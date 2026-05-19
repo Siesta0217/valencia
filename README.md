@@ -27,15 +27,18 @@ Fabric mod for **Lunar Client 1.21** — NoFall / XRay / MaceAura / NoSlow
 
 ## Keybinds
 
-預設鍵位，可以在遊戲內用指令修改：
+預設鍵位如下，修改請直接編輯 `.minecraft/config/nofall.json`：
 
+```json
+{
+  "nofallKey": 78,
+  "xrayKey": 88,
+  "maceAuraKey": 90,
+  "fastFoodKey": 71
+}
 ```
-.nf bind <nofall|xray|maceaura|noslow> <鍵名>
-```
 
-例：`.nf bind xray F5`
-
-設定存在 `.minecraft/config/nofall.json`
+常用 GLFW key codes：`G=71  H=72  J=74  N=78  X=88  Z=90  F5=296`
 
 ---
 
