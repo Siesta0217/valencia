@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "nofall",
+  "version": "${version}",
+  "name": "NoFall",
+  "description": "Prevents fall damage by spoofing onGround in movement packets.",
+  "authors": ["Siesta"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.nofall.NoFallMod"]
+  },
+  "mixins": ["nofall.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21"
+  }
+}

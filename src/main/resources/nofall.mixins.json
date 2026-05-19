@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "com.nofall.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "NoFallMixin",
+    "TickMixin",
+    "XRayBlockMixin",
+    "ChatMixin",
+    "MaceAuraMixin",
+    "NoSlowMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

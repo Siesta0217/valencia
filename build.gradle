@@ -1,0 +1,64 @@
+plugins {
+    id "fabric-loom" version "1.10-SNAPSHOT"
+    id "java"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    withSourcesJar()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+def lunarModsDir = file("${System.getProperty('user.home')}\\.lunarclient\\profiles\\lunar\\1.21\\mods\\fabric-1.21.11")
+
+tasks.register("deploy") {
+    dependsOn remapJar
+    doLast {
+        if (lunarModsDir.exists()) {
+            copy {
+                from remapJar.archiveFile
+                into lunarModsDir
+            }
+            println "Deployed to ${lunarModsDir}"
+        } else {
+            println "WARNING: Lunar mods dir not found: ${lunarModsDir}"
+        }
+    }
+}
+
+build.finalizedBy("deploy")
