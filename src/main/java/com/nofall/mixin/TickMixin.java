@@ -1,9 +1,10 @@
 package com.nofall.mixin;
 
-import com.nofall.NoSlowMod;
+import com.nofall.ClickGuiScreen;
 import com.nofall.MaceAuraMod;
 import com.nofall.ModConfig;
 import com.nofall.NoFallMod;
+import com.nofall.NoSlowMod;
 import com.nofall.XRayMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -21,6 +22,7 @@ public abstract class TickMixin {
     @Unique private boolean nofall$prevX = false;
     @Unique private boolean nofall$prevM = false;
     @Unique private boolean nofall$prevG = false;
+    @Unique private boolean nofall$prevGui = false;
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void nofall$onTick(CallbackInfo ci) {
@@ -30,10 +32,11 @@ public abstract class TickMixin {
         if (handle == 0L) return;
 
         ModConfig cfg = ModConfig.get();
-        boolean nDown = GLFW.glfwGetKey(handle, cfg.nofallKey) == GLFW.GLFW_PRESS;
-        boolean xDown = GLFW.glfwGetKey(handle, cfg.xrayKey) == GLFW.GLFW_PRESS;
-        boolean mDown = GLFW.glfwGetKey(handle, cfg.maceAuraKey) == GLFW.GLFW_PRESS;
-        boolean gDown = GLFW.glfwGetKey(handle, cfg.fastFoodKey) == GLFW.GLFW_PRESS;
+        boolean nDown   = GLFW.glfwGetKey(handle, cfg.nofallKey)   == GLFW.GLFW_PRESS;
+        boolean xDown   = GLFW.glfwGetKey(handle, cfg.xrayKey)     == GLFW.GLFW_PRESS;
+        boolean mDown   = GLFW.glfwGetKey(handle, cfg.maceAuraKey) == GLFW.GLFW_PRESS;
+        boolean gDown   = GLFW.glfwGetKey(handle, cfg.fastFoodKey) == GLFW.GLFW_PRESS;
+        boolean guiDown = GLFW.glfwGetKey(handle, cfg.guiKey)      == GLFW.GLFW_PRESS;
 
         if (mc.screen == null) {
             if (nDown && !nofall$prevN) {
@@ -52,12 +55,18 @@ public abstract class TickMixin {
                 NoSlowMod.toggle();
                 msg(mc, "§7[NoSlow] " + (NoSlowMod.isEnabled() ? "§aON" : "§cOFF"));
             }
+            if (guiDown && !nofall$prevGui) {
+                mc.setScreen(new ClickGuiScreen());
+            }
+        } else if (mc.screen instanceof ClickGuiScreen && guiDown && !nofall$prevGui) {
+            mc.setScreen(null);
         }
 
-        nofall$prevN = nDown;
-        nofall$prevX = xDown;
-        nofall$prevM = mDown;
-        nofall$prevG = gDown;
+        nofall$prevN   = nDown;
+        nofall$prevX   = xDown;
+        nofall$prevM   = mDown;
+        nofall$prevG   = gDown;
+        nofall$prevGui = guiDown;
     }
 
     private static void msg(Minecraft mc, String text) {

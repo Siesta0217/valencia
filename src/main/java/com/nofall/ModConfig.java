@@ -14,10 +14,11 @@ public class ModConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("nofall.json");
 
-    public int nofallKey = GLFW.GLFW_KEY_N;
-    public int xrayKey = GLFW.GLFW_KEY_X;
+    public int nofallKey   = GLFW.GLFW_KEY_N;
+    public int xrayKey     = GLFW.GLFW_KEY_X;
     public int maceAuraKey = GLFW.GLFW_KEY_Z;
     public int fastFoodKey = GLFW.GLFW_KEY_G;
+    public int guiKey      = GLFW.GLFW_KEY_RIGHT_SHIFT;
 
     private static ModConfig instance;
 
