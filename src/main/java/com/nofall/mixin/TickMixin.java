@@ -35,7 +35,7 @@ public abstract class TickMixin {
         boolean nDown   = GLFW.glfwGetKey(handle, cfg.nofallKey)   == GLFW.GLFW_PRESS;
         boolean xDown   = GLFW.glfwGetKey(handle, cfg.xrayKey)     == GLFW.GLFW_PRESS;
         boolean mDown   = GLFW.glfwGetKey(handle, cfg.maceAuraKey) == GLFW.GLFW_PRESS;
-        boolean gDown   = GLFW.glfwGetKey(handle, cfg.fastFoodKey) == GLFW.GLFW_PRESS;
+        boolean gDown   = GLFW.glfwGetKey(handle, cfg.noSlowKey)   == GLFW.GLFW_PRESS;
         boolean guiDown = GLFW.glfwGetKey(handle, cfg.guiKey)      == GLFW.GLFW_PRESS;
 
         if (mc.screen == null) {

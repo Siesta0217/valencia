@@ -6,6 +6,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -13,9 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LocalPlayer.class)
 public abstract class MaceAuraMixin {
 
+    @Unique private boolean nofall$rotModified = false;
+
     // HEAD: 封包發出前，偷偷把視角轉向目標
     @Inject(method = "sendPosition", at = @At("HEAD"))
     private void maceAura$before(CallbackInfo ci) {
+        nofall$rotModified = false;
         if (!MaceAuraMod.isActive()) return;
 
         Entity target = MaceAuraMod.findTarget();
@@ -33,6 +37,7 @@ public abstract class MaceAuraMixin {
         self.setYRot(rot[0]);
         self.setXRot(rot[1]);
 
+        nofall$rotModified = true;
         MaceAuraMod.pendingAttack = true;
     }
 
@@ -43,9 +48,11 @@ public abstract class MaceAuraMixin {
 
         LocalPlayer self = (LocalPlayer) (Object) this;
 
-        // 恢復客戶端真實視角（玩家完全看不出視角動了）
-        self.setYRot(MaceAuraMod.savedYRot);
-        self.setXRot(MaceAuraMod.savedXRot);
+        // 視角有被修改才恢復，避免無目標時覆蓋玩家當前視角
+        if (nofall$rotModified) {
+            self.setYRot(MaceAuraMod.savedYRot);
+            self.setXRot(MaceAuraMod.savedXRot);
+        }
 
         // 攻擊冷卻 ≥ 90% 才出手
         if (MaceAuraMod.pendingAttack && MaceAuraMod.currentTarget != null) {

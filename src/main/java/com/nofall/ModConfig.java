@@ -17,8 +17,8 @@ public class ModConfig {
     public int nofallKey   = GLFW.GLFW_KEY_N;
     public int xrayKey     = GLFW.GLFW_KEY_X;
     public int maceAuraKey = GLFW.GLFW_KEY_Z;
-    public int fastFoodKey = GLFW.GLFW_KEY_G;
-    public int guiKey      = GLFW.GLFW_KEY_RIGHT_SHIFT;
+    public int noSlowKey   = GLFW.GLFW_KEY_G;
+    public int guiKey      = GLFW.GLFW_KEY_RIGHT_CONTROL;
 
     private static ModConfig instance;
 

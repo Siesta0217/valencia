@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "nofall",
+  "id": "valencia",
   "version": "${version}",
-  "name": "NoFall",
-  "description": "Prevents fall damage by spoofing onGround in movement packets.",
+  "name": "Valencia",
+  "description": "Valencia client — NoFall / XRay / MaceAura / NoSlow for Lunar Client 1.21.",
   "authors": ["Siesta"],
   "contact": {},
   "license": "MIT",

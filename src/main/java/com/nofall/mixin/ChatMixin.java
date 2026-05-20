@@ -31,7 +31,7 @@ public class ChatMixin {
         String keyName = parts[3].toUpperCase();
         int keyCode = resolveKey(keyName);
         if (keyCode == -1) {
-            msg(mc, "§c找不到按鍵 \"" + keyName + "\"，例: G  Z  RSHIFT  F5");
+            msg(mc, "§c找不到按鍵 \"" + keyName + "\"，例: G  Z  RIGHT_SHIFT  F5");
             return;
         }
 
@@ -40,7 +40,7 @@ public class ChatMixin {
             case "nofall"   -> cfg.nofallKey   = keyCode;
             case "xray"     -> cfg.xrayKey     = keyCode;
             case "maceaura" -> cfg.maceAuraKey = keyCode;
-            case "noslow"   -> cfg.fastFoodKey = keyCode;
+            case "noslow"   -> cfg.noSlowKey   = keyCode;
             case "gui"      -> cfg.guiKey      = keyCode;
             default -> { msg(mc, "§c目標: nofall / xray / maceaura / noslow / gui"); return; }
         }
