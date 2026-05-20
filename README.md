@@ -1,46 +1,52 @@
 # Valencia
 
-Fabric mod for **Lunar Client 1.21** — NoFall / XRay / MaceAura / NoSlow
+Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
 ---
 
 ## Features
 
-| Feature | Key | Description |
-|---------|-----|-------------|
-| **NoFall** | `N` | 不受墜落傷害 |
-| **XRay** | `X` | 透視礦石（煤、鐵、金、鑽石、綠寶石、青金石、紅石、下界石英、下界金礦、遠古殘骸、紫水晶） |
-| **MaceAura** | `Z` | 手持重錘時自動鎖定並攻擊最近的玩家 / Mob（Silent Aim，不移動視角） |
-| **NoSlow** | `G` | 吃東西 / 使用物品時移動速度不減慢 |
-| **ClickGUI** | `右 Ctrl` | 開啟模組管理介面（可拖曳，Raven 風格）|
+| Module | Default Key | Description |
+|--------|-------------|-------------|
+| **NoFall** | `N` | onGround spoofing，不受墜落傷害 |
+| **XRay** | `X` | 透視礦石，gamma 16.0 |
+| **MaceAura** | `Z` | 手持重錘自動鎖定 + silent aim 攻擊，偵測 6f，攻擊 3.5f |
+| **KillAura** | `K` | 全武器 aura，switch/single 模式可選，目標範圍 / 種類 / 攻速可調 |
+| **NoSlow** | `G` | 使用物品時不減速 |
+| **BHop** | `B` | 自動跳躍保持最高速度，W/A/S/D 及斜向全支援，速度倍率可調 |
+| **Step** | `H` | 步高提升（暫不生效，等待 API 修復） |
+| **ClickGUI** | `右 Ctrl` | 可拖曳面板，展開每個模組的詳細設定 |
+
+### ClickGUI 設定項
+
+- **MaceAura**：偵測範圍、攻擊範圍滑桿
+- **KillAura**：範圍、攻擊範圍、攻擊延遲（ticks）、Single 模式、目標篩選（Hostile / Animals / Players）
+- **BHop**：速度倍率滑桿（0.5×–2.5×）
+- 所有模組：點擊右側 `[KEY]` 徽章可直接在 GUI 內重新綁鍵
 
 ---
 
 ## Installation
 
-1. 安裝 **Fabric Loader**（不需要 Fabric API）
-2. 下載 JAR → [**releases/valencia-1.0.0.jar**](releases/valencia-1.0.0.jar)
+1. 安裝 **Fabric Loader 0.19.2+**（不需要 Fabric API）
+2. 下載 JAR → [`releases/valencia-1.0.0.jar`](releases/valencia-1.0.0.jar)
 3. 放入 mods 資料夾：
    - **Lunar Client**：`.lunarclient/profiles/lunar/1.21/mods/fabric-1.21.11/`
    - **一般 Fabric**：`.minecraft/mods/`
 
 ---
 
-## Keybinds
+## Keybinds & Config
 
-預設鍵位如下，修改請直接編輯 `.minecraft/config/nofall.json`：
+設定儲存於 `.minecraft/config/valencia.json`，可用 `.nf bind` 指令在遊戲內修改：
 
-```json
-{
-  "nofallKey": 78,
-  "xrayKey": 88,
-  "maceAuraKey": 90,
-  "fastFoodKey": 71,
-  "guiKey": 345
-}
+```
+.nf bind <功能> <鍵名>
+功能：nofall / xray / maceaura / killaura / noslow / bhop / step / gui
+鍵名：N  X  Z  K  G  B  H  RIGHT_CONTROL  F5  ...（GLFW 名稱去掉 GLFW_KEY_ 前綴）
 ```
 
-常用 GLFW key codes：`G=71  H=72  J=74  N=78  X=88  Z=90  F5=296  RIGHT_CONTROL=345  RIGHT_SHIFT=344`
+常用 key codes：`B=66  G=71  H=72  K=75  N=78  X=88  Z=90  RIGHT_CONTROL=345`
 
 ---
 
@@ -48,15 +54,19 @@ Fabric mod for **Lunar Client 1.21** — NoFall / XRay / MaceAura / NoSlow
 
 - Minecraft **1.21.11**（Lunar Client 1.21）
 - Fabric Loader **0.19.2+**
-- Java **21**
+- Java **21+**
+- 相容 Sodium / Iris（純 GuiGraphics 渲染，無 GL11 直接呼叫）
 
 ---
 
 ## Build
 
 ```bash
-git clone https://github.com/Siesta0217/nofall-mod.git
-cd nofall-mod
-JAVA_HOME=/path/to/jdk21 ./gradlew build
+git clone https://github.com/Siesta0217/valencia.git
+cd valencia
+.\gradlew.bat assemble
 # JAR → build/libs/valencia-1.0.0.jar
 ```
+
+> **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
+> `settings.gradle` 的 `rootProject.name` 請勿修改（JDK 25 + Groovy ASM 限制）。

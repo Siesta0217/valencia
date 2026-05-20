@@ -1,6 +1,6 @@
-package com.nofall.mixin;
+package com.valencia.mixin;
 
-import com.nofall.XRayMod;
+import com.valencia.XRayMod;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockBehaviour;

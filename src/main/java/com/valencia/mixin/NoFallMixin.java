@@ -1,6 +1,6 @@
-package com.nofall.mixin;
+package com.valencia.mixin;
 
-import com.nofall.NoFallMod;
+import com.valencia.NoFallMod;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -25,7 +25,7 @@ public abstract class NoFallMixin {
 
         LivingEntity self = (LivingEntity) (Object) this;
 
-        // 鞘翅飛行中不介入，避免卡傷害
+        // ??憌?銝凋?隞嚗??瑕拿
         if (self.isFallFlying()) return;
 
         nofall$active = true;

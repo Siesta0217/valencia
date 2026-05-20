@@ -1,4 +1,4 @@
-package com.nofall;
+package com.valencia;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -33,7 +33,7 @@ public class ClickGuiScreen extends Screen {
     private static final int ARR_W    = 10;
     private static final int VAL_W    = 28;
 
-    // Colors — Raven palette extended
+    // Colors ??Raven palette extended
     private static final int C_SHADOW   = 0x66000000;
     private static final int C_BG       = 0xEE0C0C1C;
     private static final int C_HDR_TOP  = 0xFF200855;
@@ -163,7 +163,7 @@ public class ClickGuiScreen extends Screen {
 
     @Override public boolean isPauseScreen() { return false; }
 
-    // ── Layout helpers ────────────────────────────────────────────────────────
+    // ?? Layout helpers ????????????????????????????????????????????????????????
 
     private int panelH() {
         int h = HEADER_H;
@@ -195,7 +195,7 @@ public class ClickGuiScreen extends Screen {
         return W - PAD * 2 - INDENT - font.width(label) - 4 - VAL_W;
     }
 
-    // ── Rendering ─────────────────────────────────────────────────────────────
+    // ?? Rendering ?????????????????????????????????????????????????????????????
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float delta) {
@@ -305,7 +305,7 @@ public class ClickGuiScreen extends Screen {
         g.drawString(font, bs.label(), cx + 12, cy, C_TEXT, false);
     }
 
-    // ── Draw helpers ──────────────────────────────────────────────────────────
+    // ?? Draw helpers ??????????????????????????????????????????????????????????
 
     private void border(GuiGraphics g, int x, int y, int w, int h, int c) {
         g.fill(x,         y,         x + w,     y + 1,     c);
@@ -343,7 +343,7 @@ public class ClickGuiScreen extends Screen {
         };
     }
 
-    // ── Input ─────────────────────────────────────────────────────────────────
+    // ?? Input ?????????????????????????????????????????????????????????????????
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {

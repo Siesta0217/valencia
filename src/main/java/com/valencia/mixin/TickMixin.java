@@ -1,14 +1,14 @@
-package com.nofall.mixin;
+package com.valencia.mixin;
 
-import com.nofall.BHopMod;
-import com.nofall.ClickGuiScreen;
-import com.nofall.KillAuraMod;
-import com.nofall.MaceAuraMod;
-import com.nofall.ModConfig;
-import com.nofall.NoFallMod;
-import com.nofall.NoSlowMod;
-import com.nofall.StepMod;
-import com.nofall.XRayMod;
+import com.valencia.BHopMod;
+import com.valencia.ClickGuiScreen;
+import com.valencia.KillAuraMod;
+import com.valencia.MaceAuraMod;
+import com.valencia.ModConfig;
+import com.valencia.NoFallMod;
+import com.valencia.NoSlowMod;
+import com.valencia.StepMod;
+import com.valencia.XRayMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
@@ -48,13 +48,13 @@ public abstract class TickMixin {
         boolean kDown   = GLFW.glfwGetKey(handle, cfg.killAuraKey) == GLFW.GLFW_PRESS;
 
         if (mc.screen == null) {
-            if (nDown && !nofall$prevN)   { NoFallMod.toggleManual(); msg(mc, "§7[NoFall] "   + state(NoFallMod.isEnabled())); }
-            if (xDown && !nofall$prevX)   { XRayMod.toggle();         msg(mc, "§7[XRay] "     + state(XRayMod.isEnabled()));   }
-            if (mDown && !nofall$prevM)   { MaceAuraMod.toggle();     msg(mc, "§7[MaceAura] " + state(MaceAuraMod.isEnabled())); }
-            if (gDown && !nofall$prevG)   { NoSlowMod.toggle();       msg(mc, "§7[NoSlow] "   + state(NoSlowMod.isEnabled())); }
-            if (bDown && !nofall$prevB)   { BHopMod.toggle();         msg(mc, "§7[BHop] "     + state(BHopMod.isEnabled()));   }
-            if (hDown && !nofall$prevH)   { StepMod.toggle();         msg(mc, "§7[Step] "     + state(StepMod.isEnabled()));   }
-            if (kDown && !nofall$prevK)   { KillAuraMod.toggle();     msg(mc, "§7[KillAura] " + state(KillAuraMod.isEnabled())); }
+            if (nDown && !nofall$prevN)   { NoFallMod.toggleManual(); msg(mc, "禮7[NoFall] "   + state(NoFallMod.isEnabled())); }
+            if (xDown && !nofall$prevX)   { XRayMod.toggle();         msg(mc, "禮7[XRay] "     + state(XRayMod.isEnabled()));   }
+            if (mDown && !nofall$prevM)   { MaceAuraMod.toggle();     msg(mc, "禮7[MaceAura] " + state(MaceAuraMod.isEnabled())); }
+            if (gDown && !nofall$prevG)   { NoSlowMod.toggle();       msg(mc, "禮7[NoSlow] "   + state(NoSlowMod.isEnabled())); }
+            if (bDown && !nofall$prevB)   { BHopMod.toggle();         msg(mc, "禮7[BHop] "     + state(BHopMod.isEnabled()));   }
+            if (hDown && !nofall$prevH)   { StepMod.toggle();         msg(mc, "禮7[Step] "     + state(StepMod.isEnabled()));   }
+            if (kDown && !nofall$prevK)   { KillAuraMod.toggle();     msg(mc, "禮7[KillAura] " + state(KillAuraMod.isEnabled())); }
             if (guiDown && !nofall$prevGui) mc.setScreen(new ClickGuiScreen());
         } else if (mc.screen instanceof ClickGuiScreen && guiDown && !nofall$prevGui) {
             mc.setScreen(null);
@@ -70,7 +70,7 @@ public abstract class TickMixin {
         nofall$prevK   = kDown;
     }
 
-    private static String state(boolean on) { return on ? "§aON" : "§cOFF"; }
+    private static String state(boolean on) { return on ? "禮aON" : "禮cOFF"; }
 
     private static void msg(Minecraft mc, String text) {
         if (mc.player != null)

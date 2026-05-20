@@ -1,6 +1,6 @@
-package com.nofall.mixin;
+package com.valencia.mixin;
 
-import com.nofall.KillAuraMod;
+import com.valencia.KillAuraMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;

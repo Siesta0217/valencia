@@ -1,4 +1,4 @@
-package com.nofall;
+package com.valencia;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -12,7 +12,7 @@ import java.nio.file.Path;
 public class ModConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("nofall.json");
+    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("valencia.json");
 
     public int nofallKey   = GLFW.GLFW_KEY_N;
     public int xrayKey     = GLFW.GLFW_KEY_X;

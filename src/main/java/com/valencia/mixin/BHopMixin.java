@@ -1,6 +1,6 @@
-package com.nofall.mixin;
+package com.valencia.mixin;
 
-import com.nofall.BHopMod;
+import com.valencia.BHopMod;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
@@ -26,7 +26,7 @@ public abstract class BHopMixin {
         LivingEntity self = (LivingEntity)(Object)this;
         if (!self.onGround()) return;
 
-        // Check WASD keys directly — triggers for all directions including strafe + diagonals
+        // Check WASD keys directly ??triggers for all directions including strafe + diagonals
         long handle = GLFW.glfwGetCurrentContext();
         if (handle == 0L) return;
         boolean moving = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS

@@ -1,4 +1,4 @@
-package com.nofall;
+package com.valencia;
 
 public class NoSlowMod {
     private static boolean enabled = false;

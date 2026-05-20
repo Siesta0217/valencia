@@ -1,6 +1,6 @@
-{
+﻿{
   "required": true,
-  "package": "com.nofall.mixin",
+  "package": "com.valencia.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "NoFallMixin",

@@ -9,9 +9,9 @@
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "client": ["com.nofall.NoFallMod"]
+    "client": ["com.valencia.NoFallMod"]
   },
-  "mixins": ["nofall.mixins.json"],
+  "mixins": ["valencia.mixins.json"],
   "depends": {
     "fabricloader": ">=0.19.0",
     "minecraft": "~1.21.11",

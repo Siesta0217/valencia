@@ -1,6 +1,6 @@
-package com.nofall.mixin;
+package com.valencia.mixin;
 
-import com.nofall.ModConfig;
+import com.valencia.ModConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
@@ -22,7 +22,7 @@ public class ChatMixin {
         Minecraft mc = Minecraft.getInstance();
         String[] parts = message.split(" ");
         if (parts.length != 4) {
-            msg(mc, "§c用法: .nf bind <功能> <鍵名>");
+            msg(mc, "禮c?冽?: .nf bind <?> <?萄?>");
             return;
         }
 
@@ -30,7 +30,7 @@ public class ChatMixin {
         String keyName = parts[3].toUpperCase();
         int keyCode    = resolveKey(keyName);
         if (keyCode == -1) {
-            msg(mc, "§c找不到按鍵 \"" + keyName + "\"，例: G  Z  RIGHT_SHIFT  F5");
+            msg(mc, "禮c?曆??唳???\"" + keyName + "\"嚗?: G  Z  RIGHT_SHIFT  F5");
             return;
         }
 
@@ -45,12 +45,12 @@ public class ChatMixin {
             case "step"      -> cfg.stepKey       = keyCode;
             case "killaura"  -> cfg.killAuraKey   = keyCode;
             default -> {
-                msg(mc, "§c功能: nofall / xray / maceaura / noslow / gui / bhop / step / killaura");
+                msg(mc, "禮c?: nofall / xray / maceaura / noslow / gui / bhop / step / killaura");
                 return;
             }
         }
         cfg.save();
-        msg(mc, "§a[Valencia] §e" + target + " §a→ §e" + keyName);
+        msg(mc, "禮a[Valencia] 禮e" + target + " 禮a??禮e" + keyName);
     }
 
     private static void msg(Minecraft mc, String text) {
