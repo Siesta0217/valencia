@@ -10,7 +10,8 @@
     "MaceAuraMixin",
     "NoSlowMixin",
     "BHopMixin",
-    "KillAuraMixin"
+    "KillAuraMixin",
+    "GlowMixin"
   ],
   "injectors": {
     "defaultRequire": 1

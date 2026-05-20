@@ -14,6 +14,7 @@ public class MaceAuraMod {
     public static float savedYRot, savedXRot;
     public static Entity currentTarget = null;
     public static boolean pendingAttack = false;
+    public static Entity glowTarget = null;
 
     public static float RANGE        = 6.0f;
     public static float ATTACK_RANGE = 3.5f;
@@ -22,10 +23,11 @@ public class MaceAuraMod {
     public static void toggle() { enabled = !enabled; }
 
     public static boolean isActive() {
-        if (!enabled) return false;
+        if (!enabled) { glowTarget = null; return false; }
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return false;
-        return mc.player.getMainHandItem().is(Items.MACE);
+        if (mc.player == null || mc.level == null) { glowTarget = null; return false; }
+        if (!mc.player.getMainHandItem().is(Items.MACE)) { glowTarget = null; return false; }
+        return true;
     }
 
     public static Entity findTarget() {
@@ -45,6 +47,7 @@ public class MaceAuraMod {
                 best = e;
             }
         }
+        glowTarget = best;
         return best;
     }
 

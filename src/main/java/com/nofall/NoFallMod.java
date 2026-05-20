@@ -25,6 +25,8 @@ public class NoFallMod implements ClientModInitializer {
         KillAuraMod.targetHostile = cfg.killHostile;
         KillAuraMod.targetAnimals = cfg.killAnimals;
         KillAuraMod.targetPlayers = cfg.killPlayers;
+        KillAuraMod.singleMode    = cfg.killSingle;
+        KillAuraMod.attackDelay   = cfg.killAttackDelay;
         BHopMod.speedMultiplier  = cfg.bhopSpeed;
     }
 }

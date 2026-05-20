@@ -13,30 +13,57 @@ public class KillAuraMod {
     private static boolean enabled = false;
 
     public static float savedYRot, savedXRot;
-    public static Entity currentTarget = null;
+    public static Entity currentTarget  = null;
     public static boolean pendingAttack = false;
 
     public static float RANGE        = 4.0f;
     public static float ATTACK_RANGE = 3.0f;
+    public static int   attackDelay  = 10;   // ticks between attacks
+
     public static boolean targetHostile = true;
     public static boolean targetAnimals = false;
     public static boolean targetPlayers = false;
+
+    // Switch / Single mode
+    public static boolean     singleMode   = false;
+    public static LivingEntity lockedTarget = null;
+
+    // Glow rendering
+    public static Entity glowTarget = null;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
     public static boolean isActive() {
-        if (!enabled) return false;
+        if (!enabled) {
+            glowTarget    = null;
+            lockedTarget  = null;
+            return false;
+        }
         Minecraft mc = Minecraft.getInstance();
-        return mc.player != null && mc.level != null;
+        if (mc.player == null || mc.level == null) {
+            glowTarget = null;
+            return false;
+        }
+        return true;
     }
 
     public static Entity findTarget() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return null;
 
+        // Single mode: keep locked target if still valid
+        if (singleMode && lockedTarget != null) {
+            if (!lockedTarget.isDeadOrDying()
+                    && mc.player.distanceTo(lockedTarget) <= RANGE) {
+                glowTarget = lockedTarget;
+                return lockedTarget;
+            }
+            lockedTarget = null;
+        }
+
         AABB box = mc.player.getBoundingBox().inflate(RANGE);
-        Entity best = null;
+        LivingEntity best = null;
         double bestDist = Double.MAX_VALUE;
 
         for (LivingEntity e : mc.level.getEntitiesOfClass(LivingEntity.class, box)) {
@@ -58,6 +85,9 @@ public class KillAuraMod {
                 best = e;
             }
         }
+
+        if (singleMode && best != null) lockedTarget = best;
+        glowTarget = best;
         return best;
     }
 

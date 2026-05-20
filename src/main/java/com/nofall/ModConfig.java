@@ -37,6 +37,10 @@ public class ModConfig {
     // BHop tuning
     public float bhopSpeed = 1.0f;
 
+    // KillAura mode
+    public boolean killSingle      = false;
+    public int     killAttackDelay = 10;
+
     private static ModConfig instance;
 
     public static ModConfig get() {

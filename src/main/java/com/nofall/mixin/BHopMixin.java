@@ -1,8 +1,10 @@
 package com.nofall.mixin;
 
 import com.nofall.BHopMod;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,15 +19,21 @@ public abstract class BHopMixin {
 
     @Inject(method = "aiStep", at = @At("HEAD"))
     private void bhop$jump(CallbackInfo ci) {
-        if (!((Object)this instanceof net.minecraft.client.player.LocalPlayer)) return;
+        if (!((Object)this instanceof LocalPlayer)) return;
         if (!BHopMod.isActive()) return;
-        if (jumping) return; // player is already pressing space, don't interfere
+        if (jumping) return;
 
         LivingEntity self = (LivingEntity)(Object)this;
         if (!self.onGround()) return;
 
-        Vec3 vel = self.getDeltaMovement();
-        if (vel.x * vel.x + vel.z * vel.z < 1e-6) return;
+        // Check WASD keys directly — triggers for all directions including strafe + diagonals
+        long handle = GLFW.glfwGetCurrentContext();
+        if (handle == 0L) return;
+        boolean moving = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS
+                      || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_A) == GLFW.GLFW_PRESS
+                      || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_S) == GLFW.GLFW_PRESS
+                      || GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_D) == GLFW.GLFW_PRESS;
+        if (!moving) return;
 
         jumpFromGround();
 
