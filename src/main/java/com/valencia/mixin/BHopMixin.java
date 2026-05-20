@@ -54,8 +54,8 @@ public abstract class BHopMixin {
             float wishX = 0, wishZ = 0;
             if (wKey) { wishX -= sinY; wishZ += cosY; }
             if (sKey) { wishX += sinY; wishZ -= cosY; }
-            if (dKey) { wishX += cosY; wishZ += sinY; }
-            if (aKey) { wishX -= cosY; wishZ -= sinY; }
+            if (dKey) { wishX -= cosY; wishZ -= sinY; }
+            if (aKey) { wishX += cosY; wishZ += sinY; }
 
             float len = (float) Math.sqrt(wishX * wishX + wishZ * wishZ);
             if (len < 0.001f) return;
