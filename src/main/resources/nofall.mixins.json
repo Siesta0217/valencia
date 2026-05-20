@@ -10,7 +10,6 @@
     "MaceAuraMixin",
     "NoSlowMixin",
     "BHopMixin",
-    "StepMixin",
     "KillAuraMixin"
   ],
   "injectors": {
