@@ -19,6 +19,23 @@ public class ModConfig {
     public int maceAuraKey = GLFW.GLFW_KEY_Z;
     public int noSlowKey   = GLFW.GLFW_KEY_G;
     public int guiKey      = GLFW.GLFW_KEY_RIGHT_CONTROL;
+    public int bhopKey     = GLFW.GLFW_KEY_B;
+    public int stepKey     = GLFW.GLFW_KEY_H;
+    public int killAuraKey = GLFW.GLFW_KEY_K;
+
+    // MaceAura tuning
+    public float maceDetectRange = 6.0f;
+    public float maceAttackRange = 3.5f;
+
+    // KillAura tuning
+    public float killRange       = 4.0f;
+    public float killAttackRange = 3.0f;
+    public boolean killHostile   = true;
+    public boolean killAnimals   = false;
+    public boolean killPlayers   = false;
+
+    // BHop tuning
+    public float bhopSpeed = 1.0f;
 
     private static ModConfig instance;
 

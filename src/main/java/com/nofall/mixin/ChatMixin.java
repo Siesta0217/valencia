@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// 攔截 ChatScreen.handleChatInput — 在封包送出前截取，適用於 1.21.11
 @Mixin(ChatScreen.class)
 public class ChatMixin {
 
@@ -23,13 +22,13 @@ public class ChatMixin {
         Minecraft mc = Minecraft.getInstance();
         String[] parts = message.split(" ");
         if (parts.length != 4) {
-            msg(mc, "§c用法: .nf bind <nofall|xray|maceaura|noslow|gui> <鍵名>");
+            msg(mc, "§c用法: .nf bind <功能> <鍵名>");
             return;
         }
 
-        String target = parts[2].toLowerCase();
+        String target  = parts[2].toLowerCase();
         String keyName = parts[3].toUpperCase();
-        int keyCode = resolveKey(keyName);
+        int keyCode    = resolveKey(keyName);
         if (keyCode == -1) {
             msg(mc, "§c找不到按鍵 \"" + keyName + "\"，例: G  Z  RIGHT_SHIFT  F5");
             return;
@@ -37,15 +36,21 @@ public class ChatMixin {
 
         ModConfig cfg = ModConfig.get();
         switch (target) {
-            case "nofall"   -> cfg.nofallKey   = keyCode;
-            case "xray"     -> cfg.xrayKey     = keyCode;
-            case "maceaura" -> cfg.maceAuraKey = keyCode;
-            case "noslow"   -> cfg.noSlowKey   = keyCode;
-            case "gui"      -> cfg.guiKey      = keyCode;
-            default -> { msg(mc, "§c目標: nofall / xray / maceaura / noslow / gui"); return; }
+            case "nofall"    -> cfg.nofallKey    = keyCode;
+            case "xray"      -> cfg.xrayKey      = keyCode;
+            case "maceaura"  -> cfg.maceAuraKey  = keyCode;
+            case "noslow"    -> cfg.noSlowKey     = keyCode;
+            case "gui"       -> cfg.guiKey        = keyCode;
+            case "bhop"      -> cfg.bhopKey       = keyCode;
+            case "step"      -> cfg.stepKey       = keyCode;
+            case "killaura"  -> cfg.killAuraKey   = keyCode;
+            default -> {
+                msg(mc, "§c功能: nofall / xray / maceaura / noslow / gui / bhop / step / killaura");
+                return;
+            }
         }
         cfg.save();
-        msg(mc, "§a[NoFall] §e" + target + " §a→ §e" + keyName);
+        msg(mc, "§a[Valencia] §e" + target + " §a→ §e" + keyName);
     }
 
     private static void msg(Minecraft mc, String text) {

@@ -8,7 +8,10 @@
     "XRayBlockMixin",
     "ChatMixin",
     "MaceAuraMixin",
-    "NoSlowMixin"
+    "NoSlowMixin",
+    "BHopMixin",
+    "StepMixin",
+    "KillAuraMixin"
   ],
   "injectors": {
     "defaultRequire": 1

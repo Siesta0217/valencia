@@ -16,6 +16,15 @@ public class NoFallMod implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ModConfig.get(); // load config on startup
+        ModConfig cfg = ModConfig.get();
+        // Sync saved settings into mod static fields
+        MaceAuraMod.RANGE        = cfg.maceDetectRange;
+        MaceAuraMod.ATTACK_RANGE = cfg.maceAttackRange;
+        KillAuraMod.RANGE        = cfg.killRange;
+        KillAuraMod.ATTACK_RANGE = cfg.killAttackRange;
+        KillAuraMod.targetHostile = cfg.killHostile;
+        KillAuraMod.targetAnimals = cfg.killAnimals;
+        KillAuraMod.targetPlayers = cfg.killPlayers;
+        BHopMod.speedMultiplier  = cfg.bhopSpeed;
     }
 }
