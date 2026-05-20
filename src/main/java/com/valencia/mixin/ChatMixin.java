@@ -22,7 +22,7 @@ public class ChatMixin {
         Minecraft mc = Minecraft.getInstance();
         String[] parts = message.split(" ");
         if (parts.length != 4) {
-            msg(mc, "禮c?冽?: .nf bind <?> <?萄?>");
+            msg(mc, "§cUsage: .nf bind <module> <key>");
             return;
         }
 
@@ -30,7 +30,7 @@ public class ChatMixin {
         String keyName = parts[3].toUpperCase();
         int keyCode    = resolveKey(keyName);
         if (keyCode == -1) {
-            msg(mc, "禮c?曆??唳???\"" + keyName + "\"嚗?: G  Z  RIGHT_SHIFT  F5");
+            msg(mc, "§cUnknown key \"" + keyName + "\" — examples: G  Z  RIGHT_SHIFT  F5");
             return;
         }
 
@@ -45,12 +45,12 @@ public class ChatMixin {
             case "step"      -> cfg.stepKey       = keyCode;
             case "killaura"  -> cfg.killAuraKey   = keyCode;
             default -> {
-                msg(mc, "禮c?: nofall / xray / maceaura / noslow / gui / bhop / step / killaura");
+                msg(mc, "§cUnknown module. Options: nofall / xray / maceaura / noslow / gui / bhop / step / killaura");
                 return;
             }
         }
         cfg.save();
-        msg(mc, "禮a[Valencia] 禮e" + target + " 禮a??禮e" + keyName);
+        msg(mc, "§a[Valencia] §e" + target + " §arebound to §e" + keyName);
     }
 
     private static void msg(Minecraft mc, String text) {

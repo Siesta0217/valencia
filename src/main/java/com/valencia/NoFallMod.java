@@ -6,18 +6,23 @@ public class NoFallMod implements ClientModInitializer {
 
     private static boolean enabled = true;
 
-    public static boolean isEnabled() {
-        return enabled;
-    }
-
-    public static void toggleManual() {
-        enabled = !enabled;
-    }
+    public static boolean isEnabled() { return enabled; }
+    public static void toggleManual() { enabled = !enabled; }
 
     @Override
     public void onInitializeClient() {
         ModConfig cfg = ModConfig.get();
-        // Sync saved settings into mod static fields
+
+        // Restore module enabled states from last session
+        enabled                   = cfg.nofallEnabled;
+        if (cfg.xrayEnabled     != XRayMod.isEnabled())     XRayMod.toggle();
+        if (cfg.maceAuraEnabled != MaceAuraMod.isEnabled()) MaceAuraMod.toggle();
+        if (cfg.noSlowEnabled   != NoSlowMod.isEnabled())   NoSlowMod.toggle();
+        if (cfg.bhopEnabled     != BHopMod.isEnabled())     BHopMod.toggle();
+        if (cfg.stepEnabled     != StepMod.isEnabled())     StepMod.toggle();
+        if (cfg.killAuraEnabled != KillAuraMod.isEnabled()) KillAuraMod.toggle();
+
+        // Restore tuning values
         MaceAuraMod.RANGE        = cfg.maceDetectRange;
         MaceAuraMod.ATTACK_RANGE = cfg.maceAttackRange;
         KillAuraMod.RANGE        = cfg.killRange;

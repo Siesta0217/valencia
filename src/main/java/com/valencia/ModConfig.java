@@ -41,6 +41,15 @@ public class ModConfig {
     public boolean killSingle      = false;
     public int     killAttackDelay = 10;
 
+    // Module enabled states (persisted across sessions)
+    public boolean nofallEnabled   = true;
+    public boolean xrayEnabled     = false;
+    public boolean maceAuraEnabled = false;
+    public boolean noSlowEnabled   = false;
+    public boolean bhopEnabled     = false;
+    public boolean stepEnabled     = false;
+    public boolean killAuraEnabled = false;
+
     private static ModConfig instance;
 
     public static ModConfig get() {
