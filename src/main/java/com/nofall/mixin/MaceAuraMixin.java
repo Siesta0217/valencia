@@ -54,10 +54,13 @@ public abstract class MaceAuraMixin {
             self.setXRot(MaceAuraMod.savedXRot);
         }
 
-        // 攻擊冷卻 ≥ 90% 才出手
+        // 在 server reach 內且冷卻 ≥ 50% 才送攻擊包
         if (MaceAuraMod.pendingAttack && MaceAuraMod.currentTarget != null) {
             Minecraft mc = Minecraft.getInstance();
-            if (mc.gameMode != null && self.getAttackStrengthScale(0f) >= 0.9f) {
+            double dist = self.distanceTo(MaceAuraMod.currentTarget);
+            if (mc.gameMode != null
+                    && dist <= MaceAuraMod.ATTACK_RANGE
+                    && self.getAttackStrengthScale(0f) >= 0.5f) {
                 mc.gameMode.attack(self, MaceAuraMod.currentTarget);
                 self.swing(InteractionHand.MAIN_HAND);
             }

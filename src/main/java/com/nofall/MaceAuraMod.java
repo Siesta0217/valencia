@@ -15,7 +15,8 @@ public class MaceAuraMod {
     public static Entity currentTarget = null;
     public static boolean pendingAttack = false;
 
-    public static final float RANGE = 4.5f;
+    public static final float RANGE        = 6.0f;  // 偵測 + 瞄準範圍（空中就開始追蹤）
+    public static final float ATTACK_RANGE = 3.5f;  // 實際送出攻擊包的距離（server reach）
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle() { enabled = !enabled; }
