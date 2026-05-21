@@ -1,5 +1,15 @@
 # Valencia Changelog
 
+## [alpha-0.19] - 2026-05-21
+
+### Scaffold — fix "tower flies up without column"
+
+Look-ahead was trying to place blocks that the player's hitbox still overlapped (player feet at y=N+0.3, block placement at y=N, hitbox overlaps the block from y=N+0.3 to y=N+1). Vanilla servers reject placements that overlap any entity, so the `useItemOn` packet silently failed. Scaffold thought it placed, but no block ever landed — meanwhile Tower vy kept lifting the player off into the air.
+
+Fixed by removing look-ahead entirely. Scaffold now only places at curFoot when it's actually empty, which means the player has *already* cleared the block above and there's no overlap. Every `useItemOn` is clean, no rejection, column grows reliably at all Tower Spd values.
+
+Removed the `Look Ahead` GUI toggle — wasn't doing useful work, and the toggle was the source of the flying-up bug.
+
 ## [alpha-0.18] - 2026-05-21
 
 ### Scaffold

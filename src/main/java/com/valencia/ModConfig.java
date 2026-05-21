@@ -80,7 +80,6 @@ public class ModConfig {
     public boolean scaffoldAutoSwitch = true;
     public boolean scaffoldSwitchBack = true;
     public int     scaffoldPlaceDelay = 0;
-    public boolean scaffoldLookAhead  = true;
     public boolean scaffoldSilentRot  = true;
     public boolean scaffoldFakeHand   = false;
 

@@ -35,7 +35,6 @@ public class ScaffoldMod {
     public static boolean autoSwitch  = true;
     public static boolean switchBack  = true;
     public static int     placeDelay  = 0;      // ticks (0 = every tick)
-    public static boolean lookAhead   = true;   // place predicted next-tick foot if current foot already solid
     public static boolean silentRot   = true;   // send rotation packet aimed at hit point before useItemOn
     public static boolean fakeHand    = false;  // server-only slot swap — client keeps holding original item
 
@@ -91,27 +90,18 @@ public class ScaffoldMod {
 
         if (placeTimer > 0) { placeTimer--; return; }
 
-        // Pick a single target: current foot if empty, else look-ahead's
-        // predicted foot. Don't gap-fill downward — moving laterally while
-        // towering makes the new column all-air below, and aggressive fill
-        // builds a thick blob at every lateral step.
+        // Place only at curFoot when it's empty. No look-ahead — predicting
+        // the next-tick foot tries to place a block that the player hitbox
+        // still overlaps (player feet at y=N+0.3 inside block N [N, N+1]),
+        // and vanilla servers reject overlap-with-entity placements. The
+        // scaffold thinks it placed but nothing actually lands, and Tower vy
+        // keeps lifting the player off the column.
         //
-        // Look-ahead scales deltaMovement by 1.5 (predict 1.5 ticks ahead).
-        // At Tower Spd 0.3 this places the next block one full tick before
-        // the player physically crosses the boundary into it, so the column
-        // visibly stays one block ahead of the feet instead of placing right
-        // when the foot becomes empty.
+        // Waiting until curFoot is genuinely empty (i.e. player feet have
+        // cleared the previous block's top) means every useItemOn we send
+        // is clean: no overlap, no rejection, column always grows.
         BlockPos curFoot = BlockPos.containing(p.position().subtract(0, 1, 0));
-        BlockPos target  = null;
-        if (mc.level.getBlockState(curFoot).canBeReplaced()) {
-            target = curFoot;
-        } else if (lookAhead) {
-            Vec3 nextPos = p.position().add(p.getDeltaMovement().scale(1.5));
-            BlockPos nextFoot = BlockPos.containing(nextPos.subtract(0, 1, 0));
-            if (!nextFoot.equals(curFoot) && mc.level.getBlockState(nextFoot).canBeReplaced()) {
-                target = nextFoot;
-            }
-        }
+        BlockPos target = mc.level.getBlockState(curFoot).canBeReplaced() ? curFoot : null;
 
         if (target == null) { if (switchBack) restoreSlot(mc); return; }
 

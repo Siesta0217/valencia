@@ -32,7 +32,6 @@ public class NoFallMod implements ClientModInitializer {
         ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch;
         ScaffoldMod.switchBack = cfg.scaffoldSwitchBack;
         ScaffoldMod.placeDelay = cfg.scaffoldPlaceDelay;
-        ScaffoldMod.lookAhead  = cfg.scaffoldLookAhead;
         ScaffoldMod.silentRot  = cfg.scaffoldSilentRot;
         ScaffoldMod.fakeHand   = cfg.scaffoldFakeHand;
 
