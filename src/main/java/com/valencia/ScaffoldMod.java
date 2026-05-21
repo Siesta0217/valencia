@@ -102,22 +102,34 @@ public class ScaffoldMod {
 
         if (placeTimer > 0) { placeTimer--; return; }
 
-        // Place only at curFoot when it's empty. No look-ahead — predicting
-        // the next-tick foot tries to place a block that the player hitbox
-        // still overlaps (player feet at y=N+0.3 inside block N [N, N+1]),
-        // and vanilla servers reject overlap-with-entity placements. The
-        // scaffold thinks it placed but nothing actually lands, and Tower vy
-        // keeps lifting the player off the column.
-        //
-        // Waiting until curFoot is genuinely empty (i.e. player feet have
-        // cleared the previous block's top) means every useItemOn we send
-        // is clean: no overlap, no rejection, column always grows.
+        // curFoot empty? if not, nothing to do.
         BlockPos curFoot = BlockPos.containing(p.position().subtract(0, 1, 0));
-        BlockPos target = mc.level.getBlockState(curFoot).canBeReplaced() ? curFoot : null;
+        if (!mc.level.getBlockState(curFoot).canBeReplaced()) {
+            if (switchBack && !fakeHand) restoreSlot(mc);
+            return;
+        }
 
-        if (target == null) { if (switchBack) restoreSlot(mc); return; }
+        // Try the direct placement first — curFoot needs at least one solid
+        // face-neighbor to act as the reference block for useItemOn.
+        boolean placed = false;
+        if (findPlacement(mc.level, curFoot) != null) {
+            placed = placeAt(mc, p, curFoot);
+        } else {
+            // Stair-step bridge: when player moves diagonally (Tower Move +
+            // WASD), the previous column block ends up at a *diagonal* offset
+            // from curFoot — not a face-neighbor. Bridge by first placing
+            // curFoot.below() (which usually has the old column as a side
+            // face-neighbor), then placing curFoot on top of the bridge.
+            BlockPos bridge = curFoot.below();
+            if (mc.level.getBlockState(bridge).canBeReplaced()
+                && findPlacement(mc.level, bridge) != null) {
+                if (placeAt(mc, p, bridge)) {
+                    placed = placeAt(mc, p, curFoot);
+                }
+            }
+        }
 
-        if (placeAt(mc, p, target)) placeTimer = Math.max(0, placeDelay);
+        if (placed) placeTimer = Math.max(0, placeDelay);
 
         if (switchBack && !fakeHand) restoreSlot(mc);
     }

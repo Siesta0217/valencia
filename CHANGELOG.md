@@ -1,5 +1,14 @@
 # Valencia Changelog
 
+## [alpha-0.21] - 2026-05-21
+
+### Scaffold — stair-step bridging when towering diagonally
+Tower Move + WASD = diagonal motion. When the player crosses both an x/z and a y boundary in one tick, curFoot ends up at a *diagonal* offset from the previous column block — not a face-neighbor — so `findPlacement` returns null and the placement silently fails. Player keeps rising on Tower vy with no column under them.
+
+Fixed by adding a fallback: if curFoot has no face-neighbor reference, try `curFoot.below()`. The bridge block usually does have an old-column face-neighbor (one block laterally + at the same y as old top). Place bridge first, then curFoot uses the bridge as a DOWN reference. Two placements per tick when needed, one otherwise.
+
+Doesn't trigger thick towers — only goes 1 level below, and only when its own findPlacement finds a reference. Isolated lateral drift (no nearby column at all) still skips placement, just like before.
+
 ## [alpha-0.20] - 2026-05-21
 
 ### Scaffold — fix scattered blocks / fly-away from sprint inertia
