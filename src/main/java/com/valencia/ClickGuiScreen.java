@@ -74,7 +74,7 @@ public class ClickGuiScreen extends Screen {
     private Object waifuLoc  = null;
     private int    waifuTexW = 0;
     private int    waifuTexH = 0;
-    // Reflection cache — populated once at loadWaifu(), reused every frame
+    private String waifuHint = null;
     private static Method WAIFU_BLIT = null;
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -197,14 +197,13 @@ public class ClickGuiScreen extends Screen {
     }
 
     // ── Waifu ─────────────────────────────────────────────────────────────────
-    // Supported extensions — first match wins. NativeImage only decodes PNG, so
-    // anything else goes through Java's ImageIO and is re-encoded to PNG bytes.
+    // NativeImage only decodes PNG; other formats go through ImageIO first.
     private static final String[] WAIFU_EXTS = {"png", "jpg", "jpeg", "bmp", "gif"};
 
     private void loadWaifu() {
+        File dir = FabricLoader.getInstance().getConfigDir().resolve("valencia").toFile();
+        waifuHint = dir.getAbsolutePath();
         try {
-            File dir = FabricLoader.getInstance().getConfigDir()
-                .resolve("valencia").toFile();
             if (!dir.exists() || !dir.isDirectory()) return;
 
             File f = null;
@@ -214,14 +213,7 @@ public class ClickGuiScreen extends Screen {
             }
             if (f == null) return;
 
-            Class<?> rlClass = Class.forName("net.minecraft.resources.ResourceLocation");
-            Class<?> niClass = Class.forName("com.mojang.blaze3d.platform.NativeImage");
-            Class<?> dtClass = Class.forName("net.minecraft.client.renderer.texture.DynamicTexture");
-            Class<?> tmClass = Class.forName("net.minecraft.client.renderer.texture.TextureManager");
-            Class<?> atClass = Class.forName("net.minecraft.client.renderer.texture.AbstractTexture");
-
-            // NativeImage.read only handles PNG. For other formats, decode with
-            // ImageIO and re-encode as PNG bytes so NativeImage can read them.
+            // NativeImage only handles PNG; convert other formats first
             InputStream pngStream;
             String name = f.getName().toLowerCase();
             if (name.endsWith(".png")) {
@@ -234,36 +226,52 @@ public class ClickGuiScreen extends Screen {
                 pngStream = new ByteArrayInputStream(baos.toByteArray());
             }
 
-            Method read = niClass.getMethod("read", InputStream.class);
-            Object ni = read.invoke(null, pngStream);
+            Class<?> niClass = Class.forName("com.mojang.blaze3d.platform.NativeImage");
+            Class<?> dtClass = Class.forName("net.minecraft.client.renderer.texture.DynamicTexture");
+            Class<?> rlClass = Class.forName("net.minecraft.resources.ResourceLocation");
 
+            Object ni = niClass.getMethod("read", InputStream.class).invoke(null, pngStream);
             waifuTexW = (int) niClass.getMethod("getWidth").invoke(ni);
             waifuTexH = (int) niClass.getMethod("getHeight").invoke(ni);
 
-            // new DynamicTexture(NativeImage)
             Object dt = dtClass.getDeclaredConstructor(niClass).newInstance(ni);
 
-            // ResourceLocation.fromNamespaceAndPath("valencia", "waifu")
+            // ResourceLocation factory — try 1.21+ API first, fall back to constructor
             Object loc;
             try {
-                Method factory = rlClass.getMethod("fromNamespaceAndPath", String.class, String.class);
-                loc = factory.invoke(null, "valencia", "waifu");
+                loc = rlClass.getMethod("fromNamespaceAndPath", String.class, String.class)
+                             .invoke(null, "valencia", "waifu");
             } catch (NoSuchMethodException e) {
-                loc = rlClass.getDeclaredConstructor(String.class, String.class).newInstance("valencia", "waifu");
+                loc = rlClass.getDeclaredConstructor(String.class, String.class)
+                             .newInstance("valencia", "waifu");
             }
 
-            // TextureManager.register(ResourceLocation, AbstractTexture)
-            Object tm = Minecraft.class.getMethod("getTextureManager").invoke(Minecraft.getInstance());
-            tmClass.getMethod("register", rlClass, atClass).invoke(tm, loc, dt);
+            // register() — scan by name+count to survive classloader mismatch
+            Object tm = Minecraft.getInstance().getTextureManager();
+            for (Method m : tm.getClass().getMethods()) {
+                if ("register".equals(m.getName()) && m.getParameterCount() == 2
+                        && m.getParameterTypes()[0].getSimpleName().equals("ResourceLocation")) {
+                    m.invoke(tm, loc, dt);
+                    break;
+                }
+            }
 
-            // Cache the blit method once (avoids per-frame reflection)
+            // blit — scan GuiGraphics for the 9-arg float-uv overload
             if (WAIFU_BLIT == null) {
-                WAIFU_BLIT = GuiGraphics.class.getMethod("blit",
-                    rlClass, int.class, int.class, float.class, float.class,
-                    int.class, int.class, int.class, int.class);
+                for (Method m : GuiGraphics.class.getMethods()) {
+                    if ("blit".equals(m.getName())) {
+                        Class<?>[] p = m.getParameterTypes();
+                        if (p.length == 9
+                                && p[0].getSimpleName().equals("ResourceLocation")
+                                && p[1] == int.class && p[3] == float.class) {
+                            WAIFU_BLIT = m;
+                            break;
+                        }
+                    }
+                }
             }
 
-            waifuLoc = loc;
+            if (WAIFU_BLIT != null) waifuLoc = loc;
         } catch (Exception ignored) {}
     }
 
@@ -387,14 +395,16 @@ public class ClickGuiScreen extends Screen {
     // ── Waifu rendering ───────────────────────────────────────────────────────
     private void renderWaifu(GuiGraphics g) {
         if (waifuLoc == null || WAIFU_BLIT == null || waifuTexW <= 0 || waifuTexH <= 0) {
-            g.drawString(font, "§8[waifu: config/valencia/waifu.{png,jpg,bmp,gif}]", 4, height - 20, 0xFF555555, false);
+            String path = waifuHint != null
+                ? waifuHint + File.separator + "waifu.png"
+                : "config/valencia/waifu.png";
+            g.drawString(font, "§8[waifu: " + path + "]", 4, height - 20, 0xFF555555, false);
             return;
         }
         try {
             int dispH = Math.min(height / 3, 150);
             int dispW = waifuTexW * dispH / waifuTexH;
-            int wx = 4, wy = height - dispH - 14;
-            WAIFU_BLIT.invoke(g, waifuLoc, wx, wy, 0f, 0f, dispW, dispH, waifuTexW, waifuTexH);
+            WAIFU_BLIT.invoke(g, waifuLoc, 4, height - dispH - 14, 0f, 0f, dispW, dispH, waifuTexW, waifuTexH);
         } catch (Exception ignored) {
             g.drawString(font, "§8[waifu render err]", 4, height - 20, 0xFF555555, false);
         }
