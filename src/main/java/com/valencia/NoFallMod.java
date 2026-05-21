@@ -26,19 +26,12 @@ public class NoFallMod implements ClientModInitializer {
         if (cfg.critEnabled       != CritMod.isEnabled())       CritMod.toggle();
         if (cfg.scaffoldEnabled   != ScaffoldMod.isEnabled())   ScaffoldMod.toggle();
 
-        ScaffoldMod.tower         = cfg.scaffoldTower;
-        ScaffoldMod.autoSwitch    = cfg.scaffoldAutoSwitch;
-        ScaffoldMod.switchBack    = cfg.scaffoldSwitchBack;
-        ScaffoldMod.placeDelay    = cfg.scaffoldPlaceDelay;
-        ScaffoldMod.sneakWhile    = cfg.scaffoldSneak;
-        ScaffoldMod.safeWalk      = cfg.scaffoldSafeWalk;
-        ScaffoldMod.blocksPerTick = cfg.scaffoldBlocksPerTick;
-        ScaffoldMod.lookAhead     = cfg.scaffoldLookAhead;
-        ScaffoldMod.airPlace      = cfg.scaffoldAirPlace;
-        ScaffoldMod.silentRot     = cfg.scaffoldSilentRot;
-        ScaffoldMod.skipHeavy     = cfg.scaffoldSkipHeavy;
-        ScaffoldMod.skipContainer = cfg.scaffoldSkipContainer;
-        ScaffoldMod.extendRadius  = cfg.scaffoldExtend;
+        ScaffoldMod.tower      = cfg.scaffoldTower;
+        ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch;
+        ScaffoldMod.switchBack = cfg.scaffoldSwitchBack;
+        ScaffoldMod.placeDelay = cfg.scaffoldPlaceDelay;
+        ScaffoldMod.lookAhead  = cfg.scaffoldLookAhead;
+        ScaffoldMod.silentRot  = cfg.scaffoldSilentRot;
 
         // Restore tuning values
         MaceAuraMod.RANGE        = cfg.maceDetectRange;

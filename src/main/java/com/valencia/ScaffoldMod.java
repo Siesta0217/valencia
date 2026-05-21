@@ -22,29 +22,24 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.lang.reflect.Field;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 public class ScaffoldMod {
 
     private static boolean enabled = false;
 
-    // ── Behavior ──────────────────────────────────────────────────────────────
-    public static boolean tower         = false;
-    public static boolean autoSwitch    = true;
-    public static boolean switchBack    = true;
-    public static int     placeDelay    = 0;   // ticks (0 = every tick)
-    public static boolean sneakWhile    = false;
-    public static boolean safeWalk      = true;
+    // ── User-facing settings ──────────────────────────────────────────────────
+    public static boolean tower       = false;  // jump-up + auto place under foot
+    public static boolean autoSwitch  = true;
+    public static boolean switchBack  = true;
+    public static int     placeDelay  = 0;      // ticks (0 = every tick)
+    public static boolean lookAhead   = true;   // place predicted next-tick foot if current foot already solid
+    public static boolean silentRot   = true;   // send rotation packet aimed at hit point before useItemOn
 
-    // ── Aggressive / vanilla-server tuning ────────────────────────────────────
-    public static int     blocksPerTick  = 3;     // max useItemOn calls per tick
-    public static boolean lookAhead      = true;  // predict next-tick foot pos
-    public static boolean airPlace       = true;  // place even when off-ground
-    public static boolean silentRot      = true;  // send rotation packet before useItemOn
-    public static boolean skipHeavy      = true;  // skip FallingBlock items
-    public static boolean skipContainer  = true;  // skip chests/barrels/furnaces
-    public static int     extendRadius   = 0;     // extra placements around foot
+    // ── Internal constants (always on; not exposed in GUI) ────────────────────
+    // Skip falling / container blocks so we never bridge with sand or place a
+    // chest under our feet. Hard-coded — there's no reason a user would want
+    // these off.
+    // ──────────────────────────────────────────────────────────────────────────
 
     // ── Runtime state ─────────────────────────────────────────────────────────
     private static int placeTimer = 0;
@@ -79,7 +74,8 @@ public class ScaffoldMod {
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
 
-        // Tower: stamp jump velocity while on ground
+        // Tower: stamp jump velocity while on ground — pair with Scaffold's
+        // auto-place to ride a column of blocks straight up.
         if (tower && p.onGround()) {
             Vec3 v = p.getDeltaMovement();
             p.setDeltaMovement(v.x, 0.42, v.z);
@@ -87,70 +83,44 @@ public class ScaffoldMod {
 
         if (placeTimer > 0) { placeTimer--; return; }
 
-        // Air-place gate
-        if (!airPlace && !p.onGround()) {
-            if (switchBack) restoreSlot(mc);
-            return;
-        }
-
-        // Collect candidate positions
-        Set<BlockPos> candidates = new LinkedHashSet<>();
-
-        // Current foot (block directly under player)
+        // Choose target: current foot if open, else (when lookAhead) the cell
+        // we'll arrive at next tick based on current velocity. This is what
+        // lets sprinting / sprint-jumping not drop the player.
         BlockPos curFoot = BlockPos.containing(p.position().subtract(0, 1, 0));
-        candidates.add(curFoot);
-
-        // Predict next-tick foot position using current velocity
-        if (lookAhead) {
+        BlockPos target = null;
+        if (mc.level.getBlockState(curFoot).canBeReplaced()) {
+            target = curFoot;
+        } else if (lookAhead) {
             Vec3 nextPos = p.position().add(p.getDeltaMovement());
             BlockPos nextFoot = BlockPos.containing(nextPos.subtract(0, 1, 0));
-            candidates.add(nextFoot);
-        }
-
-        // Extend: rectangular radius around current foot
-        int r = Math.max(0, extendRadius);
-        if (r > 0) {
-            for (int dx = -r; dx <= r; dx++) {
-                for (int dz = -r; dz <= r; dz++) {
-                    if (dx == 0 && dz == 0) continue;
-                    candidates.add(curFoot.offset(dx, 0, dz));
-                }
+            if (!nextFoot.equals(curFoot) && mc.level.getBlockState(nextFoot).canBeReplaced()) {
+                target = nextFoot;
             }
         }
 
-        int placed = 0;
-        int maxPerTick = Math.max(1, blocksPerTick);
+        if (target == null) { if (switchBack) restoreSlot(mc); return; }
 
-        for (BlockPos target : candidates) {
-            if (placed >= maxPerTick) break;
+        BlockHitResult hit = findPlacement(mc.level, target);
+        if (hit == null) return;
 
-            BlockState cur = mc.level.getBlockState(target);
-            if (!cur.canBeReplaced()) continue;
+        int slot = findBlockSlot(p);
+        if (slot == -1) return;
 
-            BlockHitResult hit = findPlacement(mc.level, target);
-            if (hit == null) continue;
-
-            int slot = findBlockSlot(p);
-            if (slot == -1) break;
-
-            Inventory inv = p.getInventory();
-            int curSlot = getSelected(inv);
-            if (autoSwitch && curSlot != slot) {
-                if (prevSlot == -1) prevSlot = curSlot;
-                setSelected(inv, slot);
-            }
-
-            if (silentRot) sendRotation(mc, p, hit);
-
-            mc.gameMode.useItemOn(p, InteractionHand.MAIN_HAND, hit);
-            p.swing(InteractionHand.MAIN_HAND);
-            placed++;
+        Inventory inv = p.getInventory();
+        int curSlot = getSelected(inv);
+        if (autoSwitch && curSlot != slot) {
+            if (prevSlot == -1) prevSlot = curSlot;
+            setSelected(inv, slot);
         }
 
-        // Reset look so subsequent vanilla packets carry the player's real view
-        if (silentRot && placed > 0) restoreRotation(mc, p);
+        if (silentRot) sendRotation(mc, p, hit);
 
-        placeTimer = placed > 0 ? Math.max(0, placeDelay) : 0;
+        mc.gameMode.useItemOn(p, InteractionHand.MAIN_HAND, hit);
+        p.swing(InteractionHand.MAIN_HAND);
+
+        if (silentRot) restoreRotation(mc, p);
+
+        placeTimer = Math.max(0, placeDelay);
 
         if (switchBack) restoreSlot(mc);
     }
@@ -161,10 +131,7 @@ public class ScaffoldMod {
         prevSlot = -1;
     }
 
-    /**
-     * Send a server-side rotation packet aimed at the hit point. Lets vanilla
-     * / Paper's reach + facing checks accept the upcoming useItemOn.
-     */
+    /** Send a server-side rotation aimed at the hit point. */
     private static void sendRotation(Minecraft mc, LocalPlayer p, BlockHitResult hit) {
         if (mc.getConnection() == null) return;
         Vec3 eye = p.getEyePosition();
@@ -189,10 +156,7 @@ public class ScaffoldMod {
         } catch (Exception ignored) {}
     }
 
-    /**
-     * Find a reference block adjacent to targetPos that we can right-click to
-     * place a block at targetPos. Prefers DOWN, then horizontals, then UP.
-     */
+    /** Find a solid neighbor of targetPos to use as the reference block. */
     private static BlockHitResult findPlacement(Level level, BlockPos targetPos) {
         Direction[] dirs = {
             Direction.DOWN,
@@ -216,6 +180,7 @@ public class ScaffoldMod {
         return null;
     }
 
+    /** Pick the hotbar slot with the most blocks, skipping junk types. */
     private static int findBlockSlot(LocalPlayer player) {
         Inventory inv = player.getInventory();
         int best = -1;
@@ -225,13 +190,10 @@ public class ScaffoldMod {
             if (s.isEmpty()) continue;
             if (!(s.getItem() instanceof BlockItem bi)) continue;
             Block b = bi.getBlock();
-            if (skipHeavy && b instanceof FallingBlock) continue;
-            if (skipContainer && (b instanceof ChestBlock
-                               || b instanceof BarrelBlock
-                               || b instanceof EnderChestBlock
-                               || b instanceof AbstractFurnaceBlock
-                               || b instanceof CraftingTableBlock)) continue;
-            // Pick the slot with the most blocks to avoid running out mid-bridge
+            if (b instanceof FallingBlock) continue;
+            if (b instanceof ChestBlock || b instanceof BarrelBlock
+                || b instanceof EnderChestBlock || b instanceof AbstractFurnaceBlock
+                || b instanceof CraftingTableBlock) continue;
             if (s.getCount() > bestCount) {
                 best = i;
                 bestCount = s.getCount();

@@ -1,5 +1,18 @@
 # Valencia Changelog
 
+## [alpha-0.10] - 2026-05-21
+
+### Scaffold — Simplified
+Trimmed GUI to the three settings that actually matter, plus slot management:
+- **Tower**, **Look Ahead**, **Silent Rot**, **Auto Sw**, **Sw Back**, **Delay**, **Key**.
+
+Internal-only (still always on, no longer in GUI):
+- Multi-block-per-tick removed — back to one placement per tick (foot, or look-ahead foot if current is solid)
+- Air-place is always on (was a toggle; off would just drop you)
+- Skip-falling-block and skip-container item filters are always on
+- Extend radius removed (was 0 default anyway)
+- Sneak / Safe Walk placeholders removed (never implemented)
+
 ## [alpha-0.9] - 2026-05-21
 
 ### Scaffold — Aggressive Mode
