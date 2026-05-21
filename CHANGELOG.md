@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.18] - 2026-05-21
+
+### Scaffold
+- Look-ahead prediction distance bumped from 1.0 → 1.5 ticks. At low Tower Spd, this places the next block one full tick before the player physically crosses the boundary into it. Same placement rate, but each placement happens earlier so the column visibly stays ahead of the feet instead of being placed right at the moment of crossing.
+
 ## [alpha-0.17] - 2026-05-21
 
 ### Scaffold — fix fat tower from lateral drift

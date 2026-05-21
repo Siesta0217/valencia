@@ -92,16 +92,21 @@ public class ScaffoldMod {
         if (placeTimer > 0) { placeTimer--; return; }
 
         // Pick a single target: current foot if empty, else look-ahead's
-        // predicted next-tick foot. Don't gap-fill downward — moving laterally
-        // while towering makes the new column all-air below, and aggressive
-        // fill builds a thick blob at every lateral step instead of a clean
-        // column.
+        // predicted foot. Don't gap-fill downward — moving laterally while
+        // towering makes the new column all-air below, and aggressive fill
+        // builds a thick blob at every lateral step.
+        //
+        // Look-ahead scales deltaMovement by 1.5 (predict 1.5 ticks ahead).
+        // At Tower Spd 0.3 this places the next block one full tick before
+        // the player physically crosses the boundary into it, so the column
+        // visibly stays one block ahead of the feet instead of placing right
+        // when the foot becomes empty.
         BlockPos curFoot = BlockPos.containing(p.position().subtract(0, 1, 0));
         BlockPos target  = null;
         if (mc.level.getBlockState(curFoot).canBeReplaced()) {
             target = curFoot;
         } else if (lookAhead) {
-            Vec3 nextPos = p.position().add(p.getDeltaMovement());
+            Vec3 nextPos = p.position().add(p.getDeltaMovement().scale(1.5));
             BlockPos nextFoot = BlockPos.containing(nextPos.subtract(0, 1, 0));
             if (!nextFoot.equals(curFoot) && mc.level.getBlockState(nextFoot).canBeReplaced()) {
                 target = nextFoot;
