@@ -50,6 +50,7 @@ public class ModConfig {
     public boolean killWaitCool   = true;
     public boolean killSmoothRot  = true;
     public int     killMaxTurn    = 60;
+    public boolean killBodyLock   = false;
 
     // Theme colors
     public int accentR  = 0;

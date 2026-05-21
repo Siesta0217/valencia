@@ -55,7 +55,10 @@ public abstract class KillAuraMixin {
         if (!KillAuraMod.isActive()) return;
 
         LocalPlayer self = (LocalPlayer)(Object)this;
-        if (nofall$killModified) {
+        // Body Lock: skip restore so the player's view physically follows the
+        // target (snap-aim / visible rotation). Default behavior restores
+        // savedYRot/XRot to keep the local view unchanged (silent aim).
+        if (nofall$killModified && !KillAuraMod.bodyLock) {
             self.setYRot(KillAuraMod.savedYRot);
             self.setXRot(KillAuraMod.savedXRot);
         }

@@ -38,6 +38,7 @@ public class KillAuraMod {
     public static boolean waitCooldown  = true;   // wait for attack charge = 1.0
     public static boolean smoothRot     = true;   // lerp rotation toward target
     public static float   maxTurnDeg    = 60.0f;  // max degrees per tick when smoothing
+    public static boolean bodyLock      = false;  // DON'T restore rotation — view physically snaps to target
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }

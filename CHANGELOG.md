@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.6] - 2026-05-21
+
+### KillAura
+- **Body Lock** toggle added — when ON, the local view physically snaps to the target (visible rotation / snap-aim) instead of restoring rotation post-send (silent aim). Combine with `Smooth Rot` OFF for instant snap or `Smooth Rot` ON for FPS-style aimlock tracking.
+
 ## [alpha-0.5] - 2026-05-21
 
 ### KillAura — Major Overhaul
