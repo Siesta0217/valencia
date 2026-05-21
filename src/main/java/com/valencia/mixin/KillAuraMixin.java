@@ -14,16 +14,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LocalPlayer.class)
 public abstract class KillAuraMixin {
 
-    @Unique private boolean nofall$killModified = false;
-    @Unique private int     nofall$atkTimer     = 0;
+    @Unique private boolean nofall$killModified   = false;
+    @Unique private int     nofall$nextAttackTick = 0;
 
     @Inject(method = "sendPosition", at = @At("HEAD"))
     private void killAura$before(CallbackInfo ci) {
         nofall$killModified = false;
-        if (!KillAuraMod.isActive()) {
-            nofall$atkTimer = 0;
-            return;
-        }
+        if (!KillAuraMod.isActive()) return;
 
         Entity target = KillAuraMod.findTarget();
         KillAuraMod.currentTarget = target;
@@ -32,10 +29,24 @@ public abstract class KillAuraMixin {
         LocalPlayer self = (LocalPlayer)(Object)this;
         KillAuraMod.savedYRot = self.getYRot();
         KillAuraMod.savedXRot = self.getXRot();
-        float[] rot = KillAuraMod.calcRotations(self, target);
-        self.setYRot(rot[0]);
-        self.setXRot(rot[1]);
-        nofall$killModified = true;
+
+        float[] tgtRot = KillAuraMod.calcRotations(self, target);
+        float newYaw, newPitch;
+        if (KillAuraMod.smoothRot) {
+            float[] sm = KillAuraMod.smoothRotation(
+                KillAuraMod.savedYRot, KillAuraMod.savedXRot,
+                tgtRot[0], tgtRot[1],
+                Math.max(1f, KillAuraMod.maxTurnDeg)
+            );
+            newYaw   = sm[0];
+            newPitch = sm[1];
+        } else {
+            newYaw   = tgtRot[0];
+            newPitch = tgtRot[1];
+        }
+        self.setYRot(newYaw);
+        self.setXRot(newPitch);
+        nofall$killModified  = true;
         KillAuraMod.pendingAttack = true;
     }
 
@@ -49,18 +60,26 @@ public abstract class KillAuraMixin {
             self.setXRot(KillAuraMod.savedXRot);
         }
 
-        // Tick-based attack timer (independent of weapon cooldown)
-        nofall$atkTimer--;
-
         if (KillAuraMod.pendingAttack && KillAuraMod.currentTarget != null) {
             Minecraft mc = Minecraft.getInstance();
-            double dist = self.distanceTo(KillAuraMod.currentTarget);
-            if (mc.gameMode != null
-                    && dist <= KillAuraMod.ATTACK_RANGE
-                    && nofall$atkTimer <= 0) {
+
+            // Hitbox-edge distance — matches server reach check, fixes ghost
+            // swings on airborne / tall mobs where center-distance > 3.0 but
+            // hitbox-edge distance is well within reach.
+            double distSq  = KillAuraMod.reachDistSq(self, KillAuraMod.currentTarget);
+            double rangeSq = (double) KillAuraMod.ATTACK_RANGE * KillAuraMod.ATTACK_RANGE;
+
+            boolean inRange       = distSq <= rangeSq;
+            boolean tickReady     = self.tickCount >= nofall$nextAttackTick;
+            boolean cooldownReady = !KillAuraMod.waitCooldown
+                                 || self.getAttackStrengthScale(0.5f) >= 1.0f;
+            boolean lineOfSight   = !KillAuraMod.raycast
+                                 || KillAuraMod.canSee(self, KillAuraMod.currentTarget);
+
+            if (mc.gameMode != null && inRange && tickReady && cooldownReady && lineOfSight) {
                 mc.gameMode.attack(self, KillAuraMod.currentTarget);
                 self.swing(InteractionHand.MAIN_HAND);
-                nofall$atkTimer = KillAuraMod.attackDelay;
+                nofall$nextAttackTick = self.tickCount + Math.max(1, KillAuraMod.attackDelay);
             }
             KillAuraMod.pendingAttack = false;
             KillAuraMod.currentTarget = null;

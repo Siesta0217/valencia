@@ -44,6 +44,13 @@ public class ModConfig {
     public boolean killSingle      = false;
     public int     killAttackDelay = 10;
 
+    // KillAura behavior
+    public boolean killRaycast    = true;
+    public boolean killSkipInvis  = true;
+    public boolean killWaitCool   = true;
+    public boolean killSmoothRot  = true;
+    public int     killMaxTurn    = 60;
+
     // Theme colors
     public int accentR  = 0;
     public int accentG  = 170;

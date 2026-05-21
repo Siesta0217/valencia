@@ -102,6 +102,11 @@ public class ClickGuiScreen extends Screen {
                 new BoolS("Hostile",     () -> cfg.killHostile,      () -> { cfg.killHostile     = !cfg.killHostile;     KillAuraMod.targetHostile = cfg.killHostile;     cfg.save(); }),
                 new BoolS("Animals",     () -> cfg.killAnimals,      () -> { cfg.killAnimals     = !cfg.killAnimals;     KillAuraMod.targetAnimals = cfg.killAnimals;     cfg.save(); }),
                 new BoolS("Players",     () -> cfg.killPlayers,      () -> { cfg.killPlayers     = !cfg.killPlayers;     KillAuraMod.targetPlayers = cfg.killPlayers;     cfg.save(); }),
+                new BoolS("Raycast",     () -> cfg.killRaycast,      () -> { cfg.killRaycast     = !cfg.killRaycast;     KillAuraMod.raycast       = cfg.killRaycast;     cfg.save(); }),
+                new BoolS("Skip Invis",  () -> cfg.killSkipInvis,    () -> { cfg.killSkipInvis   = !cfg.killSkipInvis;   KillAuraMod.skipInvisible = cfg.killSkipInvis;   cfg.save(); }),
+                new BoolS("Wait Cool",   () -> cfg.killWaitCool,     () -> { cfg.killWaitCool    = !cfg.killWaitCool;    KillAuraMod.waitCooldown  = cfg.killWaitCool;    cfg.save(); }),
+                new BoolS("Smooth Rot",  () -> cfg.killSmoothRot,    () -> { cfg.killSmoothRot   = !cfg.killSmoothRot;   KillAuraMod.smoothRot     = cfg.killSmoothRot;   cfg.save(); }),
+                new SliderS("Max Turn",  () -> cfg.killMaxTurn,      v -> { cfg.killMaxTurn      = (int)v;               KillAuraMod.maxTurnDeg    = (int)v;               cfg.save(); }, 10, 180),
                 new KeyS("Key",          () -> cfg.killAuraKey,      v -> { cfg.killAuraKey = v; cfg.save(); })
             )));
 

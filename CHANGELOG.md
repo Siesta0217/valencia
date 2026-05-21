@@ -1,5 +1,23 @@
 # Valencia Changelog
 
+## [alpha-0.5] - 2026-05-21
+
+### KillAura — Major Overhaul
+
+**Fixed:**
+- **Ghost swings on airborne mobs.** Attack range was using `Entity.distanceTo` (center-to-center), but the vanilla server reach check uses player-eye-to-hitbox-nearest-point. A mob floating at Y+4 had center-distance ~4.0 (above the 3.0 reach gate, so we skipped) but hitbox-edge distance ~2.4 (well within reach). Now uses `reachDistSq` to match server behavior.
+
+**New:**
+- **Raycast (line-of-sight)** — won't attack targets behind walls. Toggleable.
+- **Skip Invisible** — ignores invisible players/mobs. Toggleable.
+- **Wait Cooldown** — only attacks when 1.21 attack-strength meter is fully charged (max damage every hit). Toggleable.
+- **Smooth Rotation** — lerps rotation toward target with `Max Turn` deg/tick cap (default 60°). Much less detectable than instant snap. Toggleable.
+
+**Internal:**
+- Attack delay now keyed on `tickCount` not a countdown — robust across sleeping/dead/riding states.
+- `distanceTo` → `distanceToSqr` throughout `findTarget`; raycast deferred until cheaper checks pass.
+- Bounds-checked `attackDelay` to `max(1, …)`.
+
 ## [alpha-0.4] - 2026-05-21
 
 ### Improvements
