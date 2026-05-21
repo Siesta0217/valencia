@@ -29,6 +29,7 @@ public class ScaffoldMod {
 
     // ── User-facing settings ──────────────────────────────────────────────────
     public static boolean tower       = false;  // jump-up + auto place under foot
+    public static boolean towerMove   = true;   // Tower: keep horizontal velocity (false = lock in place, straight up)
     public static boolean autoSwitch  = true;
     public static boolean switchBack  = true;
     public static int     placeDelay  = 0;      // ticks (0 = every tick)
@@ -75,10 +76,13 @@ public class ScaffoldMod {
         if (p == null || mc.level == null) return;
 
         // Tower: stamp jump velocity while on ground — pair with Scaffold's
-        // auto-place to ride a column of blocks straight up.
+        // auto-place to ride a column of blocks up. towerMove=true keeps the
+        // horizontal velocity so WASD steers the tower; false zeroes it so
+        // the player goes straight up regardless of input.
         if (tower && p.onGround()) {
             Vec3 v = p.getDeltaMovement();
-            p.setDeltaMovement(v.x, 0.42, v.z);
+            if (towerMove) p.setDeltaMovement(v.x, 0.42, v.z);
+            else            p.setDeltaMovement(0,   0.42, 0);
         }
 
         if (placeTimer > 0) { placeTimer--; return; }

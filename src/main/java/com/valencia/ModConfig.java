@@ -75,6 +75,7 @@ public class ModConfig {
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;
+    public boolean scaffoldTowerMove  = true;
     public boolean scaffoldAutoSwitch = true;
     public boolean scaffoldSwitchBack = true;
     public int     scaffoldPlaceDelay = 0;

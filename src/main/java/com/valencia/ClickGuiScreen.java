@@ -144,6 +144,7 @@ public class ClickGuiScreen extends Screen {
             ScaffoldMod::isEnabled, ScaffoldMod::toggle, true,
             List.of(
                 new BoolS("Tower",       () -> cfg.scaffoldTower,      () -> { cfg.scaffoldTower      = !cfg.scaffoldTower;      ScaffoldMod.tower      = cfg.scaffoldTower;      cfg.save(); }),
+                new BoolS("Tower Move",  () -> cfg.scaffoldTowerMove,  () -> { cfg.scaffoldTowerMove  = !cfg.scaffoldTowerMove;  ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;  cfg.save(); }),
                 new BoolS("Look Ahead",  () -> cfg.scaffoldLookAhead,  () -> { cfg.scaffoldLookAhead  = !cfg.scaffoldLookAhead;  ScaffoldMod.lookAhead  = cfg.scaffoldLookAhead;  cfg.save(); }),
                 new BoolS("Silent Rot",  () -> cfg.scaffoldSilentRot,  () -> { cfg.scaffoldSilentRot  = !cfg.scaffoldSilentRot;  ScaffoldMod.silentRot  = cfg.scaffoldSilentRot;  cfg.save(); }),
                 new BoolS("Auto Sw",     () -> cfg.scaffoldAutoSwitch, () -> { cfg.scaffoldAutoSwitch = !cfg.scaffoldAutoSwitch; ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch; cfg.save(); }),

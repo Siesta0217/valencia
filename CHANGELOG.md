@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.11] - 2026-05-21
+
+### Scaffold
+- **Tower Move** toggle added. ON (default) = keep horizontal velocity while Tower is jumping → WASD steers a slanted tower. OFF = zero out x/z velocity each Tower jump → straight-up column regardless of inputs.
+
 ## [alpha-0.10] - 2026-05-21
 
 ### Scaffold — Simplified

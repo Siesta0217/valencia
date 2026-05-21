@@ -27,6 +27,7 @@ public class NoFallMod implements ClientModInitializer {
         if (cfg.scaffoldEnabled   != ScaffoldMod.isEnabled())   ScaffoldMod.toggle();
 
         ScaffoldMod.tower      = cfg.scaffoldTower;
+        ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;
         ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch;
         ScaffoldMod.switchBack = cfg.scaffoldSwitchBack;
         ScaffoldMod.placeDelay = cfg.scaffoldPlaceDelay;
