@@ -12,7 +12,6 @@
     "BHopMixin",
     "KillAuraMixin",
     "GlowMixin",
-    "AutoSprintMixin",
     "VelocityMixin",
     "CritMixin"
   ],

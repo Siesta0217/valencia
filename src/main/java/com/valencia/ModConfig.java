@@ -22,7 +22,6 @@ public class ModConfig {
     public int bhopKey       = GLFW.GLFW_KEY_B;
     public int stepKey       = GLFW.GLFW_KEY_H;
     public int killAuraKey   = GLFW.GLFW_KEY_K;
-    public int autoSprintKey = GLFW.GLFW_KEY_V;
     public int velocityKey   = GLFW.GLFW_KEY_C;
     public int fastPlaceKey  = GLFW.GLFW_KEY_F;
     public int critKey       = GLFW.GLFW_KEY_R;
@@ -59,7 +58,6 @@ public class ModConfig {
     public boolean bhopEnabled       = false;
     public boolean stepEnabled       = false;
     public boolean killAuraEnabled   = false;
-    public boolean autoSprintEnabled = false;
     public boolean velocityEnabled   = false;
     public boolean fastPlaceEnabled  = false;
     public boolean critEnabled       = false;

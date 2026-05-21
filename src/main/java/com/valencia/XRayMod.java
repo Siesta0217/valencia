@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.block.Block;
 
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class XRayMod {
 
@@ -49,11 +50,18 @@ public class XRayMod {
         }
     }
 
+    // Cache per Block — Block instances are static singletons in Minecraft,
+    // so this hash map only grows to the total registered block count, then
+    // becomes pure O(1) lookups instead of doing string.substring every frame.
+    private static final ConcurrentHashMap<Block, Boolean> XRAY_CACHE = new ConcurrentHashMap<>();
+
     public static boolean isXRayBlock(Block block) {
+        Boolean cached = XRAY_CACHE.get(block);
+        if (cached != null) return cached;
         String id = block.getDescriptionId();
         String path = id.substring(id.lastIndexOf('.') + 1);
-        if (XRAY_BLOCKS.contains(path)) return true;
-        if (path.endsWith("shulker_box")) return true;
-        return false;
+        boolean result = XRAY_BLOCKS.contains(path) || path.endsWith("shulker_box");
+        XRAY_CACHE.put(block, result);
+        return result;
     }
 }

@@ -69,6 +69,8 @@ public class ClickGuiScreen extends Screen {
     private Object waifuLoc  = null;
     private int    waifuTexW = 0;
     private int    waifuTexH = 0;
+    // Reflection cache — populated once at loadWaifu(), reused every frame
+    private static Method WAIFU_BLIT = null;
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -117,10 +119,6 @@ public class ClickGuiScreen extends Screen {
                 new SliderS("Speed", () -> (double)cfg.bhopSpeed, v -> { cfg.bhopSpeed = (float)v; BHopMod.speedMultiplier = (float)v; cfg.save(); }, 0.5, 2.5),
                 new KeyS("Key",      () -> cfg.bhopKey,           v -> { cfg.bhopKey = v; cfg.save(); })
             )));
-
-        mods.add(new ModEntry("AutoSprint", Category.MOVEMENT,
-            AutoSprintMod::isEnabled, AutoSprintMod::toggle, true,
-            List.of(new KeyS("Key", () -> cfg.autoSprintKey, v -> { cfg.autoSprintKey = v; cfg.save(); }))));
 
         mods.add(new ModEntry("Velocity", Category.MOVEMENT,
             VelocityMod::isEnabled, VelocityMod::toggle, true,
@@ -197,6 +195,13 @@ public class ClickGuiScreen extends Screen {
             // TextureManager.register(ResourceLocation, AbstractTexture)
             Object tm = Minecraft.class.getMethod("getTextureManager").invoke(Minecraft.getInstance());
             tmClass.getMethod("register", rlClass, atClass).invoke(tm, loc, dt);
+
+            // Cache the blit method once (avoids per-frame reflection)
+            if (WAIFU_BLIT == null) {
+                WAIFU_BLIT = GuiGraphics.class.getMethod("blit",
+                    rlClass, int.class, int.class, float.class, float.class,
+                    int.class, int.class, int.class, int.class);
+            }
 
             waifuLoc = loc;
         } catch (Exception ignored) {}
@@ -321,7 +326,7 @@ public class ClickGuiScreen extends Screen {
 
     // ── Waifu rendering ───────────────────────────────────────────────────────
     private void renderWaifu(GuiGraphics g) {
-        if (waifuLoc == null || waifuTexW <= 0 || waifuTexH <= 0) {
+        if (waifuLoc == null || WAIFU_BLIT == null || waifuTexW <= 0 || waifuTexH <= 0) {
             g.drawString(font, "§8[waifu: config/valencia/waifu.png]", 4, height - 20, 0xFF555555, false);
             return;
         }
@@ -329,12 +334,7 @@ public class ClickGuiScreen extends Screen {
             int dispH = Math.min(height / 3, 150);
             int dispW = waifuTexW * dispH / waifuTexH;
             int wx = 4, wy = height - dispH - 14;
-
-            Class<?> rlClass = Class.forName("net.minecraft.resources.ResourceLocation");
-            Method blit = GuiGraphics.class.getMethod("blit",
-                rlClass, int.class, int.class, float.class, float.class,
-                int.class, int.class, int.class, int.class);
-            blit.invoke(g, waifuLoc, wx, wy, 0f, 0f, dispW, dispH, waifuTexW, waifuTexH);
+            WAIFU_BLIT.invoke(g, waifuLoc, wx, wy, 0f, 0f, dispW, dispH, waifuTexW, waifuTexH);
         } catch (Exception ignored) {
             g.drawString(font, "§8[waifu render err]", 4, height - 20, 0xFF555555, false);
         }
@@ -475,7 +475,6 @@ public class ClickGuiScreen extends Screen {
         cfg.bhopEnabled       = BHopMod.isEnabled();
         cfg.stepEnabled       = StepMod.isEnabled();
         cfg.killAuraEnabled   = KillAuraMod.isEnabled();
-        cfg.autoSprintEnabled = AutoSprintMod.isEnabled();
         cfg.velocityEnabled   = VelocityMod.isEnabled();
         cfg.fastPlaceEnabled  = FastPlaceMod.isEnabled();
         cfg.critEnabled       = CritMod.isEnabled();

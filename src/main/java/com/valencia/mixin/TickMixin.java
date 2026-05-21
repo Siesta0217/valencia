@@ -1,6 +1,5 @@
 package com.valencia.mixin;
 
-import com.valencia.AutoSprintMod;
 import com.valencia.BHopMod;
 import com.valencia.ClickGuiScreen;
 import com.valencia.CritMod;
@@ -36,7 +35,6 @@ public abstract class TickMixin {
     @Unique private boolean nofall$prevB   = false;
     @Unique private boolean nofall$prevH   = false;
     @Unique private boolean nofall$prevK   = false;
-    @Unique private boolean nofall$prevAS  = false;
     @Unique private boolean nofall$prevVel = false;
     @Unique private boolean nofall$prevFP  = false;
     @Unique private boolean nofall$prevCr  = false;
@@ -57,7 +55,6 @@ public abstract class TickMixin {
         boolean bDown   = GLFW.glfwGetKey(handle, cfg.bhopKey)       == GLFW.GLFW_PRESS;
         boolean hDown   = GLFW.glfwGetKey(handle, cfg.stepKey)       == GLFW.GLFW_PRESS;
         boolean kDown   = GLFW.glfwGetKey(handle, cfg.killAuraKey)   == GLFW.GLFW_PRESS;
-        boolean asDown  = GLFW.glfwGetKey(handle, cfg.autoSprintKey) == GLFW.GLFW_PRESS;
         boolean velDown = GLFW.glfwGetKey(handle, cfg.velocityKey)   == GLFW.GLFW_PRESS;
         boolean fpDown  = GLFW.glfwGetKey(handle, cfg.fastPlaceKey)  == GLFW.GLFW_PRESS;
         boolean crDown  = GLFW.glfwGetKey(handle, cfg.critKey)       == GLFW.GLFW_PRESS;
@@ -70,7 +67,6 @@ public abstract class TickMixin {
             if (bDown   && !nofall$prevB)   { BHopMod.toggle();          saveEnabled(); msg(mc, "§7[BHop] "       + state(BHopMod.isEnabled()));       }
             if (hDown   && !nofall$prevH)   { StepMod.toggle();          saveEnabled(); msg(mc, "§7[Step] "       + state(StepMod.isEnabled()));       }
             if (kDown   && !nofall$prevK)   { KillAuraMod.toggle();      saveEnabled(); msg(mc, "§7[KillAura] "   + state(KillAuraMod.isEnabled()));   }
-            if (asDown  && !nofall$prevAS)  { AutoSprintMod.toggle();    saveEnabled(); msg(mc, "§7[AutoSprint] "  + state(AutoSprintMod.isEnabled())); }
             if (velDown && !nofall$prevVel) { VelocityMod.toggle();      saveEnabled(); msg(mc, "§7[Velocity] "   + state(VelocityMod.isEnabled()));   }
             if (fpDown  && !nofall$prevFP)  { FastPlaceMod.toggle();     saveEnabled(); msg(mc, "§7[FastPlace] "  + state(FastPlaceMod.isEnabled()));  }
             if (crDown  && !nofall$prevCr)  { CritMod.toggle();          saveEnabled(); msg(mc, "§7[CritHit] "    + state(CritMod.isEnabled()));       }
@@ -89,7 +85,6 @@ public abstract class TickMixin {
         nofall$prevB   = bDown;
         nofall$prevH   = hDown;
         nofall$prevK   = kDown;
-        nofall$prevAS  = asDown;
         nofall$prevVel = velDown;
         nofall$prevFP  = fpDown;
         nofall$prevCr  = crDown;
@@ -104,7 +99,6 @@ public abstract class TickMixin {
         cfg.bhopEnabled       = BHopMod.isEnabled();
         cfg.stepEnabled       = StepMod.isEnabled();
         cfg.killAuraEnabled   = KillAuraMod.isEnabled();
-        cfg.autoSprintEnabled = AutoSprintMod.isEnabled();
         cfg.velocityEnabled   = VelocityMod.isEnabled();
         cfg.fastPlaceEnabled  = FastPlaceMod.isEnabled();
         cfg.critEnabled       = CritMod.isEnabled();

@@ -1,5 +1,14 @@
 # Valencia Changelog
 
+## [alpha-0.3] - 2026-05-21
+
+### Removed
+- **AutoSprint** module removed (unused)
+
+### FPS Optimizations
+- `XRayMod.isXRayBlock` now caches results per Block instance using a `ConcurrentHashMap` — previously did `descriptionId.substring()` + Set lookup for **every block in every chunk on every frame** when XRay was enabled. Now O(1) after first lookup per block type.
+- `ClickGuiScreen` waifu rendering: cached the `GuiGraphics.blit` reflection `Method` once at load time instead of re-resolving it every frame.
+
 ## [alpha-0.2] - 2026-05-21
 
 ### New Modules
