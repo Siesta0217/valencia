@@ -23,6 +23,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ScaffoldMod {
 
@@ -78,49 +81,72 @@ public class ScaffoldMod {
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
 
-        // Tower: stamp y velocity while the jump key is held (uses the player's
-        // vanilla jump binding so it works if remapped). Release → gravity takes
-        // over and the player lands on the column scaffold just built.
-        if (tower && mc.options.keyJump.isDown()) {
+        // Tower: stamp y velocity while the jump key is held. Add 0.08 to
+        // compensate for vanilla gravity, so the effective rise per tick
+        // actually matches towerSpeed (otherwise gravity eats ~0.08 and
+        // 0.3 slider only rises 0.22 b/tick).
+        if (tower && mc.options.keyJump.isDown() && towerSpeed > 0) {
             Vec3 v = p.getDeltaMovement();
-            double y = towerSpeed;
+            double y = towerSpeed + 0.08;
             if (towerMove) p.setDeltaMovement(v.x, y, v.z);
             else            p.setDeltaMovement(0,   y, 0);
         }
 
         if (placeTimer > 0) { placeTimer--; return; }
 
-        // Choose target: current foot if open, else (when lookAhead) the cell
-        // we'll arrive at next tick based on current velocity. This is what
-        // lets sprinting / sprint-jumping not drop the player.
+        // Collect placements. Start at foot and scan downward — any empty
+        // blocks above the first solid one need filling. This prevents holes
+        // if the player ever crosses more than one block boundary in a tick
+        // (fast tower, lag spike, etc.). Cap depth to avoid unbounded scans.
         BlockPos curFoot = BlockPos.containing(p.position().subtract(0, 1, 0));
-        BlockPos target = null;
-        if (mc.level.getBlockState(curFoot).canBeReplaced()) {
-            target = curFoot;
-        } else if (lookAhead) {
+        List<BlockPos> targets = new ArrayList<>(3);
+        BlockPos cursor = curFoot;
+        for (int i = 0; i < 3; i++) {
+            BlockState s = mc.level.getBlockState(cursor);
+            if (!s.canBeReplaced()) break;
+            targets.add(cursor);
+            cursor = cursor.below();
+        }
+
+        // If foot is already solid, fall back to look-ahead — predict where
+        // we'll be next tick based on current velocity.
+        if (targets.isEmpty() && lookAhead) {
             Vec3 nextPos = p.position().add(p.getDeltaMovement());
             BlockPos nextFoot = BlockPos.containing(nextPos.subtract(0, 1, 0));
             if (!nextFoot.equals(curFoot) && mc.level.getBlockState(nextFoot).canBeReplaced()) {
-                target = nextFoot;
+                targets.add(nextFoot);
             }
         }
 
-        if (target == null) { if (switchBack) restoreSlot(mc); return; }
+        if (targets.isEmpty()) { if (switchBack) restoreSlot(mc); return; }
 
+        // Place bottom-up so each placement has a solid reference under it.
+        Collections.reverse(targets);
+
+        boolean placedAny = false;
+        for (BlockPos t : targets) {
+            if (placeAt(mc, p, t)) placedAny = true;
+            else break;
+        }
+
+        if (placedAny) placeTimer = Math.max(0, placeDelay);
+
+        if (switchBack && !fakeHand) restoreSlot(mc);
+    }
+
+    /** Place one block at target. Returns true on success. */
+    private static boolean placeAt(Minecraft mc, LocalPlayer p, BlockPos target) {
         BlockHitResult hit = findPlacement(mc.level, target);
-        if (hit == null) return;
+        if (hit == null) return false;
 
         int slot = findBlockSlot(p);
-        if (slot == -1) return;
+        if (slot == -1) return false;
 
         Inventory inv = p.getInventory();
         int curSlot = getSelected(inv);
         boolean swapped = false;
         if (autoSwitch && curSlot != slot) {
             if (fakeHand) {
-                // Server-only swap. Don't touch client inv.selected so the
-                // first-person view keeps showing whatever the player is
-                // actually holding (sword, bow, etc.).
                 sendCarried(mc, slot);
             } else {
                 if (prevSlot == -1) prevSlot = curSlot;
@@ -137,13 +163,9 @@ public class ScaffoldMod {
         if (silentRot) restoreRotation(mc, p);
 
         if (swapped && fakeHand) {
-            // Tell server we're back on the original slot. Client never moved.
             sendCarried(mc, curSlot);
         }
-
-        placeTimer = Math.max(0, placeDelay);
-
-        if (switchBack && !fakeHand) restoreSlot(mc);
+        return true;
     }
 
     private static void sendCarried(Minecraft mc, int slot) {

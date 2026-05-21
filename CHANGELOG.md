@@ -1,5 +1,13 @@
 # Valencia Changelog
 
+## [alpha-0.16] - 2026-05-21
+
+### Scaffold — fix "blocks can't keep up" at low Tower Spd
+
+Two underlying bugs:
+1. **Gravity ate the slider value.** `setDeltaMovement(*, towerSpeed, *)` was being reduced by gravity (~0.08) and drag every tick, so Tower Spd 0.3 only produced ~0.216 b/tick actual rise. Now stamps `towerSpeed + 0.08` to compensate — the slider value matches the real rise rate.
+2. **One-block-per-tick was fragile.** A single missed tick (lag spike, weird velocity, etc.) left a hole the player would fly past. Scaffold now scans the foot block and up to 2 blocks below, and fills any empty cells in a single tick (bottom-up so each placement has a reference below).
+
 ## [alpha-0.15] - 2026-05-21
 
 ### Fixed
