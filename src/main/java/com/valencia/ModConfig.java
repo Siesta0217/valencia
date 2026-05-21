@@ -76,11 +76,17 @@ public class ModConfig {
     // Scaffold tuning
     public boolean scaffoldTower      = false;
     public boolean scaffoldTowerMove  = true;
+    public float   scaffoldTowerSpeed = 0.5f;
     public boolean scaffoldAutoSwitch = true;
     public boolean scaffoldSwitchBack = true;
     public int     scaffoldPlaceDelay = 0;
     public boolean scaffoldLookAhead  = true;
     public boolean scaffoldSilentRot  = true;
+    public boolean scaffoldFakeHand   = false;
+
+    // Velocity tuning
+    public int velocityHoriz = 0;
+    public int velocityVert  = 0;
 
     private static ModConfig instance;
 

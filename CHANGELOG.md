@@ -1,5 +1,18 @@
 # Valencia Changelog
 
+## [alpha-0.12] - 2026-05-21
+
+### Scaffold
+- **Fast Tower** — removed `onGround` gate; Tower now stamps y velocity every tick instead of only after landing. Goes straight from ~1.6 b/s (vanilla jump cooldown) to whatever `Tower Spd` is set to.
+- **Tower Spd** slider (0.42 – 1.0). 0.42 = vanilla jump magnitude per tick (~8 b/s). 1.0 = ~20 b/s.
+- **Fake Hand** toggle — server-only slot swap via `ServerboundSetCarriedItemPacket`. Client `inv.selected` is untouched, so first-person view keeps showing whatever item you were holding (sword, bow, etc.) while server still processes the placement as if you'd swapped to a block.
+
+### Velocity — Knockback Scaling
+Replaced full-cancel with delta-scale:
+- **Horiz** (0–200%) — scales the horizontal component of the knockback vanilla adds. 0 = immune. 100 = vanilla. 200 = doubled.
+- **Vert** (0–200%) — same for the vertical component.
+- Implementation samples velocity in `knockback` HEAD, reads post-knockback velocity in RETURN, scales the delta and re-applies. Doesn't touch the player's pre-existing movement.
+
 ## [alpha-0.11] - 2026-05-21
 
 ### Scaffold

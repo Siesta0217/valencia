@@ -5,6 +5,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.BlockItem;
@@ -30,11 +31,13 @@ public class ScaffoldMod {
     // ── User-facing settings ──────────────────────────────────────────────────
     public static boolean tower       = false;  // jump-up + auto place under foot
     public static boolean towerMove   = true;   // Tower: keep horizontal velocity (false = lock in place, straight up)
+    public static float   towerSpeed  = 0.5f;   // y velocity per tick when Tower active (0.42 = vanilla jump, 1.0 = ~20 b/s)
     public static boolean autoSwitch  = true;
     public static boolean switchBack  = true;
     public static int     placeDelay  = 0;      // ticks (0 = every tick)
     public static boolean lookAhead   = true;   // place predicted next-tick foot if current foot already solid
     public static boolean silentRot   = true;   // send rotation packet aimed at hit point before useItemOn
+    public static boolean fakeHand    = false;  // server-only slot swap — client keeps holding original item
 
     // ── Internal constants (always on; not exposed in GUI) ────────────────────
     // Skip falling / container blocks so we never bridge with sand or place a
@@ -75,14 +78,15 @@ public class ScaffoldMod {
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
 
-        // Tower: stamp jump velocity while on ground — pair with Scaffold's
-        // auto-place to ride a column of blocks up. towerMove=true keeps the
-        // horizontal velocity so WASD steers the tower; false zeroes it so
-        // the player goes straight up regardless of input.
-        if (tower && p.onGround()) {
+        // Tower: stamp y velocity every tick (not just onGround) so the player
+        // floats up at a constant rate set by towerSpeed. Scaffold's per-tick
+        // placement keeps up because curFoot/lookAhead refills as the player
+        // rises. towerMove=true keeps WASD horizontal velocity, false locks it.
+        if (tower) {
             Vec3 v = p.getDeltaMovement();
-            if (towerMove) p.setDeltaMovement(v.x, 0.42, v.z);
-            else            p.setDeltaMovement(0,   0.42, 0);
+            double y = towerSpeed;
+            if (towerMove) p.setDeltaMovement(v.x, y, v.z);
+            else            p.setDeltaMovement(0,   y, 0);
         }
 
         if (placeTimer > 0) { placeTimer--; return; }
@@ -112,9 +116,18 @@ public class ScaffoldMod {
 
         Inventory inv = p.getInventory();
         int curSlot = getSelected(inv);
+        boolean swapped = false;
         if (autoSwitch && curSlot != slot) {
-            if (prevSlot == -1) prevSlot = curSlot;
-            setSelected(inv, slot);
+            if (fakeHand) {
+                // Server-only swap. Don't touch client inv.selected so the
+                // first-person view keeps showing whatever the player is
+                // actually holding (sword, bow, etc.).
+                sendCarried(mc, slot);
+            } else {
+                if (prevSlot == -1) prevSlot = curSlot;
+                setSelected(inv, slot);
+            }
+            swapped = true;
         }
 
         if (silentRot) sendRotation(mc, p, hit);
@@ -124,9 +137,20 @@ public class ScaffoldMod {
 
         if (silentRot) restoreRotation(mc, p);
 
+        if (swapped && fakeHand) {
+            // Tell server we're back on the original slot. Client never moved.
+            sendCarried(mc, curSlot);
+        }
+
         placeTimer = Math.max(0, placeDelay);
 
-        if (switchBack) restoreSlot(mc);
+        if (switchBack && !fakeHand) restoreSlot(mc);
+    }
+
+    private static void sendCarried(Minecraft mc, int slot) {
+        if (mc.getConnection() == null) return;
+        try { mc.getConnection().send(new ServerboundSetCarriedItemPacket(slot)); }
+        catch (Exception ignored) {}
     }
 
     private static void restoreSlot(Minecraft mc) {

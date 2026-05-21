@@ -28,11 +28,16 @@ public class NoFallMod implements ClientModInitializer {
 
         ScaffoldMod.tower      = cfg.scaffoldTower;
         ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;
+        ScaffoldMod.towerSpeed = cfg.scaffoldTowerSpeed;
         ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch;
         ScaffoldMod.switchBack = cfg.scaffoldSwitchBack;
         ScaffoldMod.placeDelay = cfg.scaffoldPlaceDelay;
         ScaffoldMod.lookAhead  = cfg.scaffoldLookAhead;
         ScaffoldMod.silentRot  = cfg.scaffoldSilentRot;
+        ScaffoldMod.fakeHand   = cfg.scaffoldFakeHand;
+
+        VelocityMod.horizontal = cfg.velocityHoriz;
+        VelocityMod.vertical   = cfg.velocityVert;
 
         // Restore tuning values
         MaceAuraMod.RANGE        = cfg.maceDetectRange;

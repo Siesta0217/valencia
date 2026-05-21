@@ -134,7 +134,11 @@ public class ClickGuiScreen extends Screen {
 
         mods.add(new ModEntry("Velocity", Category.MOVEMENT,
             VelocityMod::isEnabled, VelocityMod::toggle, true,
-            List.of(new KeyS("Key", () -> cfg.velocityKey, v -> { cfg.velocityKey = v; cfg.save(); }))));
+            List.of(
+                new SliderS("Horiz", () -> cfg.velocityHoriz, v -> { cfg.velocityHoriz = (int)v; VelocityMod.horizontal = (int)v; cfg.save(); }, 0, 200),
+                new SliderS("Vert",  () -> cfg.velocityVert,  v -> { cfg.velocityVert  = (int)v; VelocityMod.vertical   = (int)v; cfg.save(); }, 0, 200),
+                new KeyS("Key",      () -> cfg.velocityKey,   v -> { cfg.velocityKey = v; cfg.save(); })
+            )));
 
         mods.add(new ModEntry("FastPlace", Category.MOVEMENT,
             FastPlaceMod::isEnabled, FastPlaceMod::toggle, true,
@@ -143,14 +147,16 @@ public class ClickGuiScreen extends Screen {
         mods.add(new ModEntry("Scaffold", Category.MOVEMENT,
             ScaffoldMod::isEnabled, ScaffoldMod::toggle, true,
             List.of(
-                new BoolS("Tower",       () -> cfg.scaffoldTower,      () -> { cfg.scaffoldTower      = !cfg.scaffoldTower;      ScaffoldMod.tower      = cfg.scaffoldTower;      cfg.save(); }),
-                new BoolS("Tower Move",  () -> cfg.scaffoldTowerMove,  () -> { cfg.scaffoldTowerMove  = !cfg.scaffoldTowerMove;  ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;  cfg.save(); }),
-                new BoolS("Look Ahead",  () -> cfg.scaffoldLookAhead,  () -> { cfg.scaffoldLookAhead  = !cfg.scaffoldLookAhead;  ScaffoldMod.lookAhead  = cfg.scaffoldLookAhead;  cfg.save(); }),
-                new BoolS("Silent Rot",  () -> cfg.scaffoldSilentRot,  () -> { cfg.scaffoldSilentRot  = !cfg.scaffoldSilentRot;  ScaffoldMod.silentRot  = cfg.scaffoldSilentRot;  cfg.save(); }),
-                new BoolS("Auto Sw",     () -> cfg.scaffoldAutoSwitch, () -> { cfg.scaffoldAutoSwitch = !cfg.scaffoldAutoSwitch; ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch; cfg.save(); }),
-                new BoolS("Sw Back",     () -> cfg.scaffoldSwitchBack, () -> { cfg.scaffoldSwitchBack = !cfg.scaffoldSwitchBack; ScaffoldMod.switchBack = cfg.scaffoldSwitchBack; cfg.save(); }),
-                new SliderS("Delay",     () -> cfg.scaffoldPlaceDelay, v -> { cfg.scaffoldPlaceDelay  = (int)v;                  ScaffoldMod.placeDelay = (int)v;                  cfg.save(); }, 0, 10),
-                new KeyS("Key",          () -> cfg.scaffoldKey,        v -> { cfg.scaffoldKey         = v;                       cfg.save(); })
+                new BoolS("Tower",       () -> cfg.scaffoldTower,         () -> { cfg.scaffoldTower      = !cfg.scaffoldTower;      ScaffoldMod.tower      = cfg.scaffoldTower;      cfg.save(); }),
+                new BoolS("Tower Move",  () -> cfg.scaffoldTowerMove,     () -> { cfg.scaffoldTowerMove  = !cfg.scaffoldTowerMove;  ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;  cfg.save(); }),
+                new SliderS("Tower Spd", () -> cfg.scaffoldTowerSpeed,    v -> { cfg.scaffoldTowerSpeed = (float)v;                ScaffoldMod.towerSpeed = (float)v;               cfg.save(); }, 0.42, 1.0),
+                new BoolS("Fake Hand",   () -> cfg.scaffoldFakeHand,      () -> { cfg.scaffoldFakeHand   = !cfg.scaffoldFakeHand;   ScaffoldMod.fakeHand   = cfg.scaffoldFakeHand;   cfg.save(); }),
+                new BoolS("Look Ahead",  () -> cfg.scaffoldLookAhead,     () -> { cfg.scaffoldLookAhead  = !cfg.scaffoldLookAhead;  ScaffoldMod.lookAhead  = cfg.scaffoldLookAhead;  cfg.save(); }),
+                new BoolS("Silent Rot",  () -> cfg.scaffoldSilentRot,     () -> { cfg.scaffoldSilentRot  = !cfg.scaffoldSilentRot;  ScaffoldMod.silentRot  = cfg.scaffoldSilentRot;  cfg.save(); }),
+                new BoolS("Auto Sw",     () -> cfg.scaffoldAutoSwitch,    () -> { cfg.scaffoldAutoSwitch = !cfg.scaffoldAutoSwitch; ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch; cfg.save(); }),
+                new BoolS("Sw Back",     () -> cfg.scaffoldSwitchBack,    () -> { cfg.scaffoldSwitchBack = !cfg.scaffoldSwitchBack; ScaffoldMod.switchBack = cfg.scaffoldSwitchBack; cfg.save(); }),
+                new SliderS("Delay",     () -> cfg.scaffoldPlaceDelay,    v -> { cfg.scaffoldPlaceDelay  = (int)v;                  ScaffoldMod.placeDelay = (int)v;                  cfg.save(); }, 0, 10),
+                new KeyS("Key",          () -> cfg.scaffoldKey,           v -> { cfg.scaffoldKey         = v;                       cfg.save(); })
             )));
 
         mods.add(new ModEntry("NoFall", Category.MOVEMENT,
