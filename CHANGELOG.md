@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.17] - 2026-05-21
+
+### Scaffold — fix fat tower from lateral drift
+Reverted the 3-deep gap-fill from alpha-0.16. It made the new column thick whenever the player moved sideways while towering: the new (x, z) had no ground below, so scan-downward filled multiple blocks deep at every lateral step. Back to one block per tick (foot, or look-ahead predicted foot). Gravity compensation from 0.16 stays — that alone is enough to keep up.
+
 ## [alpha-0.16] - 2026-05-21
 
 ### Scaffold — fix "blocks can't keep up" at low Tower Spd

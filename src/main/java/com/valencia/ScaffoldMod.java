@@ -23,9 +23,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class ScaffoldMod {
 
@@ -94,42 +91,26 @@ public class ScaffoldMod {
 
         if (placeTimer > 0) { placeTimer--; return; }
 
-        // Collect placements. Start at foot and scan downward — any empty
-        // blocks above the first solid one need filling. This prevents holes
-        // if the player ever crosses more than one block boundary in a tick
-        // (fast tower, lag spike, etc.). Cap depth to avoid unbounded scans.
+        // Pick a single target: current foot if empty, else look-ahead's
+        // predicted next-tick foot. Don't gap-fill downward — moving laterally
+        // while towering makes the new column all-air below, and aggressive
+        // fill builds a thick blob at every lateral step instead of a clean
+        // column.
         BlockPos curFoot = BlockPos.containing(p.position().subtract(0, 1, 0));
-        List<BlockPos> targets = new ArrayList<>(3);
-        BlockPos cursor = curFoot;
-        for (int i = 0; i < 3; i++) {
-            BlockState s = mc.level.getBlockState(cursor);
-            if (!s.canBeReplaced()) break;
-            targets.add(cursor);
-            cursor = cursor.below();
-        }
-
-        // If foot is already solid, fall back to look-ahead — predict where
-        // we'll be next tick based on current velocity.
-        if (targets.isEmpty() && lookAhead) {
+        BlockPos target  = null;
+        if (mc.level.getBlockState(curFoot).canBeReplaced()) {
+            target = curFoot;
+        } else if (lookAhead) {
             Vec3 nextPos = p.position().add(p.getDeltaMovement());
             BlockPos nextFoot = BlockPos.containing(nextPos.subtract(0, 1, 0));
             if (!nextFoot.equals(curFoot) && mc.level.getBlockState(nextFoot).canBeReplaced()) {
-                targets.add(nextFoot);
+                target = nextFoot;
             }
         }
 
-        if (targets.isEmpty()) { if (switchBack) restoreSlot(mc); return; }
+        if (target == null) { if (switchBack) restoreSlot(mc); return; }
 
-        // Place bottom-up so each placement has a solid reference under it.
-        Collections.reverse(targets);
-
-        boolean placedAny = false;
-        for (BlockPos t : targets) {
-            if (placeAt(mc, p, t)) placedAny = true;
-            else break;
-        }
-
-        if (placedAny) placeTimer = Math.max(0, placeDelay);
+        if (placeAt(mc, p, target)) placeTimer = Math.max(0, placeDelay);
 
         if (switchBack && !fakeHand) restoreSlot(mc);
     }
