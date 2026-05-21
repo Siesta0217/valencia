@@ -1,5 +1,17 @@
 # Valencia Changelog
 
+## [alpha-0.20] - 2026-05-21
+
+### Scaffold — fix scattered blocks / fly-away from sprint inertia
+
+Found the real cause of "tower flies up without column". With Tower Move ON, the mod preserved whatever horizontal velocity the player had — including sprint inertia that decays slowly (drag 0.91/tick, ~10 ticks to bleed off). At low Tower Spd, the player drifts sideways 1–2 blocks per vertical block rise. Each scaffold placement then lands at a new (x, z), and `findPlacement` can't find a neighbor (the previous column is at a different x/z). Placement returns null. Tower vy keeps pushing the player up. Blocks end up scattered across the ground instead of forming a column.
+
+Fixed by gating Tower's horizontal-preservation on WASD actually being pressed. Tower Move ON without WASD held now zeros horizontal velocity (same as Tower Move OFF). Sprint momentum no longer leaks into the tower.
+
+- Tower Move OFF → always vertical
+- Tower Move ON + WASD held → drift in WASD direction (steerable tower)
+- Tower Move ON + no WASD → vertical (same as Tower Move OFF — no sprint drift)
+
 ## [alpha-0.19] - 2026-05-21
 
 ### Scaffold — fix "tower flies up without column"

@@ -78,14 +78,26 @@ public class ScaffoldMod {
         if (p == null || mc.level == null) return;
 
         // Tower: stamp y velocity while the jump key is held. Add 0.08 to
-        // compensate for vanilla gravity, so the effective rise per tick
-        // actually matches towerSpeed (otherwise gravity eats ~0.08 and
-        // 0.3 slider only rises 0.22 b/tick).
+        // compensate for vanilla gravity (effective rise matches towerSpeed).
+        //
+        // Tower Move ON + no WASD held = also zero horizontal. Without this,
+        // residual sprint momentum (drag 0.91/tick = ~10 ticks to decay)
+        // drifts the player sideways while rising. At low Tower Spd the drift
+        // outpaces vertical rise, so each scaffold placement is at a new
+        // (x, z) where no neighbor of the previous column exists →
+        // findPlacement returns null → block never lands → player flies up.
         if (tower && mc.options.keyJump.isDown() && towerSpeed > 0) {
             Vec3 v = p.getDeltaMovement();
             double y = towerSpeed + 0.08;
-            if (towerMove) p.setDeltaMovement(v.x, y, v.z);
-            else            p.setDeltaMovement(0,   y, 0);
+            boolean wasdHeld = mc.options.keyUp.isDown()
+                            || mc.options.keyDown.isDown()
+                            || mc.options.keyLeft.isDown()
+                            || mc.options.keyRight.isDown();
+            if (towerMove && wasdHeld) {
+                p.setDeltaMovement(v.x, y, v.z);
+            } else {
+                p.setDeltaMovement(0, y, 0);
+            }
         }
 
         if (placeTimer > 0) { placeTimer--; return; }
