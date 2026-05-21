@@ -1,5 +1,14 @@
 # Valencia Changelog
 
+## [alpha-0.22] - 2026-05-21
+
+### Scaffold — cardinal bridges for diagonal sprint-jump
+alpha-0.21 only tried `curFoot.below()` as a bridge — that handles vertical-drop diagonals but not horizontal-only diagonals. Sprint-jumping diagonally (W+A or W+D, or any small heading offset) crosses both x and z boundaries in one tick, so the old column ends up at a diagonal offset and `findPlacement` finds no face-neighbor reference.
+
+Extended bridging to try 4 cardinal horizontal neighbors of curFoot in addition to DOWN. Whichever bridge cell has a face-neighbor reference (typically the old starting block one block laterally) gets placed first; then curFoot uses the bridge as its own face-neighbor.
+
+Two placements per tick when bridging, one otherwise — same as alpha-0.21, just with more bridge candidates.
+
 ## [alpha-0.21] - 2026-05-21
 
 ### Scaffold — stair-step bridging when towering diagonally

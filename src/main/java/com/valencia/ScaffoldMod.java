@@ -109,23 +109,37 @@ public class ScaffoldMod {
             return;
         }
 
-        // Try the direct placement first — curFoot needs at least one solid
-        // face-neighbor to act as the reference block for useItemOn.
+        // Try direct placement first — curFoot needs at least one solid
+        // face-neighbor as the reference block for useItemOn.
         boolean placed = false;
         if (findPlacement(mc.level, curFoot) != null) {
             placed = placeAt(mc, p, curFoot);
         } else {
-            // Stair-step bridge: when player moves diagonally (Tower Move +
-            // WASD), the previous column block ends up at a *diagonal* offset
-            // from curFoot — not a face-neighbor. Bridge by first placing
-            // curFoot.below() (which usually has the old column as a side
-            // face-neighbor), then placing curFoot on top of the bridge.
-            BlockPos bridge = curFoot.below();
-            if (mc.level.getBlockState(bridge).canBeReplaced()
-                && findPlacement(mc.level, bridge) != null) {
+            // Bridge: find an empty face-adjacent cell of curFoot that itself
+            // has a face-neighbor reference. Place bridge first, then curFoot
+            // uses the bridge as its face-neighbor.
+            //
+            // Covers two distinct failure modes:
+            //   - DOWN bridge: vertical drop / steep descent.
+            //   - Cardinal (N/S/E/W): diagonal sprint-jump. Player crosses
+            //     both x and z boundaries in one tick, so the old column is
+            //     at a *diagonal* offset and not a face-neighbor of curFoot.
+            //     But (curFoot ± 1 lateral) IS face-adjacent to the old
+            //     column, so it bridges the gap.
+            Direction[] bridgeDirs = {
+                Direction.DOWN,
+                Direction.NORTH, Direction.SOUTH,
+                Direction.EAST,  Direction.WEST
+            };
+            for (Direction d : bridgeDirs) {
+                BlockPos bridge = curFoot.relative(d);
+                if (!mc.level.getBlockState(bridge).canBeReplaced()) continue;
+                if (findPlacement(mc.level, bridge) == null) continue;
+
                 if (placeAt(mc, p, bridge)) {
                     placed = placeAt(mc, p, curFoot);
                 }
+                break;
             }
         }
 
