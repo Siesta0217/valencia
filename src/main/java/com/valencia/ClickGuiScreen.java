@@ -149,7 +149,7 @@ public class ClickGuiScreen extends Screen {
             List.of(
                 new BoolS("Tower",       () -> cfg.scaffoldTower,         () -> { cfg.scaffoldTower      = !cfg.scaffoldTower;      ScaffoldMod.tower      = cfg.scaffoldTower;      cfg.save(); }),
                 new BoolS("Tower Move",  () -> cfg.scaffoldTowerMove,     () -> { cfg.scaffoldTowerMove  = !cfg.scaffoldTowerMove;  ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;  cfg.save(); }),
-                new SliderS("Tower Spd", () -> cfg.scaffoldTowerSpeed,    v -> { cfg.scaffoldTowerSpeed = (float)v;                ScaffoldMod.towerSpeed = (float)v;               cfg.save(); }, 0.42, 1.0),
+                new SliderS("Tower Spd", () -> cfg.scaffoldTowerSpeed,    v -> { cfg.scaffoldTowerSpeed = (float)v;                ScaffoldMod.towerSpeed = (float)v;               cfg.save(); }, 0.0, 1.0),
                 new BoolS("Fake Hand",   () -> cfg.scaffoldFakeHand,      () -> { cfg.scaffoldFakeHand   = !cfg.scaffoldFakeHand;   ScaffoldMod.fakeHand   = cfg.scaffoldFakeHand;   cfg.save(); }),
                 new BoolS("Look Ahead",  () -> cfg.scaffoldLookAhead,     () -> { cfg.scaffoldLookAhead  = !cfg.scaffoldLookAhead;  ScaffoldMod.lookAhead  = cfg.scaffoldLookAhead;  cfg.save(); }),
                 new BoolS("Silent Rot",  () -> cfg.scaffoldSilentRot,     () -> { cfg.scaffoldSilentRot  = !cfg.scaffoldSilentRot;  ScaffoldMod.silentRot  = cfg.scaffoldSilentRot;  cfg.save(); }),

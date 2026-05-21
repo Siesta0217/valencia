@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.14] - 2026-05-21
+
+### Scaffold
+- Tower Spd slider min changed from 0.42 to 0.0 — useful for fine-tuning slow-tower or effectively disabling rise while keeping the rest of the Tower behavior wired.
+
 ## [alpha-0.13] - 2026-05-21
 
 ### Scaffold
