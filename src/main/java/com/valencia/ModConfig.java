@@ -41,6 +41,12 @@ public class ModConfig {
     public boolean killSingle      = false;
     public int     killAttackDelay = 10;
 
+    // Theme colors
+    public int accentR  = 0;
+    public int accentG  = 170;
+    public int accentB  = 255;
+    public int bgAlpha  = 160;
+
     // Module enabled states (persisted across sessions)
     public boolean nofallEnabled   = true;
     public boolean xrayEnabled     = false;

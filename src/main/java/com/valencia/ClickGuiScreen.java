@@ -1,5 +1,6 @@
 package com.valencia;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -7,7 +8,12 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
@@ -16,465 +22,424 @@ import java.util.function.IntSupplier;
 
 public class ClickGuiScreen extends Screen {
 
-    // Panel position (draggable)
-    private int px = 30, py = 40;
-    private boolean headerDrag;
-    private int dragDx, dragDy;
+    // ── Categories ────────────────────────────────────────────────────────────
+    private enum Category {
+        COMBAT("Combat"),
+        MOVEMENT("Movement"),
+        VISUALS("Visuals"),
+        SETTINGS("Settings");
+        final String label;
+        Category(String l) { label = l; }
+    }
 
-    // Layout
-    private static final int W        = 192;
-    private static final int HEADER_H = 22;
-    private static final int ROW_H    = 22;
-    private static final int SUB_H    = 17;
-    private static final int PAD      = 5;
-    private static final int INDENT   = 8;
-    private static final int KEY_W    = 36;
-    private static final int KEY_H    = 13;
-    private static final int ARR_W    = 10;
-    private static final int VAL_W    = 28;
-
-    // Colors ??Raven palette extended
-    private static final int C_SHADOW   = 0x66000000;
-    private static final int C_BG       = 0xEE0C0C1C;
-    private static final int C_HDR_TOP  = 0xFF200855;
-    private static final int C_HDR_BOT  = 0xFF0D0330;
-    private static final int C_BORDER   = 0xFF7020CC;
-    private static final int C_DIVIDER  = 0xFF5010AA;
-    private static final int C_ROW_ALT  = 0x14FFFFFF;
-    private static final int C_BAR_ON   = 0xFF00C060;
-    private static final int C_BAR_OFF  = 0xFF992020;
-    private static final int C_TEXT     = 0xFFEEEEEE;
-    private static final int C_DIM      = 0xFF777777;
-    private static final int C_KEY_BG   = 0xFF252535;
-    private static final int C_KEY_ACT  = 0xFF553388;
-    private static final int C_SLD_BG   = 0xFF1A1A2A;
-    private static final int C_SLD_FG   = 0xFF7020CC;
-    private static final int C_SLD_HND  = 0xFFAA55FF;
-    private static final int C_CHK_ON   = 0xFF00BB55;
-    private static final int C_CHK_OFF  = 0xFF3A3A3A;
-    private static final int C_SUB_BG   = 0xFF090912;
-
-    // Setting types
+    // ── Settings ──────────────────────────────────────────────────────────────
     interface Setting {}
-    record SliderS(String label, DoubleSupplier getter, DoubleConsumer setter, double min, double max)
-        implements Setting {}
-    record BoolS(String label, BooleanSupplier getter, Runnable toggle)
-        implements Setting {}
+    record SliderS(String label, DoubleSupplier get, DoubleConsumer set, double min, double max) implements Setting {}
+    record BoolS(String label, BooleanSupplier get, Runnable toggle) implements Setting {}
+    record KeyS(String label, IntSupplier get, IntConsumer set) implements Setting {}
 
-    // Module descriptor
-    record Mod(String name, BooleanSupplier enabled, Runnable toggle,
-               IntSupplier keyGet, IntConsumer keySet, List<Setting> settings) {}
+    // ── Module entry ──────────────────────────────────────────────────────────
+    record ModEntry(
+        String name, Category cat,
+        BooleanSupplier enabled, Runnable toggle,
+        boolean toggleable,
+        List<Setting> settings
+    ) {}
 
-    private final Mod[] MODS;
-    private final boolean[] expanded;
-    private final float[]   hoverT;
+    // ── Layout ────────────────────────────────────────────────────────────────
+    private static final int COL_W  = 160;
+    private static final int COL_GAP = 6;
+    private static final int COL_Y  = 30;
+    private static final int HDR_H  = 22;
+    private static final int ROW_H  = 20;
+    private static final int SET_H  = 14;
+    private static final int INDENT = 6;
 
-    // Rebind
-    private int rebindIdx = -1;
+    // ── State ─────────────────────────────────────────────────────────────────
+    private final List<ModEntry> mods = new ArrayList<>();
+    private final Set<String> expanded = new HashSet<>();
+    private String rebindMod = null;
+    private int    rebindIdx = -1;
+    private String dragMod  = null;
+    private int    dragIdx  = -1;
 
-    // Slider drag
-    private boolean sliderDrag = false;
-    private int sliderMod = -1, sliderSub = -1;
-    private boolean configDirty = false;
+    // ── Waifu ─────────────────────────────────────────────────────────────────
+    // (image rendering pending — place waifu.png in config/valencia/)
+    private String waifuPath = "";
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     public ClickGuiScreen() {
         super(Component.empty());
-        ModConfig cfg = ModConfig.get();
-
-        MODS = new Mod[]{
-            new Mod("NoFall",   NoFallMod::isEnabled,   NoFallMod::toggleManual,
-                () -> cfg.nofallKey,
-                k  -> { cfg.nofallKey    = k; cfg.save(); },
-                List.of()),
-
-            new Mod("XRay",     XRayMod::isEnabled,     XRayMod::toggle,
-                () -> cfg.xrayKey,
-                k  -> { cfg.xrayKey     = k; cfg.save(); },
-                List.of()),
-
-            new Mod("MaceAura", MaceAuraMod::isEnabled, MaceAuraMod::toggle,
-                () -> cfg.maceAuraKey,
-                k  -> { cfg.maceAuraKey = k; cfg.save(); },
-                List.of(
-                    new SliderS("Det Range",
-                        () -> cfg.maceDetectRange,
-                        v  -> { cfg.maceDetectRange  = (float)v; MaceAuraMod.RANGE        = (float)v; },
-                        1.0, 10.0),
-                    new SliderS("Atk Range",
-                        () -> cfg.maceAttackRange,
-                        v  -> { cfg.maceAttackRange  = (float)v; MaceAuraMod.ATTACK_RANGE = (float)v; },
-                        1.0, 6.0)
-                )),
-
-            new Mod("KillAura", KillAuraMod::isEnabled, KillAuraMod::toggle,
-                () -> cfg.killAuraKey,
-                k  -> { cfg.killAuraKey = k; cfg.save(); },
-                List.of(
-                    new SliderS("Range",
-                        () -> cfg.killRange,
-                        v  -> { cfg.killRange        = (float)v; KillAuraMod.RANGE        = (float)v; },
-                        1.0, 10.0),
-                    new SliderS("Atk Range",
-                        () -> cfg.killAttackRange,
-                        v  -> { cfg.killAttackRange  = (float)v; KillAuraMod.ATTACK_RANGE = (float)v; },
-                        1.0, 6.0),
-                    new SliderS("Atk Delay",
-                        () -> (double)cfg.killAttackDelay,
-                        v  -> { cfg.killAttackDelay  = (int)Math.round(v); KillAuraMod.attackDelay = cfg.killAttackDelay; },
-                        2, 20),
-                    new BoolS("Single",
-                        () -> cfg.killSingle,
-                        ()  -> { cfg.killSingle = !cfg.killSingle; KillAuraMod.singleMode = cfg.killSingle; cfg.save(); }),
-                    new BoolS("Hostile",
-                        () -> cfg.killHostile,
-                        ()  -> { cfg.killHostile = !cfg.killHostile; KillAuraMod.targetHostile = cfg.killHostile; cfg.save(); }),
-                    new BoolS("Animals",
-                        () -> cfg.killAnimals,
-                        ()  -> { cfg.killAnimals  = !cfg.killAnimals;  KillAuraMod.targetAnimals  = cfg.killAnimals;  cfg.save(); }),
-                    new BoolS("Players",
-                        () -> cfg.killPlayers,
-                        ()  -> { cfg.killPlayers  = !cfg.killPlayers;  KillAuraMod.targetPlayers  = cfg.killPlayers;  cfg.save(); })
-                )),
-
-            new Mod("NoSlow",   NoSlowMod::isEnabled,   NoSlowMod::toggle,
-                () -> cfg.noSlowKey,
-                k  -> { cfg.noSlowKey   = k; cfg.save(); },
-                List.of()),
-
-            new Mod("BHop",     BHopMod::isEnabled,     BHopMod::toggle,
-                () -> cfg.bhopKey,
-                k  -> { cfg.bhopKey    = k; cfg.save(); },
-                List.of(
-                    new SliderS("Speed",
-                        () -> cfg.bhopSpeed,
-                        v  -> { cfg.bhopSpeed = (float)v; BHopMod.speedMultiplier = (float)v; },
-                        0.5, 2.5)
-                )),
-
-            new Mod("Step",     StepMod::isEnabled,     StepMod::toggle,
-                () -> cfg.stepKey,
-                k  -> { cfg.stepKey    = k; cfg.save(); },
-                List.of()),
-        };
-
-        expanded = new boolean[MODS.length];
-        hoverT   = new float[MODS.length];
+        buildMods();
+        loadWaifu();
     }
 
     @Override public boolean isPauseScreen() { return false; }
 
-    // ?? Layout helpers ????????????????????????????????????????????????????????
+    // ── Module list ───────────────────────────────────────────────────────────
+    private void buildMods() {
+        ModConfig cfg = ModConfig.get();
 
-    private int panelH() {
-        int h = HEADER_H;
-        for (int i = 0; i < MODS.length; i++) {
-            h += ROW_H;
-            if (expanded[i]) h += MODS[i].settings().size() * SUB_H;
-        }
-        return h + PAD;
+        // Combat
+        mods.add(new ModEntry("KillAura", Category.COMBAT,
+            KillAuraMod::isEnabled, KillAuraMod::toggle, true,
+            List.of(
+                new SliderS("Range",     () -> cfg.killRange,              v -> { cfg.killRange        = (float)v; KillAuraMod.RANGE        = (float)v; cfg.save(); }, 1, 10),
+                new SliderS("Atk Range", () -> cfg.killAttackRange,        v -> { cfg.killAttackRange  = (float)v; KillAuraMod.ATTACK_RANGE = (float)v; cfg.save(); }, 1, 8),
+                new SliderS("Atk Delay", () -> cfg.killAttackDelay,        v -> { cfg.killAttackDelay  = (int)v;   KillAuraMod.attackDelay  = (int)v;   cfg.save(); }, 2, 20),
+                new BoolS("Single",      () -> cfg.killSingle,             () -> { cfg.killSingle      = !cfg.killSingle;      KillAuraMod.singleMode    = cfg.killSingle;      cfg.save(); }),
+                new BoolS("Hostile",     () -> cfg.killHostile,            () -> { cfg.killHostile     = !cfg.killHostile;     KillAuraMod.targetHostile = cfg.killHostile;     cfg.save(); }),
+                new BoolS("Animals",     () -> cfg.killAnimals,            () -> { cfg.killAnimals     = !cfg.killAnimals;     KillAuraMod.targetAnimals = cfg.killAnimals;     cfg.save(); }),
+                new BoolS("Players",     () -> cfg.killPlayers,            () -> { cfg.killPlayers     = !cfg.killPlayers;     KillAuraMod.targetPlayers = cfg.killPlayers;     cfg.save(); }),
+                new KeyS("Key",          () -> cfg.killAuraKey,            v -> { cfg.killAuraKey = v; cfg.save(); })
+            )));
+
+        mods.add(new ModEntry("MaceAura", Category.COMBAT,
+            MaceAuraMod::isEnabled, MaceAuraMod::toggle, true,
+            List.of(
+                new SliderS("Det Range", () -> cfg.maceDetectRange, v -> { cfg.maceDetectRange = (float)v; MaceAuraMod.RANGE        = (float)v; cfg.save(); }, 1, 12),
+                new SliderS("Atk Range", () -> cfg.maceAttackRange, v -> { cfg.maceAttackRange = (float)v; MaceAuraMod.ATTACK_RANGE = (float)v; cfg.save(); }, 1, 8),
+                new KeyS("Key",          () -> cfg.maceAuraKey,     v -> { cfg.maceAuraKey = v; cfg.save(); })
+            )));
+
+        // Movement
+        mods.add(new ModEntry("BHop", Category.MOVEMENT,
+            BHopMod::isEnabled, BHopMod::toggle, true,
+            List.of(
+                new SliderS("Speed", () -> (double)cfg.bhopSpeed, v -> { cfg.bhopSpeed = (float)v; BHopMod.speedMultiplier = (float)v; cfg.save(); }, 0.5, 2.5),
+                new KeyS("Key",      () -> cfg.bhopKey,           v -> { cfg.bhopKey = v; cfg.save(); })
+            )));
+
+        mods.add(new ModEntry("NoFall", Category.MOVEMENT,
+            NoFallMod::isEnabled, NoFallMod::toggleManual, true,
+            List.of(new KeyS("Key", () -> cfg.nofallKey, v -> { cfg.nofallKey = v; cfg.save(); }))));
+
+        mods.add(new ModEntry("NoSlow", Category.MOVEMENT,
+            NoSlowMod::isEnabled, NoSlowMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.noSlowKey, v -> { cfg.noSlowKey = v; cfg.save(); }))));
+
+        mods.add(new ModEntry("Step", Category.MOVEMENT,
+            StepMod::isEnabled, StepMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.stepKey, v -> { cfg.stepKey = v; cfg.save(); }))));
+
+        // Visuals
+        mods.add(new ModEntry("XRay", Category.VISUALS,
+            XRayMod::isEnabled, XRayMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.xrayKey, v -> { cfg.xrayKey = v; cfg.save(); }))));
+
+        // Settings — not toggleable, always show sliders
+        mods.add(new ModEntry("Theme Color", Category.SETTINGS,
+            () -> false, () -> {}, false,
+            List.of(
+                new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
+                new SliderS("Green",    () -> cfg.accentG, v -> { cfg.accentG = (int)v; cfg.save(); }, 0, 255),
+                new SliderS("Blue",     () -> cfg.accentB, v -> { cfg.accentB = (int)v; cfg.save(); }, 0, 255),
+                new SliderS("BG Alpha", () -> cfg.bgAlpha, v -> { cfg.bgAlpha = (int)v; cfg.save(); }, 60, 240)
+            )));
+
+        mods.add(new ModEntry("GUI Key", Category.SETTINGS,
+            () -> false, () -> {}, false,
+            List.of(new KeyS("Key", () -> cfg.guiKey, v -> { cfg.guiKey = v; cfg.save(); }))));
     }
 
-    private int rowY(int i) {
-        int y = py + HEADER_H;
-        for (int j = 0; j < i; j++) {
-            y += ROW_H;
-            if (expanded[j]) y += MODS[j].settings().size() * SUB_H;
+    // ── Waifu ─────────────────────────────────────────────────────────────────
+    private void loadWaifu() {
+        // Image rendering not yet supported in this build
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    @Override
+    public void render(GuiGraphics g, int mx, int my, float delta) {
+        ModConfig cfg = ModConfig.get();
+        int accent = accent(cfg, 255);
+
+        // Full-screen overlay
+        g.fill(0, 0, width, height, argb(cfg.bgAlpha, 0, 0, 0));
+
+        // Columns
+        int totalW = Category.values().length * COL_W + (Category.values().length - 1) * COL_GAP;
+        int startX = (width - totalW) / 2;
+
+        for (Category cat : Category.values()) {
+            int cx = startX + cat.ordinal() * (COL_W + COL_GAP);
+            renderColumn(g, cat, cx, mx, my, cfg, accent);
         }
+
+        // Waifu
+        renderWaifu(g);
+
+        // Hint
+        g.drawString(font, "§7Right Ctrl to close", 4, height - 10, 0xFFAAAAAA, false);
+    }
+
+    private void renderColumn(GuiGraphics g, Category cat, int cx, int mx, int my, ModConfig cfg, int accent) {
+        // Measure column height
+        int colH = HDR_H;
+        for (ModEntry m : mods) {
+            if (m.cat() != cat) continue;
+            colH += ROW_H;
+            if (expanded.contains(m.name())) colH += m.settings().size() * SET_H + 2;
+        }
+
+        // Column background
+        g.fill(cx, COL_Y, cx + COL_W, COL_Y + colH, argb(180, 10, 10, 10));
+
+        // Header
+        g.fill(cx, COL_Y, cx + COL_W, COL_Y + HDR_H, accent);
+        g.drawCenteredString(font, cat.label, cx + COL_W / 2, COL_Y + (HDR_H - 8) / 2, 0xFFFFFFFF);
+
+        int y = COL_Y + HDR_H;
+
+        for (ModEntry m : mods) {
+            if (m.cat() != cat) continue;
+            y = renderRow(g, m, cx, y, mx, my, cfg, accent);
+        }
+    }
+
+    private int renderRow(GuiGraphics g, ModEntry m, int cx, int y, int mx, int my, ModConfig cfg, int accent) {
+        boolean on   = m.toggleable() && m.enabled().getAsBoolean();
+        boolean hov  = mx >= cx && mx < cx + COL_W && my >= y && my < y + ROW_H;
+        boolean exp  = expanded.contains(m.name());
+
+        // Row background
+        int bg = on  ? accent(cfg, 100)
+               : hov ? argb(50, 255, 255, 255)
+               :        argb(20, 255, 255, 255);
+        g.fill(cx, y, cx + COL_W, y + ROW_H, bg);
+
+        // Left enabled bar
+        if (on) g.fill(cx, y, cx + 3, y + ROW_H, accent);
+
+        // Module name
+        int textCol = on ? 0xFFFFFFFF : 0xFFAAAAAA;
+        g.drawString(font, m.name(), cx + INDENT + (on ? 3 : 0), y + (ROW_H - 8) / 2, textCol, false);
+
+        // Arrow if has settings
+        if (!m.settings().isEmpty()) {
+            String arr = exp ? "v" : ">";
+            g.drawString(font, arr, cx + COL_W - 12, y + (ROW_H - 8) / 2, 0xFF666666, false);
+        }
+
+        y += ROW_H;
+
+        // Expanded settings
+        if (exp) {
+            for (int si = 0; si < m.settings().size(); si++) {
+                Setting s = m.settings().get(si);
+                g.fill(cx, y, cx + COL_W, y + SET_H, argb(120, 5, 5, 5));
+
+                if (s instanceof SliderS sl)   renderSlider(g, sl, cx, y, cfg);
+                else if (s instanceof BoolS bs) renderBool(g, bs, cx, y);
+                else if (s instanceof KeyS ks)  renderKey(g, ks, m, si, cx, y);
+
+                y += SET_H;
+            }
+            // Bottom separator
+            g.fill(cx, y, cx + COL_W, y + 2, accent(cfg, 80));
+            y += 2;
+        }
+
         return y;
     }
 
-    private int subRowY(int mod, int sub) {
-        return rowY(mod) + ROW_H + sub * SUB_H;
+    private void renderSlider(GuiGraphics g, SliderS sl, int cx, int y, ModConfig cfg) {
+        int accent = accent(cfg, 255);
+        double val = sl.get().getAsDouble();
+        double pct = Math.max(0, Math.min(1, (val - sl.min()) / (sl.max() - sl.min())));
+
+        int tx  = cx + INDENT;
+        int tw  = COL_W - INDENT * 2 - 28;
+        int ty  = y + SET_H / 2;
+
+        g.drawString(font, sl.label(), tx, y + 1, 0xFF888888, false);
+
+        // Track
+        g.fill(tx, ty, tx + tw, ty + 2, argb(80, 255, 255, 255));
+        // Fill
+        g.fill(tx, ty, tx + (int)(tw * pct), ty + 2, accent);
+        // Handle
+        int hx = tx + (int)(tw * pct);
+        g.fill(hx - 2, y + 2, hx + 2, y + SET_H - 2, 0xFFFFFFFF);
+
+        // Value
+        String valStr = (sl.max() <= 20 && sl.min() >= 0 && (int)sl.min() == sl.min() && (int)sl.max() == sl.max())
+                      ? String.valueOf((int)Math.round(val))
+                      : String.format("%.1f", val);
+        g.drawString(font, valStr, cx + COL_W - 26, y + 1, 0xFFCCCCCC, false);
     }
 
-    private int trackX(String label) {
-        return px + PAD + INDENT + font.width(label) + 4;
+    private void renderBool(GuiGraphics g, BoolS bs, int cx, int y) {
+        boolean on = bs.get().getAsBoolean();
+        g.drawString(font, bs.label(), cx + INDENT, y + 1, 0xFF888888, false);
+        String tag = on ? "§aON" : "§cOFF";
+        g.drawString(font, tag, cx + COL_W - 28, y + 1, 0xFFFFFFFF, false);
     }
 
-    private int trackW(String label) {
-        return W - PAD * 2 - INDENT - font.width(label) - 4 - VAL_W;
+    private void renderKey(GuiGraphics g, KeyS ks, ModEntry m, int si, int cx, int y) {
+        boolean waiting = m.name().equals(rebindMod) && rebindIdx == si;
+        g.drawString(font, ks.label(), cx + INDENT, y + 1, 0xFF888888, false);
+        String keyTxt = waiting ? "§e..." : "§7[" + shortKey(ks.get().getAsInt()) + "]";
+        g.drawString(font, keyTxt, cx + COL_W - 40, y + 1, 0xFFCCCCCC, false);
     }
 
-    // ?? Rendering ?????????????????????????????????????????????????????????????
+    // ── Waifu rendering ───────────────────────────────────────────────────────
+    private void renderWaifu(GuiGraphics g) {
+        // Placeholder: show path hint at bottom-left
+        g.drawString(font, "§8[waifu: config/valencia/waifu.png]", 4, height - 20, 0xFF555555, false);
+    }
 
+    // ── Mouse ─────────────────────────────────────────────────────────────────
     @Override
-    public void render(GuiGraphics g, int mx, int my, float delta) {
-        int ph = panelH();
-
-        // Drop shadow
-        g.fill(px + 4, py + 4, px + W + 4, py + ph + 4, C_SHADOW);
-        // Background
-        g.fill(px, py, px + W, py + ph, C_BG);
-        // Border
-        border(g, px, py, W, ph, C_BORDER);
-        // Header gradient
-        g.fill(px + 1, py + 1,            px + W - 1, py + HEADER_H / 2, C_HDR_TOP);
-        g.fill(px + 1, py + HEADER_H / 2, px + W - 1, py + HEADER_H,     C_HDR_BOT);
-        g.fill(px + 1, py + HEADER_H,     px + W - 1, py + HEADER_H + 1, C_DIVIDER);
-        // Title
-        drawRainbow(g, "Valencia", px + PAD, py + 7, System.currentTimeMillis());
-
-        for (int i = 0; i < MODS.length; i++) {
-            renderRow(g, i, mx, my);
-            if (expanded[i]) renderSettings(g, i);
-        }
-
-        super.render(g, mx, my, delta);
-    }
-
-    private void renderRow(GuiGraphics g, int i, int mx, int my) {
-        Mod m  = MODS[i];
-        int ry = rowY(i);
-        boolean on  = m.enabled().getAsBoolean();
-        boolean hov = mx >= px && mx < px + W && my >= ry && my < ry + ROW_H;
-
-        hoverT[i] += ((hov ? 1f : 0f) - hoverT[i]) * 0.18f;
-        if (i % 2 == 0) g.fill(px + 1, ry, px + W - 1, ry + ROW_H, C_ROW_ALT);
-        if (hoverT[i] > 0.004f) {
-            int a = (int)(hoverT[i] * 0x38);
-            g.fill(px + 1, ry, px + W - 1, ry + ROW_H, (a << 24) | 0x00FFFFFF);
-        }
-
-        // Left state bar
-        g.fill(px + 1, ry, px + 4, ry + ROW_H, on ? C_BAR_ON : C_BAR_OFF);
-
-        // Module name
-        g.drawString(font, m.name(), px + PAD + 4, ry + (ROW_H - 8) / 2, C_TEXT, false);
-
-        // Expand arrow
-        if (!m.settings().isEmpty()) {
-            int ax = px + W - PAD - KEY_W - ARR_W - 4;
-            g.drawString(font, expanded[i] ? "v" : ">", ax, ry + (ROW_H - 8) / 2, C_DIM, false);
-        }
-
-        // Key badge
-        int kx = px + W - PAD - KEY_W;
-        int ky = ry + (ROW_H - KEY_H) / 2;
-        boolean rebinding = rebindIdx == i;
-        g.fill(kx, ky, kx + KEY_W, ky + KEY_H, rebinding ? C_KEY_ACT : C_KEY_BG);
-        border(g, kx, ky, KEY_W, KEY_H, rebinding ? 0xFFAA77FF : 0xFF444466);
-        String keyLabel = rebinding ? "..." : shortKeyName(m.keyGet().getAsInt());
-        int klw = font.width(keyLabel);
-        g.drawString(font, keyLabel, kx + (KEY_W - klw) / 2, ky + (KEY_H - 7) / 2, 0xFFCCCCFF, false);
-    }
-
-    private void renderSettings(GuiGraphics g, int mod) {
-        List<Setting> settings = MODS[mod].settings();
-        for (int j = 0; j < settings.size(); j++) {
-            int sy = subRowY(mod, j);
-            g.fill(px + 1, sy, px + W - 1, sy + SUB_H, C_SUB_BG);
-            g.fill(px + 1, sy, px + 2, sy + SUB_H, 0xFF441188); // left accent
-
-            Setting s = settings.get(j);
-            if (s instanceof SliderS ss) renderSlider(g, ss, sy);
-            else if (s instanceof BoolS bs) renderBool(g, bs, sy);
-        }
-    }
-
-    private void renderSlider(GuiGraphics g, SliderS ss, int sy) {
-        int tx = trackX(ss.label());
-        int tw = trackW(ss.label());
-        int ty = sy + (SUB_H - 3) / 2;
-
-        g.drawString(font, ss.label(), px + PAD + INDENT, sy + (SUB_H - 8) / 2, C_DIM, false);
-
-        g.fill(tx, ty, tx + tw, ty + 3, C_SLD_BG);
-
-        double val = ss.getter().getAsDouble();
-        double t   = Math.max(0.0, Math.min(1.0, (val - ss.min()) / (ss.max() - ss.min())));
-        int fillW  = (int)(tw * t);
-        g.fill(tx, ty, tx + fillW, ty + 3, C_SLD_FG);
-
-        // Handle nub
-        int hx = tx + fillW - 2;
-        g.fill(hx, ty - 2, hx + 4, ty + 5, C_SLD_HND);
-
-        // Value label
-        String valStr = String.format("%.1f", val);
-        g.drawString(font, valStr, tx + tw + 3, sy + (SUB_H - 8) / 2, C_TEXT, false);
-    }
-
-    private void renderBool(GuiGraphics g, BoolS bs, int sy) {
-        boolean val = bs.getter().getAsBoolean();
-        int cx = px + PAD + INDENT;
-        int cy = sy + (SUB_H - 8) / 2;
-
-        g.fill(cx, cy, cx + 8, cy + 8, val ? C_CHK_ON : C_CHK_OFF);
-        if (val) g.fill(cx + 2, cy + 2, cx + 6, cy + 6, 0xFFFFFFFF);
-
-        g.drawString(font, bs.label(), cx + 12, cy, C_TEXT, false);
-    }
-
-    // ?? Draw helpers ??????????????????????????????????????????????????????????
-
-    private void border(GuiGraphics g, int x, int y, int w, int h, int c) {
-        g.fill(x,         y,         x + w,     y + 1,     c);
-        g.fill(x,         y + h - 1, x + w,     y + h,     c);
-        g.fill(x,         y,         x + 1,     y + h,     c);
-        g.fill(x + w - 1, y,         x + w,     y + h,     c);
-    }
-
-    private void drawRainbow(GuiGraphics g, String text, int x, int y, long t) {
-        int cx = x;
-        for (int i = 0; i < text.length(); i++) {
-            String ch = String.valueOf(text.charAt(i));
-            if (ch.equals(" ")) { cx += font.width(" "); continue; }
-            g.drawString(font, ch, cx, y, rainbow(t, i * 120), false);
-            cx += font.width(ch);
-        }
-    }
-
-    private static int rainbow(long t, int offset) {
-        float hue = ((t + offset) % 4000) / 4000f;
-        int rgb = java.awt.Color.HSBtoRGB(hue, 0.7f, 1.0f);
-        return 0xFF000000 | (rgb & 0x00FFFFFF);
-    }
-
-    private static String shortKeyName(int key) {
-        String full = ModConfig.keyName(key);
-        return switch (full) {
-            case "RIGHT_CONTROL" -> "RCTRL";
-            case "LEFT_CONTROL"  -> "LCTRL";
-            case "RIGHT_SHIFT"   -> "RSHFT";
-            case "LEFT_SHIFT"    -> "LSHFT";
-            case "RIGHT_ALT"     -> "RALT";
-            case "LEFT_ALT"      -> "LALT";
-            default -> full.length() > 5 ? full.substring(0, 5) : full;
-        };
-    }
-
-    // ?? Input ?????????????????????????????????????????????????????????????????
-
-    @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean isDoubleClick) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean dbl) {
         int mx = (int)event.x(), my = (int)event.y(), btn = event.button();
-        if (btn != 0) return super.mouseClicked(event, isDoubleClick);
+        if (btn != 0) return super.mouseClicked(event, dbl);
 
-        // Header drag
-        if (mx >= px && mx < px + W && my >= py && my < py + HEADER_H) {
-            headerDrag = true;
-            dragDx = mx - px;
-            dragDy = my - py;
-            return true;
-        }
+        ModConfig cfg = ModConfig.get();
+        int totalW = Category.values().length * COL_W + (Category.values().length - 1) * COL_GAP;
+        int startX = (width - totalW) / 2;
 
-        // Module rows
-        for (int i = 0; i < MODS.length; i++) {
-            int ry = rowY(i);
-            if (my < ry || my >= ry + ROW_H || mx < px || mx >= px + W) continue;
+        for (Category cat : Category.values()) {
+            int cx = startX + cat.ordinal() * (COL_W + COL_GAP);
+            int y  = COL_Y + HDR_H;
 
-            int kx = px + W - PAD - KEY_W;
-            int ky = ry + (ROW_H - KEY_H) / 2;
+            for (ModEntry m : mods) {
+                if (m.cat() != cat) continue;
 
-            // Key badge
-            if (mx >= kx && mx < kx + KEY_W && my >= ky && my < ky + KEY_H) {
-                rebindIdx = (rebindIdx == i) ? -1 : i;
-                return true;
-            }
+                // Module row
+                if (mx >= cx && mx < cx + COL_W && my >= y && my < y + ROW_H) {
+                    boolean hasSettings = !m.settings().isEmpty();
+                    boolean clickArrow  = hasSettings && mx >= cx + COL_W - 16;
 
-            // Expand arrow
-            if (!MODS[i].settings().isEmpty()) {
-                int ax = px + W - PAD - KEY_W - ARR_W - 4;
-                if (mx >= ax && mx < kx - 2) {
-                    expanded[i] = !expanded[i];
-                    return true;
-                }
-            }
-
-            // Toggle module
-            MODS[i].toggle().run();
-            return true;
-        }
-
-        // Sub-rows (sliders & bools)
-        for (int i = 0; i < MODS.length; i++) {
-            if (!expanded[i]) continue;
-            List<Setting> settings = MODS[i].settings();
-            for (int j = 0; j < settings.size(); j++) {
-                int sy = subRowY(i, j);
-                if (my < sy || my >= sy + SUB_H || mx < px || mx >= px + W) continue;
-
-                Setting s = settings.get(j);
-                if (s instanceof SliderS ss) {
-                    int tx = trackX(ss.label());
-                    int tw = trackW(ss.label());
-                    if (mx >= tx - 2 && mx <= tx + tw + 2) {
-                        sliderDrag = true;
-                        sliderMod  = i;
-                        sliderSub  = j;
-                        applySlider(ss, mx, tx, tw);
-                        return true;
+                    if (clickArrow || !m.toggleable()) {
+                        // Expand/collapse
+                        if (expanded.contains(m.name())) expanded.remove(m.name());
+                        else expanded.add(m.name());
+                    } else {
+                        // Toggle module
+                        m.toggle().run();
+                        saveEnabled(cfg);
                     }
-                } else if (s instanceof BoolS bs) {
-                    bs.toggle().run();
                     return true;
+                }
+                y += ROW_H;
+
+                // Settings rows
+                if (expanded.contains(m.name())) {
+                    for (int si = 0; si < m.settings().size(); si++) {
+                        if (my >= y && my < y + SET_H && mx >= cx && mx < cx + COL_W) {
+                            Setting s = m.settings().get(si);
+                            if (s instanceof SliderS sl) {
+                                int tx = cx + INDENT;
+                                int tw = COL_W - INDENT * 2 - 28;
+                                dragMod = m.name(); dragIdx = si;
+                                applySlider(sl, mx, tx, tw);
+                            } else if (s instanceof BoolS bs) {
+                                bs.toggle().run();
+                            } else if (s instanceof KeyS) {
+                                rebindMod = m.name(); rebindIdx = si;
+                            }
+                            return true;
+                        }
+                        y += SET_H;
+                    }
+                    y += 2; // separator
                 }
             }
         }
-
-        return super.mouseClicked(event, isDoubleClick);
-    }
-
-    @Override
-    public boolean mouseReleased(MouseButtonEvent event) {
-        if (event.button() == 0) {
-            headerDrag = false;
-            if (sliderDrag) {
-                sliderDrag = false;
-                if (configDirty) { ModConfig.get().save(); configDirty = false; }
-            }
-        }
-        return super.mouseReleased(event);
+        return super.mouseClicked(event, dbl);
     }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-        if (event.button() != 0) return super.mouseDragged(event, dx, dy);
-        int mx = (int)event.x(), my = (int)event.y();
+        if (dragMod != null) {
+            int mx = (int)event.x();
+            int totalW = Category.values().length * COL_W + (Category.values().length - 1) * COL_GAP;
+            int startX = (width - totalW) / 2;
 
-        if (headerDrag) {
-            px = mx - dragDx;
-            py = my - dragDy;
-            return true;
-        }
-
-        if (sliderDrag && sliderMod >= 0 && sliderSub >= 0) {
-            Setting s = MODS[sliderMod].settings().get(sliderSub);
-            if (s instanceof SliderS ss) {
-                int tx = trackX(ss.label());
-                int tw = trackW(ss.label());
-                applySlider(ss, mx, tx, tw);
-                configDirty = true;
+            for (ModEntry m : mods) {
+                if (!m.name().equals(dragMod)) continue;
+                int cx = startX + m.cat().ordinal() * (COL_W + COL_GAP);
+                if (dragIdx >= 0 && dragIdx < m.settings().size()) {
+                    Setting s = m.settings().get(dragIdx);
+                    if (s instanceof SliderS sl) {
+                        int tx = cx + INDENT, tw = COL_W - INDENT * 2 - 28;
+                        applySlider(sl, mx, tx, tw);
+                    }
+                }
             }
             return true;
         }
-
         return super.mouseDragged(event, dx, dy);
     }
 
-    private void applySlider(SliderS ss, int mx, int tx, int tw) {
-        double t   = Math.max(0.0, Math.min(1.0, (double)(mx - tx) / tw));
-        double raw = ss.min() + t * (ss.max() - ss.min());
-        double val = Math.round(raw * 10.0) / 10.0;
-        ss.setter().accept(val);
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        dragMod = null; dragIdx = -1;
+        return super.mouseReleased(event);
     }
 
+    // ── Keyboard ──────────────────────────────────────────────────────────────
     @Override
     public boolean keyPressed(KeyEvent event) {
         int key = event.key();
-
-        if (rebindIdx >= 0) {
+        if (rebindMod != null) {
             if (key != GLFW.GLFW_KEY_ESCAPE) {
-                MODS[rebindIdx].keySet().accept(key);
+                for (ModEntry m : mods) {
+                    if (!m.name().equals(rebindMod)) continue;
+                    if (rebindIdx >= 0 && rebindIdx < m.settings().size()) {
+                        Setting s = m.settings().get(rebindIdx);
+                        if (s instanceof KeyS ks) ks.set().accept(key);
+                    }
+                }
             }
-            rebindIdx = -1;
+            rebindMod = null; rebindIdx = -1;
             return true;
         }
-
-        if (key == ModConfig.get().guiKey) {
-            onClose();
-            return true;
-        }
+        if (key == ModConfig.get().guiKey) { onClose(); return true; }
         return super.keyPressed(event);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    private void applySlider(SliderS sl, int mx, int tx, int tw) {
+        double pct = Math.max(0, Math.min(1, (double)(mx - tx) / tw));
+        double raw = sl.min() + pct * (sl.max() - sl.min());
+        // Snap to int if both bounds are integers
+        boolean intRange = (int)sl.min() == sl.min() && (int)sl.max() == sl.max() && sl.max() - sl.min() <= 30;
+        double val = intRange ? Math.round(raw) : Math.round(raw * 10.0) / 10.0;
+        sl.set().accept(val);
+    }
+
+    private static int accent(ModConfig cfg, int alpha) {
+        return argb(alpha, cfg.accentR, cfg.accentG, cfg.accentB);
+    }
+
+    private static int argb(int a, int r, int g, int b) {
+        return (Math.min(255, Math.max(0, a)) << 24)
+             | (Math.min(255, Math.max(0, r)) << 16)
+             | (Math.min(255, Math.max(0, g)) << 8)
+             |  Math.min(255, Math.max(0, b));
+    }
+
+    private static void saveEnabled(ModConfig cfg) {
+        cfg.nofallEnabled   = NoFallMod.isEnabled();
+        cfg.xrayEnabled     = XRayMod.isEnabled();
+        cfg.maceAuraEnabled = MaceAuraMod.isEnabled();
+        cfg.noSlowEnabled   = NoSlowMod.isEnabled();
+        cfg.bhopEnabled     = BHopMod.isEnabled();
+        cfg.stepEnabled     = StepMod.isEnabled();
+        cfg.killAuraEnabled = KillAuraMod.isEnabled();
+        cfg.save();
+    }
+
+    private static String shortKey(int key) {
+        String s = ModConfig.keyName(key);
+        return switch (s) {
+            case "RIGHT_CONTROL" -> "RCTRL";
+            case "LEFT_CONTROL"  -> "LCTRL";
+            case "RIGHT_SHIFT"   -> "RSHIFT";
+            case "LEFT_SHIFT"    -> "LSHIFT";
+            default -> s.length() > 6 ? s.substring(0, 6) : s;
+        };
     }
 }
