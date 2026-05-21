@@ -143,13 +143,20 @@ public class ClickGuiScreen extends Screen {
         mods.add(new ModEntry("Scaffold", Category.MOVEMENT,
             ScaffoldMod::isEnabled, ScaffoldMod::toggle, true,
             List.of(
-                new BoolS("Tower",      () -> cfg.scaffoldTower,      () -> { cfg.scaffoldTower      = !cfg.scaffoldTower;      ScaffoldMod.tower       = cfg.scaffoldTower;      cfg.save(); }),
-                new BoolS("Auto Sw",    () -> cfg.scaffoldAutoSwitch, () -> { cfg.scaffoldAutoSwitch = !cfg.scaffoldAutoSwitch; ScaffoldMod.autoSwitch  = cfg.scaffoldAutoSwitch; cfg.save(); }),
-                new BoolS("Sw Back",    () -> cfg.scaffoldSwitchBack, () -> { cfg.scaffoldSwitchBack = !cfg.scaffoldSwitchBack; ScaffoldMod.switchBack  = cfg.scaffoldSwitchBack; cfg.save(); }),
-                new SliderS("Delay",    () -> cfg.scaffoldPlaceDelay, v -> { cfg.scaffoldPlaceDelay  = (int)v;                  ScaffoldMod.placeDelay  = (int)v;                  cfg.save(); }, 0, 10),
-                new BoolS("Sneak",      () -> cfg.scaffoldSneak,      () -> { cfg.scaffoldSneak      = !cfg.scaffoldSneak;      ScaffoldMod.sneakWhile  = cfg.scaffoldSneak;      cfg.save(); }),
-                new BoolS("Safe Walk",  () -> cfg.scaffoldSafeWalk,   () -> { cfg.scaffoldSafeWalk   = !cfg.scaffoldSafeWalk;   ScaffoldMod.safeWalk    = cfg.scaffoldSafeWalk;   cfg.save(); }),
-                new KeyS("Key",         () -> cfg.scaffoldKey,        v -> { cfg.scaffoldKey         = v;                       cfg.save(); })
+                new BoolS("Tower",       () -> cfg.scaffoldTower,         () -> { cfg.scaffoldTower         = !cfg.scaffoldTower;         ScaffoldMod.tower         = cfg.scaffoldTower;         cfg.save(); }),
+                new BoolS("Auto Sw",     () -> cfg.scaffoldAutoSwitch,    () -> { cfg.scaffoldAutoSwitch    = !cfg.scaffoldAutoSwitch;    ScaffoldMod.autoSwitch    = cfg.scaffoldAutoSwitch;    cfg.save(); }),
+                new BoolS("Sw Back",     () -> cfg.scaffoldSwitchBack,    () -> { cfg.scaffoldSwitchBack    = !cfg.scaffoldSwitchBack;    ScaffoldMod.switchBack    = cfg.scaffoldSwitchBack;    cfg.save(); }),
+                new SliderS("Delay",     () -> cfg.scaffoldPlaceDelay,    v -> { cfg.scaffoldPlaceDelay     = (int)v;                     ScaffoldMod.placeDelay    = (int)v;                     cfg.save(); }, 0, 10),
+                new SliderS("Per Tick",  () -> cfg.scaffoldBlocksPerTick, v -> { cfg.scaffoldBlocksPerTick  = (int)v;                     ScaffoldMod.blocksPerTick = (int)v;                     cfg.save(); }, 1, 5),
+                new BoolS("Look Ahead",  () -> cfg.scaffoldLookAhead,     () -> { cfg.scaffoldLookAhead     = !cfg.scaffoldLookAhead;     ScaffoldMod.lookAhead     = cfg.scaffoldLookAhead;     cfg.save(); }),
+                new BoolS("Air Place",   () -> cfg.scaffoldAirPlace,      () -> { cfg.scaffoldAirPlace      = !cfg.scaffoldAirPlace;      ScaffoldMod.airPlace      = cfg.scaffoldAirPlace;      cfg.save(); }),
+                new BoolS("Silent Rot",  () -> cfg.scaffoldSilentRot,     () -> { cfg.scaffoldSilentRot     = !cfg.scaffoldSilentRot;     ScaffoldMod.silentRot     = cfg.scaffoldSilentRot;     cfg.save(); }),
+                new BoolS("Skip Heavy",  () -> cfg.scaffoldSkipHeavy,     () -> { cfg.scaffoldSkipHeavy     = !cfg.scaffoldSkipHeavy;     ScaffoldMod.skipHeavy     = cfg.scaffoldSkipHeavy;     cfg.save(); }),
+                new BoolS("Skip Cont",   () -> cfg.scaffoldSkipContainer, () -> { cfg.scaffoldSkipContainer = !cfg.scaffoldSkipContainer; ScaffoldMod.skipContainer = cfg.scaffoldSkipContainer; cfg.save(); }),
+                new SliderS("Extend",    () -> cfg.scaffoldExtend,        v -> { cfg.scaffoldExtend         = (int)v;                     ScaffoldMod.extendRadius  = (int)v;                     cfg.save(); }, 0, 2),
+                new BoolS("Sneak",       () -> cfg.scaffoldSneak,         () -> { cfg.scaffoldSneak         = !cfg.scaffoldSneak;         ScaffoldMod.sneakWhile    = cfg.scaffoldSneak;         cfg.save(); }),
+                new BoolS("Safe Walk",   () -> cfg.scaffoldSafeWalk,      () -> { cfg.scaffoldSafeWalk      = !cfg.scaffoldSafeWalk;      ScaffoldMod.safeWalk      = cfg.scaffoldSafeWalk;      cfg.save(); }),
+                new KeyS("Key",          () -> cfg.scaffoldKey,           v -> { cfg.scaffoldKey            = v;                          cfg.save(); })
             )));
 
         mods.add(new ModEntry("NoFall", Category.MOVEMENT,

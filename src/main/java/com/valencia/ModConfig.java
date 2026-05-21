@@ -74,12 +74,19 @@ public class ModConfig {
     public boolean scaffoldEnabled   = false;
 
     // Scaffold tuning
-    public boolean scaffoldTower      = false;
-    public boolean scaffoldAutoSwitch = true;
-    public boolean scaffoldSwitchBack = true;
-    public int     scaffoldPlaceDelay = 1;
-    public boolean scaffoldSneak      = false;
-    public boolean scaffoldSafeWalk   = true;
+    public boolean scaffoldTower         = false;
+    public boolean scaffoldAutoSwitch    = true;
+    public boolean scaffoldSwitchBack    = true;
+    public int     scaffoldPlaceDelay    = 0;
+    public boolean scaffoldSneak         = false;
+    public boolean scaffoldSafeWalk      = true;
+    public int     scaffoldBlocksPerTick = 3;
+    public boolean scaffoldLookAhead     = true;
+    public boolean scaffoldAirPlace      = true;
+    public boolean scaffoldSilentRot     = true;
+    public boolean scaffoldSkipHeavy     = true;
+    public boolean scaffoldSkipContainer = true;
+    public int     scaffoldExtend        = 0;
 
     private static ModConfig instance;
 

@@ -1,5 +1,20 @@
 # Valencia Changelog
 
+## [alpha-0.9] - 2026-05-21
+
+### Scaffold — Aggressive Mode
+
+Re-tuned for vanilla / no-anticheat servers:
+- **Look Ahead** — predicts next-tick foot position via `player.getDeltaMovement` and pre-places. Catches fast/sprinting movement before the player loses ground.
+- **Per Tick (1–5, default 3)** — multiple `useItemOn` calls per tick. Place foot + look-ahead + extend candidates in a single tick.
+- **Air Place** (default ON) — places while airborne (jumping, falling, mid-step).
+- **Silent Rot** (default ON) — sends a `ServerboundMovePlayerPacket.Rot` aimed at the hit point right before `useItemOn`, then restores. Bypasses vanilla/Paper facing-validation when the local view isn't pointed at the placement.
+- **Skip Heavy** — auto-skips FallingBlock items (sand, gravel, anvil, concrete powder).
+- **Skip Cont** — auto-skips containers (chest, barrel, ender chest, furnace, crafting table).
+- **Extend (0–2)** — places in a 1- or 2-block radius around the foot for wide platforms.
+- **Place Delay default = 0** — fire every tick when work is available.
+- `findBlockSlot` now picks the slot with the **most blocks**, so long bridges don't fragment hotbar slots.
+
 ## [alpha-0.8] - 2026-05-21
 
 ### New Module
