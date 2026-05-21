@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.13] - 2026-05-21
+
+### Scaffold
+- Tower is now **hold-to-rise** — checks `mc.options.keyJump.isDown()` instead of stamping every tick unconditionally. Press jump = go up at `Tower Spd`. Release = fall back onto the column.
+
 ## [alpha-0.12] - 2026-05-21
 
 ### Scaffold

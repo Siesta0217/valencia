@@ -78,11 +78,10 @@ public class ScaffoldMod {
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
 
-        // Tower: stamp y velocity every tick (not just onGround) so the player
-        // floats up at a constant rate set by towerSpeed. Scaffold's per-tick
-        // placement keeps up because curFoot/lookAhead refills as the player
-        // rises. towerMove=true keeps WASD horizontal velocity, false locks it.
-        if (tower) {
+        // Tower: stamp y velocity while the jump key is held (uses the player's
+        // vanilla jump binding so it works if remapped). Release → gravity takes
+        // over and the player lands on the column scaffold just built.
+        if (tower && mc.options.keyJump.isDown()) {
             Vec3 v = p.getDeltaMovement();
             double y = towerSpeed;
             if (towerMove) p.setDeltaMovement(v.x, y, v.z);
