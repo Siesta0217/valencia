@@ -13,7 +13,8 @@
     "KillAuraMixin",
     "GlowMixin",
     "VelocityMixin",
-    "CritMixin"
+    "CritMixin",
+    "ScaffoldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

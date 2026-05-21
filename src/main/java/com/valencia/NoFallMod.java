@@ -24,6 +24,14 @@ public class NoFallMod implements ClientModInitializer {
         if (cfg.velocityEnabled   != VelocityMod.isEnabled())   VelocityMod.toggle();
         if (cfg.fastPlaceEnabled  != FastPlaceMod.isEnabled())  FastPlaceMod.toggle();
         if (cfg.critEnabled       != CritMod.isEnabled())       CritMod.toggle();
+        if (cfg.scaffoldEnabled   != ScaffoldMod.isEnabled())   ScaffoldMod.toggle();
+
+        ScaffoldMod.tower       = cfg.scaffoldTower;
+        ScaffoldMod.autoSwitch  = cfg.scaffoldAutoSwitch;
+        ScaffoldMod.switchBack  = cfg.scaffoldSwitchBack;
+        ScaffoldMod.placeDelay  = cfg.scaffoldPlaceDelay;
+        ScaffoldMod.sneakWhile  = cfg.scaffoldSneak;
+        ScaffoldMod.safeWalk    = cfg.scaffoldSafeWalk;
 
         // Restore tuning values
         MaceAuraMod.RANGE        = cfg.maceDetectRange;

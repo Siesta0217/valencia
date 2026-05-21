@@ -140,6 +140,18 @@ public class ClickGuiScreen extends Screen {
             FastPlaceMod::isEnabled, FastPlaceMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.fastPlaceKey, v -> { cfg.fastPlaceKey = v; cfg.save(); }))));
 
+        mods.add(new ModEntry("Scaffold", Category.MOVEMENT,
+            ScaffoldMod::isEnabled, ScaffoldMod::toggle, true,
+            List.of(
+                new BoolS("Tower",      () -> cfg.scaffoldTower,      () -> { cfg.scaffoldTower      = !cfg.scaffoldTower;      ScaffoldMod.tower       = cfg.scaffoldTower;      cfg.save(); }),
+                new BoolS("Auto Sw",    () -> cfg.scaffoldAutoSwitch, () -> { cfg.scaffoldAutoSwitch = !cfg.scaffoldAutoSwitch; ScaffoldMod.autoSwitch  = cfg.scaffoldAutoSwitch; cfg.save(); }),
+                new BoolS("Sw Back",    () -> cfg.scaffoldSwitchBack, () -> { cfg.scaffoldSwitchBack = !cfg.scaffoldSwitchBack; ScaffoldMod.switchBack  = cfg.scaffoldSwitchBack; cfg.save(); }),
+                new SliderS("Delay",    () -> cfg.scaffoldPlaceDelay, v -> { cfg.scaffoldPlaceDelay  = (int)v;                  ScaffoldMod.placeDelay  = (int)v;                  cfg.save(); }, 0, 10),
+                new BoolS("Sneak",      () -> cfg.scaffoldSneak,      () -> { cfg.scaffoldSneak      = !cfg.scaffoldSneak;      ScaffoldMod.sneakWhile  = cfg.scaffoldSneak;      cfg.save(); }),
+                new BoolS("Safe Walk",  () -> cfg.scaffoldSafeWalk,   () -> { cfg.scaffoldSafeWalk   = !cfg.scaffoldSafeWalk;   ScaffoldMod.safeWalk    = cfg.scaffoldSafeWalk;   cfg.save(); }),
+                new KeyS("Key",         () -> cfg.scaffoldKey,        v -> { cfg.scaffoldKey         = v;                       cfg.save(); })
+            )));
+
         mods.add(new ModEntry("NoFall", Category.MOVEMENT,
             NoFallMod::isEnabled, NoFallMod::toggleManual, true,
             List.of(new KeyS("Key", () -> cfg.nofallKey, v -> { cfg.nofallKey = v; cfg.save(); }))));
@@ -514,6 +526,7 @@ public class ClickGuiScreen extends Screen {
         cfg.velocityEnabled   = VelocityMod.isEnabled();
         cfg.fastPlaceEnabled  = FastPlaceMod.isEnabled();
         cfg.critEnabled       = CritMod.isEnabled();
+        cfg.scaffoldEnabled   = ScaffoldMod.isEnabled();
         cfg.save();
     }
 

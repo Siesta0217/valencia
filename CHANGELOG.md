@@ -1,5 +1,17 @@
 # Valencia Changelog
 
+## [alpha-0.8] - 2026-05-21
+
+### New Module
+- **Scaffold** (`J`) — auto-places a block under the player's feet when stepping off solid ground.
+  - **Tower** — stamps jump velocity while grounded → tower up by holding the scaffold key + scaffold places blocks under you each tick
+  - **Auto Sw** — auto-switches hotbar to a slot containing any BlockItem
+  - **Sw Back** — restores the previous hotbar slot after placing
+  - **Delay** — ticks between placement attempts (0–10)
+  - **Sneak** — placeholder hook for server-side sneak while placing
+  - **Safe Walk** — placeholder hook for sneaking at ledges (not yet wired)
+  - **Key** — toggle key
+
 ## [alpha-0.7] - 2026-05-21
 
 ### KillAura

@@ -25,6 +25,7 @@ public class ModConfig {
     public int velocityKey   = GLFW.GLFW_KEY_C;
     public int fastPlaceKey  = GLFW.GLFW_KEY_F;
     public int critKey       = GLFW.GLFW_KEY_R;
+    public int scaffoldKey   = GLFW.GLFW_KEY_J;
 
     // MaceAura tuning
     public float maceDetectRange = 6.0f;
@@ -70,6 +71,15 @@ public class ModConfig {
     public boolean velocityEnabled   = false;
     public boolean fastPlaceEnabled  = false;
     public boolean critEnabled       = false;
+    public boolean scaffoldEnabled   = false;
+
+    // Scaffold tuning
+    public boolean scaffoldTower      = false;
+    public boolean scaffoldAutoSwitch = true;
+    public boolean scaffoldSwitchBack = true;
+    public int     scaffoldPlaceDelay = 1;
+    public boolean scaffoldSneak      = false;
+    public boolean scaffoldSafeWalk   = true;
 
     private static ModConfig instance;
 
