@@ -16,6 +16,7 @@ public abstract class KillAuraMixin {
 
     @Unique private boolean nofall$killModified   = false;
     @Unique private int     nofall$nextAttackTick = 0;
+    @Unique private float   nofall$lastTargetYaw  = 0f;
 
     @Inject(method = "sendPosition", at = @At("HEAD"))
     private void killAura$before(CallbackInfo ci) {
@@ -44,8 +45,21 @@ public abstract class KillAuraMixin {
             newYaw   = tgtRot[0];
             newPitch = tgtRot[1];
         }
+        nofall$lastTargetYaw = newYaw;
+
         self.setYRot(newYaw);
         self.setXRot(newPitch);
+
+        // Visible Body: physically rotate body+head (3rd-person visible) but
+        // leave the camera (yRot) alone so first-person view doesn't move.
+        // yRot is restored in RETURN; yBodyRot/yHeadRot persist.
+        if (KillAuraMod.visibleBody) {
+            self.yBodyRot  = newYaw;
+            self.yBodyRotO = newYaw;
+            self.yHeadRot  = newYaw;
+            self.yHeadRotO = newYaw;
+        }
+
         nofall$killModified  = true;
         KillAuraMod.pendingAttack = true;
     }
@@ -55,20 +69,26 @@ public abstract class KillAuraMixin {
         if (!KillAuraMod.isActive()) return;
 
         LocalPlayer self = (LocalPlayer)(Object)this;
-        // Body Lock: skip restore so the player's view physically follows the
-        // target (snap-aim / visible rotation). Default behavior restores
-        // savedYRot/XRot to keep the local view unchanged (silent aim).
+
+        // Body Lock OFF (default): restore view rotation — silent aim
+        // Body Lock ON: keep modified rotation — view physically snaps
         if (nofall$killModified && !KillAuraMod.bodyLock) {
             self.setYRot(KillAuraMod.savedYRot);
             self.setXRot(KillAuraMod.savedXRot);
         }
 
+        // Visible Body: re-apply body/head rotation after the view restore so
+        // body stays facing target even when camera snaps back to user's input.
+        if (nofall$killModified && KillAuraMod.visibleBody) {
+            self.yBodyRot  = nofall$lastTargetYaw;
+            self.yBodyRotO = nofall$lastTargetYaw;
+            self.yHeadRot  = nofall$lastTargetYaw;
+            self.yHeadRotO = nofall$lastTargetYaw;
+        }
+
         if (KillAuraMod.pendingAttack && KillAuraMod.currentTarget != null) {
             Minecraft mc = Minecraft.getInstance();
 
-            // Hitbox-edge distance — matches server reach check, fixes ghost
-            // swings on airborne / tall mobs where center-distance > 3.0 but
-            // hitbox-edge distance is well within reach.
             double distSq  = KillAuraMod.reachDistSq(self, KillAuraMod.currentTarget);
             double rangeSq = (double) KillAuraMod.ATTACK_RANGE * KillAuraMod.ATTACK_RANGE;
 

@@ -39,6 +39,7 @@ public class KillAuraMod {
     public static boolean smoothRot     = true;   // lerp rotation toward target
     public static float   maxTurnDeg    = 60.0f;  // max degrees per tick when smoothing
     public static boolean bodyLock      = false;  // DON'T restore rotation — view physically snaps to target
+    public static boolean visibleBody   = false;  // set body+head yaw to target — visible in 3rd person, camera unaffected
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }

@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.7] - 2026-05-21
+
+### KillAura
+- **Vis Body** toggle added — sets `yBodyRot` + `yHeadRot` to target yaw while leaving `yRot` (camera) restored to user input. Visible in 3rd person and to other players; first-person view unaffected. Independent from Body Lock; combine as needed.
+
 ## [alpha-0.6] - 2026-05-21
 
 ### KillAura
