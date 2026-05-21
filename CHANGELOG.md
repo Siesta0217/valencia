@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.4] - 2026-05-21
+
+### Improvements
+- Waifu image now supports **PNG, JPG/JPEG, BMP, GIF**. Place any of `waifu.png`, `waifu.jpg`, `waifu.jpeg`, `waifu.bmp`, `waifu.gif` in `.minecraft/config/valencia/`. Non-PNG formats are decoded via Java `ImageIO` and re-encoded to PNG internally for `NativeImage`.
+
 ## [alpha-0.3] - 2026-05-21
 
 ### Removed

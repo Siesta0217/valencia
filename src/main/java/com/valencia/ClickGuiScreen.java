@@ -9,9 +9,14 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.lang.reflect.Method;
+import javax.imageio.ImageIO;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -161,11 +166,22 @@ public class ClickGuiScreen extends Screen {
     }
 
     // ── Waifu ─────────────────────────────────────────────────────────────────
+    // Supported extensions — first match wins. NativeImage only decodes PNG, so
+    // anything else goes through Java's ImageIO and is re-encoded to PNG bytes.
+    private static final String[] WAIFU_EXTS = {"png", "jpg", "jpeg", "bmp", "gif"};
+
     private void loadWaifu() {
         try {
-            File f = FabricLoader.getInstance().getConfigDir()
-                .resolve("valencia").resolve("waifu.png").toFile();
-            if (!f.exists()) return;
+            File dir = FabricLoader.getInstance().getConfigDir()
+                .resolve("valencia").toFile();
+            if (!dir.exists() || !dir.isDirectory()) return;
+
+            File f = null;
+            for (String ext : WAIFU_EXTS) {
+                File candidate = new File(dir, "waifu." + ext);
+                if (candidate.exists()) { f = candidate; break; }
+            }
+            if (f == null) return;
 
             Class<?> rlClass = Class.forName("net.minecraft.resources.ResourceLocation");
             Class<?> niClass = Class.forName("com.mojang.blaze3d.platform.NativeImage");
@@ -173,9 +189,22 @@ public class ClickGuiScreen extends Screen {
             Class<?> tmClass = Class.forName("net.minecraft.client.renderer.texture.TextureManager");
             Class<?> atClass = Class.forName("net.minecraft.client.renderer.texture.AbstractTexture");
 
-            // NativeImage.read(InputStream)
-            Method read = niClass.getMethod("read", java.io.InputStream.class);
-            Object ni = read.invoke(null, new FileInputStream(f));
+            // NativeImage.read only handles PNG. For other formats, decode with
+            // ImageIO and re-encode as PNG bytes so NativeImage can read them.
+            InputStream pngStream;
+            String name = f.getName().toLowerCase();
+            if (name.endsWith(".png")) {
+                pngStream = new FileInputStream(f);
+            } else {
+                BufferedImage img = ImageIO.read(f);
+                if (img == null) return;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(img, "png", baos);
+                pngStream = new ByteArrayInputStream(baos.toByteArray());
+            }
+
+            Method read = niClass.getMethod("read", InputStream.class);
+            Object ni = read.invoke(null, pngStream);
 
             waifuTexW = (int) niClass.getMethod("getWidth").invoke(ni);
             waifuTexH = (int) niClass.getMethod("getHeight").invoke(ni);
@@ -327,7 +356,7 @@ public class ClickGuiScreen extends Screen {
     // ── Waifu rendering ───────────────────────────────────────────────────────
     private void renderWaifu(GuiGraphics g) {
         if (waifuLoc == null || WAIFU_BLIT == null || waifuTexW <= 0 || waifuTexH <= 0) {
-            g.drawString(font, "§8[waifu: config/valencia/waifu.png]", 4, height - 20, 0xFF555555, false);
+            g.drawString(font, "§8[waifu: config/valencia/waifu.{png,jpg,bmp,gif}]", 4, height - 20, 0xFF555555, false);
             return;
         }
         try {
