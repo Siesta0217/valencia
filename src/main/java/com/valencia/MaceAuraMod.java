@@ -4,6 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 
@@ -18,6 +21,10 @@ public class MaceAuraMod {
 
     public static float RANGE        = 6.0f;
     public static float ATTACK_RANGE = 3.5f;
+
+    public static boolean targetHostile = true;
+    public static boolean targetAnimals = false;
+    public static boolean targetPlayers = true;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle() { enabled = !enabled; }
@@ -41,6 +48,15 @@ public class MaceAuraMod {
         for (LivingEntity e : mc.level.getEntitiesOfClass(LivingEntity.class, box)) {
             if (e == mc.player) continue;
             if (e.isDeadOrDying()) continue;
+
+            boolean isPlayer  = e instanceof Player;
+            boolean isHostile = e instanceof Monster;
+            boolean isAnimal  = e instanceof Animal;
+            if (isPlayer  && !targetPlayers) continue;
+            if (isHostile && !targetHostile) continue;
+            if (isAnimal  && !targetAnimals) continue;
+            if (!isPlayer && !isHostile && !isAnimal) continue;
+
             double dist = mc.player.distanceTo(e);
             if (dist <= RANGE && dist < bestDist) {
                 bestDist = dist;

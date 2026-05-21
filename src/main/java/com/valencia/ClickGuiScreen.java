@@ -117,6 +117,9 @@ public class ClickGuiScreen extends Screen {
             List.of(
                 new SliderS("Det Range", () -> cfg.maceDetectRange, v -> { cfg.maceDetectRange = (float)v; MaceAuraMod.RANGE        = (float)v; cfg.save(); }, 1, 12),
                 new SliderS("Atk Range", () -> cfg.maceAttackRange, v -> { cfg.maceAttackRange = (float)v; MaceAuraMod.ATTACK_RANGE = (float)v; cfg.save(); }, 1, 8),
+                new BoolS("Hostile",     () -> cfg.maceHostile,     () -> { cfg.maceHostile = !cfg.maceHostile; MaceAuraMod.targetHostile = cfg.maceHostile; cfg.save(); }),
+                new BoolS("Animals",     () -> cfg.maceAnimals,     () -> { cfg.maceAnimals = !cfg.maceAnimals; MaceAuraMod.targetAnimals = cfg.maceAnimals; cfg.save(); }),
+                new BoolS("Players",     () -> cfg.macePlayers,     () -> { cfg.macePlayers = !cfg.macePlayers; MaceAuraMod.targetPlayers = cfg.macePlayers; cfg.save(); }),
                 new KeyS("Key",          () -> cfg.maceAuraKey,     v -> { cfg.maceAuraKey = v; cfg.save(); })
             )));
 
@@ -168,7 +171,10 @@ public class ClickGuiScreen extends Screen {
 
         mods.add(new ModEntry("Step", Category.MOVEMENT,
             StepMod::isEnabled, StepMod::toggle, true,
-            List.of(new KeyS("Key", () -> cfg.stepKey, v -> { cfg.stepKey = v; cfg.save(); }))));
+            List.of(
+                new SliderS("Height", () -> cfg.stepHeight, v -> { cfg.stepHeight = (float)v; StepMod.stepHeight = (float)v; cfg.save(); }, 1.0, 3.0),
+                new KeyS("Key",       () -> cfg.stepKey,    v -> { cfg.stepKey = v; cfg.save(); })
+            )));
 
         // Visuals
         mods.add(new ModEntry("XRay", Category.VISUALS,

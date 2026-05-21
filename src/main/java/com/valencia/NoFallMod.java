@@ -39,8 +39,12 @@ public class NoFallMod implements ClientModInitializer {
         VelocityMod.vertical   = cfg.velocityVert;
 
         // Restore tuning values
-        MaceAuraMod.RANGE        = cfg.maceDetectRange;
-        MaceAuraMod.ATTACK_RANGE = cfg.maceAttackRange;
+        MaceAuraMod.RANGE          = cfg.maceDetectRange;
+        MaceAuraMod.ATTACK_RANGE   = cfg.maceAttackRange;
+        MaceAuraMod.targetHostile  = cfg.maceHostile;
+        MaceAuraMod.targetAnimals  = cfg.maceAnimals;
+        MaceAuraMod.targetPlayers  = cfg.macePlayers;
+        StepMod.stepHeight         = cfg.stepHeight;
         KillAuraMod.RANGE        = cfg.killRange;
         KillAuraMod.ATTACK_RANGE = cfg.killAttackRange;
         KillAuraMod.targetHostile = cfg.killHostile;

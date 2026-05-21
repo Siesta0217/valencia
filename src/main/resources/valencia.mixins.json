@@ -14,7 +14,8 @@
     "GlowMixin",
     "VelocityMixin",
     "CritMixin",
-    "ScaffoldMixin"
+    "ScaffoldMixin",
+    "StepMixin"
   ],
   "injectors": {
     "defaultRequire": 1

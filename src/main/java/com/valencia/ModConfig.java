@@ -30,6 +30,12 @@ public class ModConfig {
     // MaceAura tuning
     public float maceDetectRange = 6.0f;
     public float maceAttackRange = 3.5f;
+    public boolean maceHostile   = true;
+    public boolean maceAnimals   = false;
+    public boolean macePlayers   = true;
+
+    // Step tuning
+    public float stepHeight = 1.0f;
 
     // KillAura tuning
     public float killRange       = 4.0f;
