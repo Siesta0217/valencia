@@ -1,5 +1,6 @@
 package com.valencia;
 
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -10,6 +11,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -64,8 +66,9 @@ public class ClickGuiScreen extends Screen {
     private int    dragIdx  = -1;
 
     // ── Waifu ─────────────────────────────────────────────────────────────────
-    // (image rendering pending — place waifu.png in config/valencia/)
-    private String waifuPath = "";
+    private Object waifuLoc  = null;
+    private int    waifuTexW = 0;
+    private int    waifuTexH = 0;
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -85,14 +88,14 @@ public class ClickGuiScreen extends Screen {
         mods.add(new ModEntry("KillAura", Category.COMBAT,
             KillAuraMod::isEnabled, KillAuraMod::toggle, true,
             List.of(
-                new SliderS("Range",     () -> cfg.killRange,              v -> { cfg.killRange        = (float)v; KillAuraMod.RANGE        = (float)v; cfg.save(); }, 1, 10),
-                new SliderS("Atk Range", () -> cfg.killAttackRange,        v -> { cfg.killAttackRange  = (float)v; KillAuraMod.ATTACK_RANGE = (float)v; cfg.save(); }, 1, 8),
-                new SliderS("Atk Delay", () -> cfg.killAttackDelay,        v -> { cfg.killAttackDelay  = (int)v;   KillAuraMod.attackDelay  = (int)v;   cfg.save(); }, 2, 20),
-                new BoolS("Single",      () -> cfg.killSingle,             () -> { cfg.killSingle      = !cfg.killSingle;      KillAuraMod.singleMode    = cfg.killSingle;      cfg.save(); }),
-                new BoolS("Hostile",     () -> cfg.killHostile,            () -> { cfg.killHostile     = !cfg.killHostile;     KillAuraMod.targetHostile = cfg.killHostile;     cfg.save(); }),
-                new BoolS("Animals",     () -> cfg.killAnimals,            () -> { cfg.killAnimals     = !cfg.killAnimals;     KillAuraMod.targetAnimals = cfg.killAnimals;     cfg.save(); }),
-                new BoolS("Players",     () -> cfg.killPlayers,            () -> { cfg.killPlayers     = !cfg.killPlayers;     KillAuraMod.targetPlayers = cfg.killPlayers;     cfg.save(); }),
-                new KeyS("Key",          () -> cfg.killAuraKey,            v -> { cfg.killAuraKey = v; cfg.save(); })
+                new SliderS("Range",     () -> cfg.killRange,        v -> { cfg.killRange        = (float)v; KillAuraMod.RANGE        = (float)v; cfg.save(); }, 1, 10),
+                new SliderS("Atk Range", () -> cfg.killAttackRange,  v -> { cfg.killAttackRange  = (float)v; KillAuraMod.ATTACK_RANGE = (float)v; cfg.save(); }, 1, 8),
+                new SliderS("Atk Delay", () -> cfg.killAttackDelay,  v -> { cfg.killAttackDelay  = (int)v;   KillAuraMod.attackDelay  = (int)v;   cfg.save(); }, 2, 20),
+                new BoolS("Single",      () -> cfg.killSingle,       () -> { cfg.killSingle      = !cfg.killSingle;      KillAuraMod.singleMode    = cfg.killSingle;      cfg.save(); }),
+                new BoolS("Hostile",     () -> cfg.killHostile,      () -> { cfg.killHostile     = !cfg.killHostile;     KillAuraMod.targetHostile = cfg.killHostile;     cfg.save(); }),
+                new BoolS("Animals",     () -> cfg.killAnimals,      () -> { cfg.killAnimals     = !cfg.killAnimals;     KillAuraMod.targetAnimals = cfg.killAnimals;     cfg.save(); }),
+                new BoolS("Players",     () -> cfg.killPlayers,      () -> { cfg.killPlayers     = !cfg.killPlayers;     KillAuraMod.targetPlayers = cfg.killPlayers;     cfg.save(); }),
+                new KeyS("Key",          () -> cfg.killAuraKey,      v -> { cfg.killAuraKey = v; cfg.save(); })
             )));
 
         mods.add(new ModEntry("MaceAura", Category.COMBAT,
@@ -103,6 +106,10 @@ public class ClickGuiScreen extends Screen {
                 new KeyS("Key",          () -> cfg.maceAuraKey,     v -> { cfg.maceAuraKey = v; cfg.save(); })
             )));
 
+        mods.add(new ModEntry("CritHit", Category.COMBAT,
+            CritMod::isEnabled, CritMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.critKey, v -> { cfg.critKey = v; cfg.save(); }))));
+
         // Movement
         mods.add(new ModEntry("BHop", Category.MOVEMENT,
             BHopMod::isEnabled, BHopMod::toggle, true,
@@ -110,6 +117,18 @@ public class ClickGuiScreen extends Screen {
                 new SliderS("Speed", () -> (double)cfg.bhopSpeed, v -> { cfg.bhopSpeed = (float)v; BHopMod.speedMultiplier = (float)v; cfg.save(); }, 0.5, 2.5),
                 new KeyS("Key",      () -> cfg.bhopKey,           v -> { cfg.bhopKey = v; cfg.save(); })
             )));
+
+        mods.add(new ModEntry("AutoSprint", Category.MOVEMENT,
+            AutoSprintMod::isEnabled, AutoSprintMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.autoSprintKey, v -> { cfg.autoSprintKey = v; cfg.save(); }))));
+
+        mods.add(new ModEntry("Velocity", Category.MOVEMENT,
+            VelocityMod::isEnabled, VelocityMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.velocityKey, v -> { cfg.velocityKey = v; cfg.save(); }))));
+
+        mods.add(new ModEntry("FastPlace", Category.MOVEMENT,
+            FastPlaceMod::isEnabled, FastPlaceMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.fastPlaceKey, v -> { cfg.fastPlaceKey = v; cfg.save(); }))));
 
         mods.add(new ModEntry("NoFall", Category.MOVEMENT,
             NoFallMod::isEnabled, NoFallMod::toggleManual, true,
@@ -145,7 +164,42 @@ public class ClickGuiScreen extends Screen {
 
     // ── Waifu ─────────────────────────────────────────────────────────────────
     private void loadWaifu() {
-        // Image rendering not yet supported in this build
+        try {
+            File f = FabricLoader.getInstance().getConfigDir()
+                .resolve("valencia").resolve("waifu.png").toFile();
+            if (!f.exists()) return;
+
+            Class<?> rlClass = Class.forName("net.minecraft.resources.ResourceLocation");
+            Class<?> niClass = Class.forName("com.mojang.blaze3d.platform.NativeImage");
+            Class<?> dtClass = Class.forName("net.minecraft.client.renderer.texture.DynamicTexture");
+            Class<?> tmClass = Class.forName("net.minecraft.client.renderer.texture.TextureManager");
+            Class<?> atClass = Class.forName("net.minecraft.client.renderer.texture.AbstractTexture");
+
+            // NativeImage.read(InputStream)
+            Method read = niClass.getMethod("read", java.io.InputStream.class);
+            Object ni = read.invoke(null, new FileInputStream(f));
+
+            waifuTexW = (int) niClass.getMethod("getWidth").invoke(ni);
+            waifuTexH = (int) niClass.getMethod("getHeight").invoke(ni);
+
+            // new DynamicTexture(NativeImage)
+            Object dt = dtClass.getDeclaredConstructor(niClass).newInstance(ni);
+
+            // ResourceLocation.fromNamespaceAndPath("valencia", "waifu")
+            Object loc;
+            try {
+                Method factory = rlClass.getMethod("fromNamespaceAndPath", String.class, String.class);
+                loc = factory.invoke(null, "valencia", "waifu");
+            } catch (NoSuchMethodException e) {
+                loc = rlClass.getDeclaredConstructor(String.class, String.class).newInstance("valencia", "waifu");
+            }
+
+            // TextureManager.register(ResourceLocation, AbstractTexture)
+            Object tm = Minecraft.class.getMethod("getTextureManager").invoke(Minecraft.getInstance());
+            tmClass.getMethod("register", rlClass, atClass).invoke(tm, loc, dt);
+
+            waifuLoc = loc;
+        } catch (Exception ignored) {}
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -166,15 +220,12 @@ public class ClickGuiScreen extends Screen {
             renderColumn(g, cat, cx, mx, my, cfg, accent);
         }
 
-        // Waifu
         renderWaifu(g);
 
-        // Hint
         g.drawString(font, "§7Right Ctrl to close", 4, height - 10, 0xFFAAAAAA, false);
     }
 
     private void renderColumn(GuiGraphics g, Category cat, int cx, int mx, int my, ModConfig cfg, int accent) {
-        // Measure column height
         int colH = HDR_H;
         for (ModEntry m : mods) {
             if (m.cat() != cat) continue;
@@ -182,15 +233,11 @@ public class ClickGuiScreen extends Screen {
             if (expanded.contains(m.name())) colH += m.settings().size() * SET_H + 2;
         }
 
-        // Column background
         g.fill(cx, COL_Y, cx + COL_W, COL_Y + colH, argb(180, 10, 10, 10));
-
-        // Header
         g.fill(cx, COL_Y, cx + COL_W, COL_Y + HDR_H, accent);
         g.drawCenteredString(font, cat.label, cx + COL_W / 2, COL_Y + (HDR_H - 8) / 2, 0xFFFFFFFF);
 
         int y = COL_Y + HDR_H;
-
         for (ModEntry m : mods) {
             if (m.cat() != cat) continue;
             y = renderRow(g, m, cx, y, mx, my, cfg, accent);
@@ -198,24 +245,20 @@ public class ClickGuiScreen extends Screen {
     }
 
     private int renderRow(GuiGraphics g, ModEntry m, int cx, int y, int mx, int my, ModConfig cfg, int accent) {
-        boolean on   = m.toggleable() && m.enabled().getAsBoolean();
-        boolean hov  = mx >= cx && mx < cx + COL_W && my >= y && my < y + ROW_H;
-        boolean exp  = expanded.contains(m.name());
+        boolean on  = m.toggleable() && m.enabled().getAsBoolean();
+        boolean hov = mx >= cx && mx < cx + COL_W && my >= y && my < y + ROW_H;
+        boolean exp = expanded.contains(m.name());
 
-        // Row background
         int bg = on  ? accent(cfg, 100)
                : hov ? argb(50, 255, 255, 255)
                :        argb(20, 255, 255, 255);
         g.fill(cx, y, cx + COL_W, y + ROW_H, bg);
 
-        // Left enabled bar
         if (on) g.fill(cx, y, cx + 3, y + ROW_H, accent);
 
-        // Module name
         int textCol = on ? 0xFFFFFFFF : 0xFFAAAAAA;
         g.drawString(font, m.name(), cx + INDENT + (on ? 3 : 0), y + (ROW_H - 8) / 2, textCol, false);
 
-        // Arrow if has settings
         if (!m.settings().isEmpty()) {
             String arr = exp ? "v" : ">";
             g.drawString(font, arr, cx + COL_W - 12, y + (ROW_H - 8) / 2, 0xFF666666, false);
@@ -223,19 +266,17 @@ public class ClickGuiScreen extends Screen {
 
         y += ROW_H;
 
-        // Expanded settings
         if (exp) {
             for (int si = 0; si < m.settings().size(); si++) {
                 Setting s = m.settings().get(si);
                 g.fill(cx, y, cx + COL_W, y + SET_H, argb(120, 5, 5, 5));
 
-                if (s instanceof SliderS sl)   renderSlider(g, sl, cx, y, cfg);
+                if (s instanceof SliderS sl)    renderSlider(g, sl, cx, y, cfg);
                 else if (s instanceof BoolS bs) renderBool(g, bs, cx, y);
                 else if (s instanceof KeyS ks)  renderKey(g, ks, m, si, cx, y);
 
                 y += SET_H;
             }
-            // Bottom separator
             g.fill(cx, y, cx + COL_W, y + 2, accent(cfg, 80));
             y += 2;
         }
@@ -248,21 +289,16 @@ public class ClickGuiScreen extends Screen {
         double val = sl.get().getAsDouble();
         double pct = Math.max(0, Math.min(1, (val - sl.min()) / (sl.max() - sl.min())));
 
-        int tx  = cx + INDENT;
-        int tw  = COL_W - INDENT * 2 - 28;
-        int ty  = y + SET_H / 2;
+        int tx = cx + INDENT;
+        int tw = COL_W - INDENT * 2 - 28;
+        int ty = y + SET_H / 2;
 
         g.drawString(font, sl.label(), tx, y + 1, 0xFF888888, false);
-
-        // Track
         g.fill(tx, ty, tx + tw, ty + 2, argb(80, 255, 255, 255));
-        // Fill
         g.fill(tx, ty, tx + (int)(tw * pct), ty + 2, accent);
-        // Handle
         int hx = tx + (int)(tw * pct);
         g.fill(hx - 2, y + 2, hx + 2, y + SET_H - 2, 0xFFFFFFFF);
 
-        // Value
         String valStr = (sl.max() <= 20 && sl.min() >= 0 && (int)sl.min() == sl.min() && (int)sl.max() == sl.max())
                       ? String.valueOf((int)Math.round(val))
                       : String.format("%.1f", val);
@@ -285,8 +321,23 @@ public class ClickGuiScreen extends Screen {
 
     // ── Waifu rendering ───────────────────────────────────────────────────────
     private void renderWaifu(GuiGraphics g) {
-        // Placeholder: show path hint at bottom-left
-        g.drawString(font, "§8[waifu: config/valencia/waifu.png]", 4, height - 20, 0xFF555555, false);
+        if (waifuLoc == null || waifuTexW <= 0 || waifuTexH <= 0) {
+            g.drawString(font, "§8[waifu: config/valencia/waifu.png]", 4, height - 20, 0xFF555555, false);
+            return;
+        }
+        try {
+            int dispH = Math.min(height / 3, 150);
+            int dispW = waifuTexW * dispH / waifuTexH;
+            int wx = 4, wy = height - dispH - 14;
+
+            Class<?> rlClass = Class.forName("net.minecraft.resources.ResourceLocation");
+            Method blit = GuiGraphics.class.getMethod("blit",
+                rlClass, int.class, int.class, float.class, float.class,
+                int.class, int.class, int.class, int.class);
+            blit.invoke(g, waifuLoc, wx, wy, 0f, 0f, dispW, dispH, waifuTexW, waifuTexH);
+        } catch (Exception ignored) {
+            g.drawString(font, "§8[waifu render err]", 4, height - 20, 0xFF555555, false);
+        }
     }
 
     // ── Mouse ─────────────────────────────────────────────────────────────────
@@ -306,17 +357,14 @@ public class ClickGuiScreen extends Screen {
             for (ModEntry m : mods) {
                 if (m.cat() != cat) continue;
 
-                // Module row
                 if (mx >= cx && mx < cx + COL_W && my >= y && my < y + ROW_H) {
                     boolean hasSettings = !m.settings().isEmpty();
                     boolean clickArrow  = hasSettings && mx >= cx + COL_W - 16;
 
                     if (clickArrow || !m.toggleable()) {
-                        // Expand/collapse
                         if (expanded.contains(m.name())) expanded.remove(m.name());
                         else expanded.add(m.name());
                     } else {
-                        // Toggle module
                         m.toggle().run();
                         saveEnabled(cfg);
                     }
@@ -324,7 +372,6 @@ public class ClickGuiScreen extends Screen {
                 }
                 y += ROW_H;
 
-                // Settings rows
                 if (expanded.contains(m.name())) {
                     for (int si = 0; si < m.settings().size(); si++) {
                         if (my >= y && my < y + SET_H && mx >= cx && mx < cx + COL_W) {
@@ -343,7 +390,7 @@ public class ClickGuiScreen extends Screen {
                         }
                         y += SET_H;
                     }
-                    y += 2; // separator
+                    y += 2;
                 }
             }
         }
@@ -404,7 +451,6 @@ public class ClickGuiScreen extends Screen {
     private void applySlider(SliderS sl, int mx, int tx, int tw) {
         double pct = Math.max(0, Math.min(1, (double)(mx - tx) / tw));
         double raw = sl.min() + pct * (sl.max() - sl.min());
-        // Snap to int if both bounds are integers
         boolean intRange = (int)sl.min() == sl.min() && (int)sl.max() == sl.max() && sl.max() - sl.min() <= 30;
         double val = intRange ? Math.round(raw) : Math.round(raw * 10.0) / 10.0;
         sl.set().accept(val);
@@ -422,13 +468,17 @@ public class ClickGuiScreen extends Screen {
     }
 
     private static void saveEnabled(ModConfig cfg) {
-        cfg.nofallEnabled   = NoFallMod.isEnabled();
-        cfg.xrayEnabled     = XRayMod.isEnabled();
-        cfg.maceAuraEnabled = MaceAuraMod.isEnabled();
-        cfg.noSlowEnabled   = NoSlowMod.isEnabled();
-        cfg.bhopEnabled     = BHopMod.isEnabled();
-        cfg.stepEnabled     = StepMod.isEnabled();
-        cfg.killAuraEnabled = KillAuraMod.isEnabled();
+        cfg.nofallEnabled     = NoFallMod.isEnabled();
+        cfg.xrayEnabled       = XRayMod.isEnabled();
+        cfg.maceAuraEnabled   = MaceAuraMod.isEnabled();
+        cfg.noSlowEnabled     = NoSlowMod.isEnabled();
+        cfg.bhopEnabled       = BHopMod.isEnabled();
+        cfg.stepEnabled       = StepMod.isEnabled();
+        cfg.killAuraEnabled   = KillAuraMod.isEnabled();
+        cfg.autoSprintEnabled = AutoSprintMod.isEnabled();
+        cfg.velocityEnabled   = VelocityMod.isEnabled();
+        cfg.fastPlaceEnabled  = FastPlaceMod.isEnabled();
+        cfg.critEnabled       = CritMod.isEnabled();
         cfg.save();
     }
 

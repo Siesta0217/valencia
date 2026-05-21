@@ -1,5 +1,19 @@
 # Valencia Changelog
 
+## [alpha-0.2] - 2026-05-21
+
+### New Modules
+- **AutoSprint** — auto-sprint when any WASD key held, key `V`
+- **Velocity** — cancels all knockback for local player, key `C`
+- **FastPlace** — removes right-click delay (instant block/item use spam), key `F`
+- **CritHit** — forces critical hits on every attack, key `R`
+
+### Improvements
+- Waifu image support: place `waifu.png` in `.minecraft/config/valencia/` — rendered bottom-left of ClickGUI (requires valid Minecraft ResourceLocation API at runtime; falls back to placeholder text if unavailable)
+- ClickGUI now shows AutoSprint, Velocity, FastPlace in Movement column and CritHit in Combat column
+
+---
+
 ## [alpha-0.1] - 2026-05-20
 
 ### Modules

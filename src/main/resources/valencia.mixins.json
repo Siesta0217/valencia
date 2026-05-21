@@ -11,7 +11,10 @@
     "NoSlowMixin",
     "BHopMixin",
     "KillAuraMixin",
-    "GlowMixin"
+    "GlowMixin",
+    "AutoSprintMixin",
+    "VelocityMixin",
+    "CritMixin"
   ],
   "injectors": {
     "defaultRequire": 1

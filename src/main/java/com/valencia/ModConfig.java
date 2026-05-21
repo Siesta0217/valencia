@@ -19,9 +19,13 @@ public class ModConfig {
     public int maceAuraKey = GLFW.GLFW_KEY_Z;
     public int noSlowKey   = GLFW.GLFW_KEY_G;
     public int guiKey      = GLFW.GLFW_KEY_RIGHT_CONTROL;
-    public int bhopKey     = GLFW.GLFW_KEY_B;
-    public int stepKey     = GLFW.GLFW_KEY_H;
-    public int killAuraKey = GLFW.GLFW_KEY_K;
+    public int bhopKey       = GLFW.GLFW_KEY_B;
+    public int stepKey       = GLFW.GLFW_KEY_H;
+    public int killAuraKey   = GLFW.GLFW_KEY_K;
+    public int autoSprintKey = GLFW.GLFW_KEY_V;
+    public int velocityKey   = GLFW.GLFW_KEY_C;
+    public int fastPlaceKey  = GLFW.GLFW_KEY_F;
+    public int critKey       = GLFW.GLFW_KEY_R;
 
     // MaceAura tuning
     public float maceDetectRange = 6.0f;
@@ -48,13 +52,17 @@ public class ModConfig {
     public int bgAlpha  = 160;
 
     // Module enabled states (persisted across sessions)
-    public boolean nofallEnabled   = true;
-    public boolean xrayEnabled     = false;
-    public boolean maceAuraEnabled = false;
-    public boolean noSlowEnabled   = false;
-    public boolean bhopEnabled     = false;
-    public boolean stepEnabled     = false;
-    public boolean killAuraEnabled = false;
+    public boolean nofallEnabled     = true;
+    public boolean xrayEnabled       = false;
+    public boolean maceAuraEnabled   = false;
+    public boolean noSlowEnabled     = false;
+    public boolean bhopEnabled       = false;
+    public boolean stepEnabled       = false;
+    public boolean killAuraEnabled   = false;
+    public boolean autoSprintEnabled = false;
+    public boolean velocityEnabled   = false;
+    public boolean fastPlaceEnabled  = false;
+    public boolean critEnabled       = false;
 
     private static ModConfig instance;
 
