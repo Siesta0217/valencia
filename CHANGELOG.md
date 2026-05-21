@@ -1,5 +1,10 @@
 # Valencia Changelog
 
+## [alpha-0.15] - 2026-05-21
+
+### Fixed
+- Slider int-snap heuristic. A range whose bounds were both integers (e.g. Tower Spd 0–1) was being treated as integer-only and collapsing to just `{0, 1}`. Now also requires `max - min >= 2` before treating as integer slider. Tower Spd works at 0.1 granularity again.
+
 ## [alpha-0.14] - 2026-05-21
 
 ### Scaffold

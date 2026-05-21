@@ -359,7 +359,7 @@ public class ClickGuiScreen extends Screen {
         int hx = tx + (int)(tw * pct);
         g.fill(hx - 2, y + 2, hx + 2, y + SET_H - 2, 0xFFFFFFFF);
 
-        String valStr = (sl.max() <= 20 && sl.min() >= 0 && (int)sl.min() == sl.min() && (int)sl.max() == sl.max())
+        String valStr = isIntSlider(sl)
                       ? String.valueOf((int)Math.round(val))
                       : String.format("%.1f", val);
         g.drawString(font, valStr, cx + COL_W - 26, y + 1, 0xFFCCCCCC, false);
@@ -506,9 +506,20 @@ public class ClickGuiScreen extends Screen {
     private void applySlider(SliderS sl, int mx, int tx, int tw) {
         double pct = Math.max(0, Math.min(1, (double)(mx - tx) / tw));
         double raw = sl.min() + pct * (sl.max() - sl.min());
-        boolean intRange = (int)sl.min() == sl.min() && (int)sl.max() == sl.max() && sl.max() - sl.min() <= 30;
+        // Treat as integer slider only when both bounds are whole numbers AND
+        // the range has enough steps to justify int-snapping. A 0–1 range with
+        // int snap collapses to just {0, 1} which is useless for floats like
+        // Tower Spd (which wants 0.1 granularity).
+        boolean intRange = isIntSlider(sl);
         double val = intRange ? Math.round(raw) : Math.round(raw * 10.0) / 10.0;
         sl.set().accept(val);
+    }
+
+    private static boolean isIntSlider(SliderS sl) {
+        return (int)sl.min() == sl.min()
+            && (int)sl.max() == sl.max()
+            && sl.max() - sl.min() >= 2
+            && sl.max() - sl.min() <= 30;
     }
 
     private static int accent(ModConfig cfg, int alpha) {
