@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.8** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.9** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.8** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.8.jar
+# JAR → build/libs/valencia-1.6.9.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.9 — ElytraGoto 伺服器拒收偵測 + 自動重發 fall-flying
+- 截圖確認 v1.6.8 跑得正確（嘗試=3）但煙火 128 完全沒減 → 證實 server 在 silent reject useItem
+- 動作列改顯示 `消耗 N/嘗試 M`，**消耗=0 + 嘗試>2 時直接顯示「伺服器拒收」紅字**
+- 自動觸發 START_FALL_FLYING 重發（最多 3 次）— 若是 client/server fall-flying 不同步造成的拒收，重發可以救
+- 若伺服器是真的禁飛（plugin 或 anti-cheat），請手動拿火箭右鍵測試。手動也不能 boost 就是伺服器限制，模組無解
 
 ### v1.6.8 — BHop 不再要求手動按 SPACE
 - v1.6.2 加的「穿著鞘翅就 skip 自動跳」守衛太嚴格。實際上前面那行 `if (!moving || jumping) return;` 已經處理掉了「玩家按住 SPACE」的狀況（`jumping` 就是 vanilla 的 input.jumping），所以額外擋 elytra 是多餘的

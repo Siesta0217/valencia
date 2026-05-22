@@ -3,6 +3,7 @@ package com.valencia;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
@@ -54,6 +55,13 @@ public class ElytraGotoMod {
      *  the server is actually accepting the boost or silently ignoring it. */
     private static int firesAttempted = 0;
 
+    /** Firework count snapshot at the start of glide — used to compute how
+     *  many rockets were actually consumed (and detect server rejection). */
+    private static int flightStartRockets = -1;
+
+    /** Count of re-deploy attempts when server appears to silently reject. */
+    private static int redeployTriggers = 0;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
@@ -70,6 +78,8 @@ public class ElytraGotoMod {
         hasTarget = true;
         rocketCooldown = 0;        // fresh flight — fire the first rocket ASAP
         firesAttempted = 0;
+        flightStartRockets = -1;
+        redeployTriggers = 0;
         deployFailTicks = 0;
         if (!enabled) enabled = true;
     }
@@ -80,6 +90,8 @@ public class ElytraGotoMod {
         targetDim = null;
         rocketCooldown = 0;
         firesAttempted = 0;
+        flightStartRockets = -1;
+        redeployTriggers = 0;
     }
 
     public static boolean inWrongDimension() {
@@ -172,6 +184,28 @@ public class ElytraGotoMod {
         deployFailTicks = 0;
 
         // ── From here on the player is gliding: full autopilot ──────────────
+
+        // Snapshot the firework count on the first gliding tick of this flight
+        // so we can tell later whether the server is actually consuming
+        // rockets or silently rejecting our useItem packets.
+        if (flightStartRockets < 0) {
+            flightStartRockets = countRockets(p);
+        }
+
+        // If we've fired several useItems but the stack hasn't moved, the
+        // server is silently rejecting (server.isFallFlying disagrees with
+        // client). Re-send START_FALL_FLYING directly to try to nudge the
+        // server back in sync. Capped at 3 attempts to avoid spam.
+        int consumed = flightStartRockets - countRockets(p);
+        if (firesAttempted >= 2 && consumed == 0 && redeployTriggers < 3) {
+            try {
+                if (p.connection != null) {
+                    p.connection.send(new ServerboundPlayerCommandPacket(
+                        p, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
+                }
+            } catch (Throwable ignored) {}
+            redeployTriggers++;
+        }
 
         // Lock yaw on target
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
@@ -418,15 +452,24 @@ public class ElytraGotoMod {
         }
         double etaSec = dist / 33.0;
         int rockets = countRockets(p);
-        // Show "煙火 80 / 嘗試 12" — if 嘗試 > 0 but the stack stays the same
-        // size, the server is silently rejecting our useItem (usually because
-        // server.isFallFlying disagrees with client). Lets the player tell
-        // "no rockets at all" from "rockets firing but ignored".
-        String ammo = rockets > 0
-            ? String.format("§7煙火 §f%d §8/嘗試§f%d", rockets, firesAttempted)
-            : "§c無煙火!";
+        int consumed = (flightStartRockets >= 0) ? (flightStartRockets - rockets) : 0;
+
+        // 消耗 = rockets actually used (server confirmed)
+        // 嘗試 = our useItem call count
+        // If 嘗試 grows but 消耗 stays at 0, the server is silently rejecting
+        // the fire — either it doesn't allow firework boost on this realm or
+        // server.isFallFlying disagrees with the client. Highlight in red.
+        String ammo;
+        if (rockets <= 0) {
+            ammo = "§c無煙火!";
+        } else if (firesAttempted >= 2 && consumed == 0) {
+            ammo = String.format("§c伺服器拒收 §7(嘗試§f%d§7,消耗§f0§7)", firesAttempted);
+        } else {
+            ammo = String.format("§7煙火 §f%d §8(消耗§f%d§8/嘗試§f%d§8)",
+                rockets, consumed, firesAttempted);
+        }
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto v1.6.8] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
+            String.format("§b[Goto v1.6.9] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
                 dist, etaSec, (int) p.getY(), ammo)), true);
     }
 }
