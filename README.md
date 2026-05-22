@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.9** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.10** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.9** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.9.jar
+# JAR → build/libs/valencia-1.6.10.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.10 — ElytraGoto 平滑視角 + 自動降落 + 同步 gap 連發
+- **平滑旋轉**：yaw 限制 12°/tick、pitch 限制 10°/tick，視角不再瞬間 snap（之前轉得太極限）
+- **自動降落**：到達 XZ 8m 內後**不會馬上 stop**，繼續引導下降直到觸地或 vanilla 自動收翅；高於目標 Y 就 pitch +15° 下降，到目標 Y 附近就 level out
+- **同步 gap 連發**：使用者實測手動「前幾發拒收，之後正常」確認是 sync gap。第一次成功消耗火箭前每 10 ticks (~500ms) 重試一次；確認成功後切回正常 50-tick 節奏
 
 ### v1.6.9 — ElytraGoto 伺服器拒收偵測 + 自動重發 fall-flying
 - 截圖確認 v1.6.8 跑得正確（嘗試=3）但煙火 128 完全沒減 → 證實 server 在 silent reject useItem

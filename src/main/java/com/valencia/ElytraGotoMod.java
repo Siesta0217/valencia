@@ -5,6 +5,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -62,6 +63,10 @@ public class ElytraGotoMod {
     /** Count of re-deploy attempts when server appears to silently reject. */
     private static int redeployTriggers = 0;
 
+    /** Once we see a rocket actually consumed, we know the server is happy and
+     *  switch from "spam to bridge sync gap" to "normal 50-tick cooldown". */
+    private static boolean rocketConfirmed = false;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
@@ -80,6 +85,7 @@ public class ElytraGotoMod {
         firesAttempted = 0;
         flightStartRockets = -1;
         redeployTriggers = 0;
+        rocketConfirmed = false;
         deployFailTicks = 0;
         if (!enabled) enabled = true;
     }
@@ -92,6 +98,7 @@ public class ElytraGotoMod {
         firesAttempted = 0;
         flightStartRockets = -1;
         redeployTriggers = 0;
+        rocketConfirmed = false;
     }
 
     public static boolean inWrongDimension() {
@@ -144,11 +151,25 @@ public class ElytraGotoMod {
         double dx = targetX - p.getX();
         double dz = targetZ - p.getZ();
         double horizDist = Math.sqrt(dx * dx + dz * dz);
+        float targetYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
 
-        // Arrived
+        // Arrived horizontally — handle the landing phase. Don't stop the
+        // autopilot just because we're over the target; keep guiding the
+        // player down until they actually touch ground (or vanilla cancels
+        // fall flying for us). This fixes "doesn't land — autopilot quits
+        // mid-air and I'm still gliding past the target".
         if (horizDist < 8) {
-            showStatus(p, horizDist, "arrived");
-            stop();
+            if (p.onGround() || !p.isFallFlying()) {
+                showStatus(p, horizDist, "arrived");
+                stop();
+                return;
+            }
+            // Still airborne above target: gentle descent if above target Y,
+            // level out otherwise. Smooth rotation so the camera doesn't snap.
+            smoothSetYaw(p, targetYaw);
+            float landingPitch = (p.getY() > targetY + 2) ? 15f : 0f;
+            smoothSetPitch(p, landingPitch);
+            showStatus(p, horizDist, "flying");
             return;
         }
 
@@ -207,10 +228,8 @@ public class ElytraGotoMod {
             redeployTriggers++;
         }
 
-        // Lock yaw on target
-        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
-        p.setYRot(yaw);
-        p.setYHeadRot(yaw);
+        // Lock yaw on target — smoothed so the camera doesn't snap-rotate
+        smoothSetYaw(p, targetYaw);
 
         // Target-Y-aware base pitch.
         //   Long cruise (>200m): slight nose-up, gravity will trim altitude
@@ -268,26 +287,56 @@ public class ElytraGotoMod {
             }
         }
 
-        p.setXRot(pitch);
+        smoothSetPitch(p, pitch);
 
-        // Auto-rocket. Fire on every available cycle while gliding — even in
-        // forward danger, because the pitch override already pulled us to -28
-        // or -40, and at that climb angle the rocket is what gets us *over*
-        // the obstacle. Skipping rockets in danger leaves the player gliding
-        // into the ground at 1-3 b/s with no thrust to escape.
-        //
-        // Only the last 20m of approach skips the boost so we don't ram the
-        // target at full speed.
+        // Detect first successful rocket consumption — flip to normal cooldown
+        if (firesAttempted > 0 && consumed > 0) rocketConfirmed = true;
+
+        // Auto-rocket cooldown is adaptive:
+        //   - Before any rocket is confirmed by the server: retry every 10
+        //     ticks (~500ms). This bridges the client/server fall-flying sync
+        //     gap that the user observed ("first few manual rockets get
+        //     rejected, then it starts working"). The rejected attempts cost
+        //     nothing on the client (rocket isn't consumed) so spamming is
+        //     free until the sync settles.
+        //   - Once at least one rocket has been consumed by the server, we
+        //     know everything is in sync and drop to the normal 50-tick
+        //     cadence to avoid burning rockets unnecessarily.
+        int interval = rocketConfirmed ? 50 : 10;
         boolean closeApproach = horizDist < 20;
         if (!closeApproach && rocketCooldown <= 0) {
             if (fireRocket(p, mc)) {
-                rocketCooldown = 50;
+                rocketCooldown = interval;
                 firesAttempted++;
             }
         }
         if (rocketCooldown > 0) rocketCooldown--;
 
         showStatus(p, horizDist, "flying");
+    }
+
+    // ── Rotation smoothing ──────────────────────────────────────────────────
+
+    /** Move yaw toward {@code target} by at most ~12° per tick. Snapping the
+     *  full delta every tick (the v1.6.9 behavior) made the camera whip
+     *  around when forward danger or yaw deltas exceeded ~20°. */
+    private static void smoothSetYaw(LocalPlayer p, float target) {
+        float current = p.getYRot();
+        float delta = Mth.wrapDegrees(target - current);
+        float maxStep = 12f;
+        if (Math.abs(delta) > maxStep) delta = Math.signum(delta) * maxStep;
+        float next = Mth.wrapDegrees(current + delta);
+        p.setYRot(next);
+        p.setYHeadRot(next);
+    }
+
+    /** Move pitch toward {@code target} by at most ~10° per tick. */
+    private static void smoothSetPitch(LocalPlayer p, float target) {
+        float current = p.getXRot();
+        float delta = target - current;
+        float maxStep = 10f;
+        if (Math.abs(delta) > maxStep) delta = Math.signum(delta) * maxStep;
+        p.setXRot(Mth.clamp(current + delta, -90f, 90f));
     }
 
     // ── Raycast helpers ──────────────────────────────────────────────────────
@@ -469,7 +518,7 @@ public class ElytraGotoMod {
                 rockets, consumed, firesAttempted);
         }
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto v1.6.9] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
+            String.format("§b[Goto v1.6.10] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
                 dist, etaSec, (int) p.getY(), ammo)), true);
     }
 }
