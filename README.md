@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.4** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.5** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.4** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.4.jar
+# JAR → build/libs/valencia-1.6.5.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.5 — ElytraGoto 全面 bugfix（6 個問題）
+- **A. 真正修好不發煙火**：原本走 `mc.gameMode.useItem`，當 autopilot 把 pitch 拉到 +20° 俯衝時 hitResult 是 BLOCK，火箭被誤判成「放置物品」放到下方方塊上 → 改成直接送 `ServerboundUseItemPacket` 強制走「空中使用」路徑
+- **B. 5 條 raycast 改成下傾 10°**：原本 Y 分量 0 純水平掃描，俯衝時看不到斜下方山壁
+- **C. groundDanger + ceilingDanger 同時觸發改成 level out**：地獄夾層裡不會再撞天花板
+- **D. 高度地板永遠生效**：原本只在 horizDist > 80 才啟用，短程飛行直接撞地
+- **E. 展翅失敗偵測**：耐久=0 / 水裡 / levitation 效果造成的展翅失敗，2 秒後動作列會清楚顯示 `elytra 展不開 — 檢查耐久…`
+- **F. pitch 表改成 target Y 感知**：用 `atan2(-dy, horizDist)` 算理想角度 + 5° 安全裕度，目標跟你同高度時不會再俯衝撞地
 
 ### v1.6.4 — ElytraGoto 拿掉 rocket gate
 - 真正的原因找到了：原本 `forwardDanger` 一觸發就 skip rocket，但低空跳下時前方 15m 內必有地形 → 永遠 skip → 慢慢掉

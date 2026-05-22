@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -44,6 +45,10 @@ public class ElytraGotoMod {
 
     /** Health (HP, 1 heart = 2) at or below which we stop the autopilot. */
     public static float safeHpThreshold = 4.0f;
+
+    /** Consecutive ticks the deploy has failed — used to surface a clear error
+     *  to the player instead of looping "deploying…" forever. */
+    private static int deployFailTicks = 0;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
@@ -133,15 +138,24 @@ public class ElytraGotoMod {
         //    fixes the "view locks before I can even jump" bug.
         if (!p.isFallFlying()) {
             if (p.onGround()) {
+                deployFailTicks = 0;
                 showStatus(p, horizDist, "jump");
                 return;
             }
-            // Airborne but not gliding → try to deploy every tick. Removed
-            // the old `y < 0` gate so jumps off short ledges still trigger.
-            try { p.tryToStartFallFlying(); } catch (Throwable ignored) {}
-            showStatus(p, horizDist, "deploying");
+            // Airborne but not gliding → try to deploy every tick.
+            boolean deployed = false;
+            try { deployed = p.tryToStartFallFlying(); } catch (Throwable ignored) {}
+            if (deployed) {
+                deployFailTicks = 0;
+            } else {
+                deployFailTicks++;
+            }
+            // After ~2 sec of failed deploys, surface a clearer error.
+            // Common causes: elytra durability <= 1, in water, levitation effect.
+            showStatus(p, horizDist, deployFailTicks > 40 ? "deploy-fail" : "deploying");
             return;
         }
+        deployFailTicks = 0;
 
         // ── From here on the player is gliding: full autopilot ──────────────
 
@@ -150,28 +164,38 @@ public class ElytraGotoMod {
         p.setYRot(yaw);
         p.setYHeadRot(yaw);
 
-        // Distance-banded base pitch (kisses the ground gently near the end)
+        // Target-Y-aware base pitch.
+        //   Long cruise (>200m): slight nose-up, gravity will trim altitude
+        //   Mid range: aim toward (target + 5° above) so we don't undershoot
+        //   Close in (<15m): level out for soft touchdown
         float pitch;
-        if      (horizDist > 200) pitch = -3f;
-        else if (horizDist > 80)  pitch = 10f;
-        else if (horizDist > 30)  pitch = 20f;
-        else if (horizDist > 15)  pitch = 8f;
-        else                      pitch = -2f;
+        double dy = targetY - p.getY();   // + = target above, - = target below
+        if (horizDist > 200) {
+            pitch = -3f;
+        } else if (horizDist > 15) {
+            double aimRad = Math.atan2(-dy, horizDist);
+            pitch = (float) Math.toDegrees(aimRad) - 5f;   // 5° margin above line
+            pitch = Math.max(-30f, Math.min(25f, pitch));  // clamp
+        } else {
+            pitch = -2f;                                   // flare
+        }
 
-        // Altitude floor — climb scales with how far below safeY we are. The
-        // further down, the steeper the forced climb. Maxes at -30° so the
-        // player has time to actually accelerate upward before stalling.
-        double safeY = isNether() ? 80 : 120;
+        // Altitude floor — always active, even on short trips. Climb scales
+        // with how far below safeY the player is.
+        double safeY = isNether() ? 80 : 110;
         double yBelow = safeY - p.getY();
-        if (yBelow > 5 && horizDist > 80) {
-            float climbPitch = (float) Math.max(-30, -10 - yBelow * 0.5);
+        if (yBelow > 5 && horizDist > 20) {
+            float climbPitch = (float) Math.max(-30, -8 - yBelow * 0.4);
             pitch = Math.min(pitch, climbPitch);
         }
 
-        // Speed-aware multi-ray danger detection. Ground check uses Fluid.NONE
-        // in overworld so open ocean / lakes don't permanently flag groundDanger
-        // (which would block rockets and drop us into the sea). In nether we
-        // do want lava to count, so Fluid.ANY there.
+        // Multi-ray danger detection.
+        //   nearestBelow uses Fluid.NONE in overworld (so open water doesn't
+        //   permanently flag groundDanger), Fluid.ANY in nether (lava kills).
+        //   nearestAhead now tilts the scan 10° downward so terrain we are
+        //   diving into is also detected (pure-horizontal scan missed cliffs
+        //   when we were at +20° pitch heading toward a peak below the
+        //   horizontal eye line).
         double speed = p.getDeltaMovement().horizontalDistance();
         double lookahead = Math.max(15, speed * 12);
         boolean groundDanger  = nearestBelow(p, mc, 7, isNether()) < Double.MAX_VALUE;
@@ -179,12 +203,21 @@ public class ElytraGotoMod {
         boolean forwardDanger = forwardHit < lookahead;
         boolean ceilingDanger = isNether() && ceilingTooClose(p, mc, 4);
 
-        if (groundDanger) {
-            pitch = -25f;
-        } else if (forwardDanger) {
-            pitch = forwardHit < lookahead * 0.4 ? -40f : -28f;
-        } else if (ceilingDanger) {
-            pitch = 20f;
+        // Avoidance overrides. Sandwich (ground + ceiling) levels out instead
+        // of slamming into one or the other. Otherwise take the steepest
+        // climb of (groundDanger -25, forwardDanger -28 / -40) since both can
+        // be true at once near a cliff face.
+        if (groundDanger && ceilingDanger) {
+            pitch = 0f;
+        } else {
+            float climb = Float.POSITIVE_INFINITY;
+            if (groundDanger) climb = Math.min(climb, -25f);
+            if (forwardDanger) climb = Math.min(climb, forwardHit < lookahead * 0.4 ? -40f : -28f);
+            if (climb < Float.POSITIVE_INFINITY) {
+                pitch = Math.min(pitch, climb);
+            } else if (ceilingDanger) {
+                pitch = Math.max(pitch, 20f);
+            }
         }
 
         p.setXRot(pitch);
@@ -208,16 +241,23 @@ public class ElytraGotoMod {
 
     // ── Raycast helpers ──────────────────────────────────────────────────────
 
-    /** Cast 5 horizontal rays in a ±25° fan; returns the nearest block/fluid
-     *  hit distance, or maxDist if nothing within range. Fluid.ANY so lava
-     *  and water also count as obstacles. */
+    /** Cast 5 rays in a ±25° horizontal fan, tilted ~10° downward to also
+     *  pick up terrain the player is diving into. Returns the nearest
+     *  block/fluid hit distance across all 5 rays, or {@code Double.MAX_VALUE}
+     *  if nothing within range. {@code Fluid.ANY} so lava and water also
+     *  count as obstacles. */
     private static double nearestAhead(LocalPlayer p, Minecraft mc, double maxDist) {
         float baseYaw = p.getYRot();
+        // Tilt 10° below horizontal so a dive-pitched player still sees the
+        // ground that's about to be in their flight path.
+        float tiltRad = (float) Math.toRadians(10);
+        double tiltY = -Math.sin(tiltRad);
+        double tiltH =  Math.cos(tiltRad);
         Vec3 from = p.getEyePosition();
         double min = Double.MAX_VALUE;
         for (float offset : new float[]{-25f, -12f, 0f, 12f, 25f}) {
             float yawRad = (float) Math.toRadians(baseYaw + offset);
-            Vec3 dir = new Vec3(-Math.sin(yawRad), 0, Math.cos(yawRad));
+            Vec3 dir = new Vec3(-Math.sin(yawRad) * tiltH, tiltY, Math.cos(yawRad) * tiltH);
             Vec3 to  = from.add(dir.scale(maxDist));
             HitResult hit = mc.level.clip(new ClipContext(
                 from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, p));
@@ -305,12 +345,35 @@ public class ElytraGotoMod {
         }
     }
 
+    /** Send a direct ServerboundUseItemPacket. Bypasses {@code mc.gameMode.useItem}
+     *  which checks {@code mc.hitResult} and, when the autopilot is pitched
+     *  +20 deg into terrain, routes a firework "use" through the block-place
+     *  path (rocket gets placed on the block instead of boosting the glide).
+     *  Direct packet send always triggers the server-side fall-flying boost. */
     private static boolean useItemSafe(Minecraft mc, LocalPlayer p, InteractionHand hand) {
+        if (p.connection == null) return false;
         try {
-            mc.gameMode.useItem(p, hand);
+            int seq = 0;
+            try {
+                java.lang.reflect.Method m = p.connection.getClass().getMethod("suggestedSequence");
+                Object result = m.invoke(p.connection);
+                if (result instanceof Integer) seq = (Integer) result;
+            } catch (Throwable ignored) {}
+            p.connection.send(new ServerboundUseItemPacket(hand, seq, p.getYRot(), p.getXRot()));
+            // Local prediction so the item count visually updates this tick
+            try {
+                ItemStack stack = p.getItemInHand(hand);
+                if (!p.getAbilities().instabuild) stack.shrink(1);
+            } catch (Throwable ignored) {}
             return true;
         } catch (Throwable t) {
-            return false;
+            // Fallback to the high-level path if direct packet build fails
+            try {
+                mc.gameMode.useItem(p, hand);
+                return true;
+            } catch (Throwable ignored) {
+                return false;
+            }
         }
     }
 
@@ -340,6 +403,11 @@ public class ElytraGotoMod {
         if ("deploying".equals(state)) {
             p.displayClientMessage(Component.literal(
                 "§e[Goto] §7deploying elytra…"), true);
+            return;
+        }
+        if ("deploy-fail".equals(state)) {
+            p.displayClientMessage(Component.literal(
+                "§c[Goto] elytra 展不開 — 檢查耐久、確認沒在水裡 / 沒 levitation 效果"), true);
             return;
         }
         double etaSec = dist / 33.0;
