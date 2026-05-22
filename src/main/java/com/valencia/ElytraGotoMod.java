@@ -426,7 +426,7 @@ public class ElytraGotoMod {
             ? String.format("§7煙火 §f%d §8/嘗試§f%d", rockets, firesAttempted)
             : "§c無煙火!";
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto v1.6.7] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
+            String.format("§b[Goto v1.6.8] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
                 dist, etaSec, (int) p.getY(), ammo)), true);
     }
 }

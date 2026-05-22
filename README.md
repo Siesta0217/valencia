@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.7** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.8** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.7** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.7.jar
+# JAR → build/libs/valencia-1.6.8.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.8 — BHop 不再要求手動按 SPACE
+- v1.6.2 加的「穿著鞘翅就 skip 自動跳」守衛太嚴格。實際上前面那行 `if (!moving || jumping) return;` 已經處理掉了「玩家按住 SPACE」的狀況（`jumping` 就是 vanilla 的 input.jumping），所以額外擋 elytra 是多餘的
+- 拿掉後 BHop + 穿鞘翅可以正常自動跳了；死亡迴圈只在你「真的按住 SPACE」時才會發生（這是 vanilla 機制，無解 — 不按 SPACE 就沒事）
 
 ### v1.6.7 — ElytraGoto client/server fall-flying desync + 診斷
 - **加 `!onGround()` 守衛**：截圖看到 client 顯示 flying 狀態但實際在地上跑 6.3 m/s — 表示 `isFallFlying` 卡在 true。這時送的 useItem 包到 server 是 silent no-op，火箭不消耗也不 boost。改成只信「真的在飛」(`isFallFlying() && !p.onGround()`)

@@ -2,9 +2,7 @@ package com.valencia.mixin;
 
 import com.valencia.BHopMod;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -54,12 +52,14 @@ public abstract class BHopMixin {
         boolean moving = wKey || sKey || aKey || dKey;
 
         if (self.onGround()) {
-            // Auto-jump when any WASD key held; skip if vanilla jump key already pressed
+            // Auto-jump when any WASD key held; skip if vanilla jump key is already
+            // pressed. The `jumping` shadow tracks vanilla's input.jumping, which is
+            // true only when the player is actually holding SPACE — and SPACE +
+            // elytra + airborne is what vanilla checks for auto-deploy. So this one
+            // line already prevents the BHop -> auto-deploy loop without needing a
+            // separate "skip if elytra equipped" guard (which was over-broad and
+            // forced the player to press SPACE manually whenever wearing elytra).
             if (!moving || jumping) return;
-            // Skip auto-jump when an elytra is equipped — otherwise vanilla
-            // sees airborne + SPACE held + elytra and auto-deploys fall
-            // flying every tick we touch ground, making it impossible to walk.
-            if (self.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA)) return;
             jumpFromGround();
 
             float mult = BHopMod.speedMultiplier;
