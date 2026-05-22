@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -147,6 +146,11 @@ public class ElytraGotoMod {
             try { deployed = p.tryToStartFallFlying(); } catch (Throwable ignored) {}
             if (deployed) {
                 deployFailTicks = 0;
+                // Give the server a ~500ms head start to apply fall-flying
+                // before we send the first useItem. Otherwise our rocket use
+                // arrives before the server has set isFallFlying server-side
+                // and FireworkRocketItem.use silently no-ops.
+                rocketCooldown = 10;
             } else {
                 deployFailTicks++;
             }
@@ -345,35 +349,24 @@ public class ElytraGotoMod {
         }
     }
 
-    /** Send a direct ServerboundUseItemPacket. Bypasses {@code mc.gameMode.useItem}
-     *  which checks {@code mc.hitResult} and, when the autopilot is pitched
-     *  +20 deg into terrain, routes a firework "use" through the block-place
-     *  path (rocket gets placed on the block instead of boosting the glide).
-     *  Direct packet send always triggers the server-side fall-flying boost. */
+    /** Fire the item in {@code hand} via the vanilla useItem path, but force
+     *  the "no target" branch by null-ing {@code mc.hitResult} for the duration
+     *  of the call. {@code MultiPlayerGameMode.useItem} short-circuits into
+     *  {@code blockState.useItemOn} when {@code hitResult} is a block, which
+     *  turns a firework "boost me" into a "place rocket on the block". With
+     *  hitResult cleared, control falls into {@code useItemFromInventory}
+     *  which is the correct path that triggers the fall-flying speed boost. */
     private static boolean useItemSafe(Minecraft mc, LocalPlayer p, InteractionHand hand) {
-        if (p.connection == null) return false;
+        if (mc.gameMode == null) return false;
+        HitResult savedHit = mc.hitResult;
         try {
-            int seq = 0;
-            try {
-                java.lang.reflect.Method m = p.connection.getClass().getMethod("suggestedSequence");
-                Object result = m.invoke(p.connection);
-                if (result instanceof Integer) seq = (Integer) result;
-            } catch (Throwable ignored) {}
-            p.connection.send(new ServerboundUseItemPacket(hand, seq, p.getYRot(), p.getXRot()));
-            // Local prediction so the item count visually updates this tick
-            try {
-                ItemStack stack = p.getItemInHand(hand);
-                if (!p.getAbilities().instabuild) stack.shrink(1);
-            } catch (Throwable ignored) {}
+            mc.hitResult = null;
+            mc.gameMode.useItem(p, hand);
             return true;
         } catch (Throwable t) {
-            // Fallback to the high-level path if direct packet build fails
-            try {
-                mc.gameMode.useItem(p, hand);
-                return true;
-            } catch (Throwable ignored) {
-                return false;
-            }
+            return false;
+        } finally {
+            mc.hitResult = savedHit;
         }
     }
 

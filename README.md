@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.5** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.6** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.5** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.5.jar
+# JAR → build/libs/valencia-1.6.6.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.6 — ElytraGoto rocket fire 終於修對了
+- **真．真．真的修好不發煙火**：之前用 direct `ServerboundUseItemPacket` 但這個 Lunar build 沒有 `suggestedSequence` 方法，sequence 永遠 0 可能造成伺服器忽略
+- 改回走 `mc.gameMode.useItem` 但**把 `mc.hitResult` 暫時清成 null**，強制走 `useItemFromInventory` 路徑（不會被「啊你在看方塊」誤判成「在方塊上放置火箭」）
+- 展翅成功後 cooldown 設 10 ticks (~500ms)，讓伺服器有時間先把 `isFallFlying` 同步到 server-side，第一發 `useItem` 才不會在 server.isFallFlying=false 時 silent no-op
 
 ### v1.6.5 — ElytraGoto 全面 bugfix（6 個問題）
 - **A. 真正修好不發煙火**：原本走 `mc.gameMode.useItem`，當 autopilot 把 pitch 拉到 +20° 俯衝時 hitResult 是 BLOCK，火箭被誤判成「放置物品」放到下方方塊上 → 改成直接送 `ServerboundUseItemPacket` 強制走「空中使用」路徑
