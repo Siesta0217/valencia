@@ -293,16 +293,17 @@ public class ElytraGotoMod {
         if (firesAttempted > 0 && consumed > 0) rocketConfirmed = true;
 
         // Auto-rocket cooldown is adaptive:
-        //   - Before any rocket is confirmed by the server: retry every 10
-        //     ticks (~500ms). This bridges the client/server fall-flying sync
-        //     gap that the user observed ("first few manual rockets get
-        //     rejected, then it starts working"). The rejected attempts cost
-        //     nothing on the client (rocket isn't consumed) so spamming is
-        //     free until the sync settles.
-        //   - Once at least one rocket has been consumed by the server, we
-        //     know everything is in sync and drop to the normal 50-tick
-        //     cadence to avoid burning rockets unnecessarily.
-        int interval = rocketConfirmed ? 50 : 10;
+        //   - Before any rocket has been confirmed consumed by the server:
+        //     retry every 2 ticks (~100ms, 10 fires/sec). Manual right-click
+        //     fires at most ~5 fires/sec (4-tick rightClickDelay) and still
+        //     needs ~1 sec of attempts to bridge the START_FALL_FLYING sync
+        //     gap. At 10 fires/sec we catch the sync window almost instantly
+        //     and the rejected attempts cost nothing (server doesn't shrink
+        //     the stack when isFallFlying disagrees).
+        //   - Once at least one rocket has been consumed by the server, drop
+        //     to the normal 50-tick cadence (2.5 sec — matches a default
+        //     duration-1 firework boost) so we don't burn rockets needlessly.
+        int interval = rocketConfirmed ? 50 : 2;
         boolean closeApproach = horizDist < 20;
         if (!closeApproach && rocketCooldown <= 0) {
             if (fireRocket(p, mc)) {
@@ -518,7 +519,7 @@ public class ElytraGotoMod {
                 rockets, consumed, firesAttempted);
         }
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto v1.6.10] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
+            String.format("§b[Goto v1.6.11] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
                 dist, etaSec, (int) p.getY(), ammo)), true);
     }
 }

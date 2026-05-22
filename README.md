@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.10** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.11** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.10** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.10.jar
+# JAR → build/libs/valencia-1.6.11.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.11 — ElytraGoto sync-gap retry 拉到 10 次/秒
+- 使用者實測：模組明顯比手動慢，因為 unconfirmed 期間我每 10 ticks (500ms) 才重試 = 2 次/秒，而手動 mash 右鍵約 5 次/秒（甚至開 FastPlace 後可達 20 次/秒）
+- 拉到每 **2 ticks (100ms)** 重試 = 10 次/秒，比手動還快，幾乎立刻跨過 sync gap
 
 ### v1.6.10 — ElytraGoto 平滑視角 + 自動降落 + 同步 gap 連發
 - **平滑旋轉**：yaw 限制 12°/tick、pitch 限制 10°/tick，視角不再瞬間 snap（之前轉得太極限）
