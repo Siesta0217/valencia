@@ -51,6 +51,11 @@ public class ElytraGotoMod {
      *  to the player instead of looping "deploying…" forever. */
     private static int deployFailTicks = 0;
 
+    /** Consecutive airborne ticks (used to delay deploy until server has
+     *  synced the player's off-ground position; matches vanilla's behavior
+     *  of only deploying once {@code getDeltaMovement().y < 0}). */
+    private static int airborneTicks = 0;
+
     /** Diagnostic: how many useItem calls we've fired this flight. The user
      *  can compare against the visible firework stack count to tell whether
      *  the server is actually accepting the boost or silently ignoring it. */
@@ -99,6 +104,7 @@ public class ElytraGotoMod {
         flightStartRockets = -1;
         redeployTriggers = 0;
         rocketConfirmed = false;
+        airborneTicks = 0;
     }
 
     public static boolean inWrongDimension() {
@@ -184,18 +190,39 @@ public class ElytraGotoMod {
         if (!reallyFlying) {
             if (p.onGround()) {
                 deployFailTicks = 0;
+                airborneTicks = 0;
                 showStatus(p, horizDist, "jump");
                 return;
             }
-            // Airborne but not gliding → try to deploy every tick.
+            airborneTicks++;
+
+            // Wait until the player is actually FALLING before sending the
+            // deploy packet (matches vanilla's `y < 0` check). Critical: if
+            // we send START_FALL_FLYING while the client thinks airborne but
+            // the server's last synced position still has the player on the
+            // ground (the jump-arc / first 100-200ms after take-off), the
+            // server REJECTS the deploy. Client flag flips true locally,
+            // server flag stays false, every subsequent useItem packet is
+            // silently rejected because server.isFallFlying disagrees.
+            //
+            // Fallback: if we've been airborne ~300ms with y still hovering
+            // near zero (e.g. tiny ledge), force the deploy so we don't lose
+            // the jump entirely.
+            boolean falling = p.getDeltaMovement().y < -0.04;
+            boolean forceDeploy = airborneTicks >= 6;
+            if (!falling && !forceDeploy) {
+                showStatus(p, horizDist, "deploying");
+                return;
+            }
+
             boolean deployed = false;
             try { deployed = p.tryToStartFallFlying(); } catch (Throwable ignored) {}
             if (deployed) {
                 deployFailTicks = 0;
-                // Give the server ~500ms to apply fall-flying before our
-                // first useItem arrives. Otherwise the server still sees
-                // isFallFlying=false and FireworkRocketItem.use no-ops.
-                rocketCooldown = 10;
+                // Brief delay before first rocket so the deploy packet has
+                // landed on the server. Adaptive retry will catch up if
+                // there's any remaining sync gap.
+                rocketCooldown = 4;
             } else {
                 deployFailTicks++;
             }
@@ -203,6 +230,7 @@ public class ElytraGotoMod {
             return;
         }
         deployFailTicks = 0;
+        airborneTicks = 0;
 
         // ── From here on the player is gliding: full autopilot ──────────────
 
@@ -519,7 +547,7 @@ public class ElytraGotoMod {
                 rockets, consumed, firesAttempted);
         }
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto v1.6.11] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
+            String.format("§b[Goto v1.6.12] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
                 dist, etaSec, (int) p.getY(), ammo)), true);
     }
 }

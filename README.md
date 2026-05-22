@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.11** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.12** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.11** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.11.jar
+# JAR → build/libs/valencia-1.6.12.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.12 — ElytraGoto 找到真正拒收原因：deploy 太早送
+- 使用者報告手動完全沒拒收問題（一跳一發就成功），但模組怎麼樣都被拒
+- **真因**：vanilla 的展翅檢查包含 `getDeltaMovement().y < 0`（要正在下落才送 deploy），但 v1.6.6 拿掉這個守衛後，模組在玩家**剛跳起來向上飛時就送 START_FALL_FLYING**。server 那邊位置還沒同步到「離地」，看 `onGround=true` 直接拒絕 deploy → 後續所有 useItem 全被拒
+- **修法**：恢復 `y < -0.04` 守衛 — 等玩家確實在下落才送 deploy packet。短跳場景用「6 ticks (~300ms) airborne 強制 deploy」作為 fallback 不會卡死
 
 ### v1.6.11 — ElytraGoto sync-gap retry 拉到 10 次/秒
 - 使用者實測：模組明顯比手動慢，因為 unconfirmed 期間我每 10 ticks (500ms) 才重試 = 2 次/秒，而手動 mash 右鍵約 5 次/秒（甚至開 FastPlace 後可達 20 次/秒）
