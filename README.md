@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.3** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.4** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.3** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.3.jar
+# JAR → build/libs/valencia-1.6.4.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.4 — ElytraGoto 拿掉 rocket gate
+- 真正的原因找到了：原本 `forwardDanger` 一觸發就 skip rocket，但低空跳下時前方 15m 內必有地形 → 永遠 skip → 慢慢掉
+- 而且 forwardDanger 時 pitch 已經被 override 成 -28°/-40°（拉起來逃）— 這時候**就是需要 rocket 推力**才爬得上去
+- 拿掉所有 rocket gate（除最後 20m 接近目標時不發以免撞太大力），cooldown 從 60 → 50 tick
 
 ### v1.6.3 — ElytraGoto auto-switch to rocket slot
 - **真正修好不發煙火**：原本只認主手/副手裡的煙火，現在會掃熱鍵欄 9 格，找到後**自動切到那格**再發射（Inventory.selected 是 private，用反射 + setSelectedHotbarSlot 雙路徑寫入）

@@ -189,13 +189,17 @@ public class ElytraGotoMod {
 
         p.setXRot(pitch);
 
-        // Auto-rocket. Skip ONLY for forward danger (would crash into wall) or
-        // landing phase (want a slow glide-in). Ground danger doesn't skip —
-        // firing while pitched up is exactly the climb we need to escape.
-        boolean landingPhase = horizDist < 50;
-        boolean cantBoost = forwardDanger || landingPhase;
-        if (!cantBoost && rocketCooldown <= 0) {
-            if (fireRocket(p, mc)) rocketCooldown = 60;
+        // Auto-rocket. Fire on every available cycle while gliding — even in
+        // forward danger, because the pitch override already pulled us to -28
+        // or -40, and at that climb angle the rocket is what gets us *over*
+        // the obstacle. Skipping rockets in danger leaves the player gliding
+        // into the ground at 1-3 b/s with no thrust to escape.
+        //
+        // Only the last 20m of approach skips the boost so we don't ram the
+        // target at full speed.
+        boolean closeApproach = horizDist < 20;
+        if (!closeApproach && rocketCooldown <= 0) {
+            if (fireRocket(p, mc)) rocketCooldown = 50;
         }
         if (rocketCooldown > 0) rocketCooldown--;
 
