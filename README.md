@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.4.2** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.5.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -23,6 +23,7 @@ Latest: **v1.4.2** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 | **Scaffold** | `J` | 自動橋方塊 + Tower 模式（按 SPACE 自動疊塔） |
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
+| **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
 | **ClickGUI** | `右 Ctrl` | 可拖曳面板，展開每個模組的詳細設定 |
 
 ### ClickGUI 設定項
@@ -85,7 +86,7 @@ Latest: **v1.4.2** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.4.2.jar
+# JAR → build/libs/valencia-1.5.0.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -94,6 +95,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.5.0 — DimCoord HUD
+- 新增 **DimCoord** 模組（Visuals 分類，預設 ON）：左上角 HUD 永遠顯示當前座標 + 另一維度的對應座標
+  - 主世界：`Overworld 1234, 65, -5678` / `Nether 154, 65, -710`
+  - 地獄：`Nether 154, 65, -710` / `Overworld 1232, 65, -5680`
+  - F3 debug 畫面或 `mc.options.hideGui` 開啟時自動隱藏
 
 ### v1.4.2 — ElytraGoto stronger protection
 - **5-ray fan-out forward check** (±25° / ±12° / 0°)，繞角的山 / 樹冠 / 紅石高塔都會被偵測

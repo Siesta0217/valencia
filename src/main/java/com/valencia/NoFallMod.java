@@ -67,5 +67,6 @@ public class NoFallMod implements ClientModInitializer {
         BHopMod.kbBoost          = cfg.bhopKBBoost;
         TimerMod.speed           = cfg.timerSpeed;
         ElytraGotoMod.safeHpThreshold = cfg.elytraSafeHp;
+        if (cfg.netherCoordEnabled != NetherCoordMod.isEnabled()) NetherCoordMod.toggle();
     }
 }

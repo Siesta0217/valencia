@@ -16,7 +16,8 @@
     "CritMixin",
     "ScaffoldMixin",
     "StepMixin",
-    "TimerMixin"
+    "TimerMixin",
+    "HudMixin"
   ],
   "injectors": {
     "defaultRequire": 1

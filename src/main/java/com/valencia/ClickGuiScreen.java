@@ -201,6 +201,16 @@ public class ClickGuiScreen extends Screen {
             XRayMod::isEnabled, XRayMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.xrayKey, v -> { cfg.xrayKey = v; cfg.save(); }))));
 
+        mods.add(new ModEntry("DimCoord", Category.VISUALS,
+            NetherCoordMod::isEnabled,
+            () -> {
+                NetherCoordMod.toggle();
+                ModConfig.get().netherCoordEnabled = NetherCoordMod.isEnabled();
+                ModConfig.get().save();
+            },
+            true, List.<Setting>of()
+        ));
+
         // Settings — not toggleable, always show sliders
         mods.add(new ModEntry("Theme Color", Category.SETTINGS,
             () -> false, () -> {}, false,

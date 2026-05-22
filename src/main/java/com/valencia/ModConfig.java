@@ -91,6 +91,9 @@ public class ModConfig {
     // ElytraGoto tuning
     public float elytraSafeHp = 4.0f;
 
+    // NetherCoord HUD
+    public boolean netherCoordEnabled = true;
+
     // Scaffold tuning
     public boolean scaffoldTower      = false;
     public boolean scaffoldTowerMove  = true;
