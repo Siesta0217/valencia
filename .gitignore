@@ -6,3 +6,5 @@ out/
 .idea/
 run/
 remappedSrc/
+.release_notes.tmp
+*.tmp
