@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.6** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.7** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.6** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.6.jar
+# JAR → build/libs/valencia-1.6.7.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.7 — ElytraGoto client/server fall-flying desync + 診斷
+- **加 `!onGround()` 守衛**：截圖看到 client 顯示 flying 狀態但實際在地上跑 6.3 m/s — 表示 `isFallFlying` 卡在 true。這時送的 useItem 包到 server 是 silent no-op，火箭不消耗也不 boost。改成只信「真的在飛」(`isFallFlying() && !p.onGround()`)
+- **動作列加診斷計數器**：`煙火 80 /嘗試 12` — 嘗試數會升但煙火數沒降代表 server silent reject（多半是 sync 問題或伺服器禁飛）
+- **動作列加版本號 v1.6.7**：方便從截圖判斷你跑的是哪一版（Lunar Client 必須完全重啟才會載入新 jar）
 
 ### v1.6.6 — ElytraGoto rocket fire 終於修對了
 - **真．真．真的修好不發煙火**：之前用 direct `ServerboundUseItemPacket` 但這個 Lunar build 沒有 `suggestedSequence` 方法，sequence 永遠 0 可能造成伺服器忽略

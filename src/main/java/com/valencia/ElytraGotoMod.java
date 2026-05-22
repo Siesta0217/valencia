@@ -49,6 +49,11 @@ public class ElytraGotoMod {
      *  to the player instead of looping "deploying…" forever. */
     private static int deployFailTicks = 0;
 
+    /** Diagnostic: how many useItem calls we've fired this flight. The user
+     *  can compare against the visible firework stack count to tell whether
+     *  the server is actually accepting the boost or silently ignoring it. */
+    private static int firesAttempted = 0;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
@@ -64,6 +69,8 @@ public class ElytraGotoMod {
         targetDim = (mc.level != null) ? mc.level.dimension() : null;
         hasTarget = true;
         rocketCooldown = 0;        // fresh flight — fire the first rocket ASAP
+        firesAttempted = 0;
+        deployFailTicks = 0;
         if (!enabled) enabled = true;
     }
 
@@ -72,6 +79,7 @@ public class ElytraGotoMod {
         hasTarget = false;
         targetDim = null;
         rocketCooldown = 0;
+        firesAttempted = 0;
     }
 
     public static boolean inWrongDimension() {
@@ -132,10 +140,15 @@ public class ElytraGotoMod {
             return;
         }
 
-        // ── Pre-glide: NEVER touch rotation while the player is on the ground
-        //    or mid-jump. Only attempt to deploy elytra once airborne. This
-        //    fixes the "view locks before I can even jump" bug.
-        if (!p.isFallFlying()) {
+        // Treat "really flying" as fall-flying AND not on ground. If the
+        // client-side fall-flying flag is stuck true (server already cancelled
+        // because the player touched ground, but the sync packet hasn't
+        // arrived), trusting isFallFlying() alone would send useItem packets
+        // to a server that has isFallFlying = false — silent rocket no-ops
+        // that don't even consume the stack.
+        boolean reallyFlying = p.isFallFlying() && !p.onGround();
+
+        if (!reallyFlying) {
             if (p.onGround()) {
                 deployFailTicks = 0;
                 showStatus(p, horizDist, "jump");
@@ -146,16 +159,13 @@ public class ElytraGotoMod {
             try { deployed = p.tryToStartFallFlying(); } catch (Throwable ignored) {}
             if (deployed) {
                 deployFailTicks = 0;
-                // Give the server a ~500ms head start to apply fall-flying
-                // before we send the first useItem. Otherwise our rocket use
-                // arrives before the server has set isFallFlying server-side
-                // and FireworkRocketItem.use silently no-ops.
+                // Give the server ~500ms to apply fall-flying before our
+                // first useItem arrives. Otherwise the server still sees
+                // isFallFlying=false and FireworkRocketItem.use no-ops.
                 rocketCooldown = 10;
             } else {
                 deployFailTicks++;
             }
-            // After ~2 sec of failed deploys, surface a clearer error.
-            // Common causes: elytra durability <= 1, in water, levitation effect.
             showStatus(p, horizDist, deployFailTicks > 40 ? "deploy-fail" : "deploying");
             return;
         }
@@ -236,7 +246,10 @@ public class ElytraGotoMod {
         // target at full speed.
         boolean closeApproach = horizDist < 20;
         if (!closeApproach && rocketCooldown <= 0) {
-            if (fireRocket(p, mc)) rocketCooldown = 50;
+            if (fireRocket(p, mc)) {
+                rocketCooldown = 50;
+                firesAttempted++;
+            }
         }
         if (rocketCooldown > 0) rocketCooldown--;
 
@@ -404,13 +417,16 @@ public class ElytraGotoMod {
             return;
         }
         double etaSec = dist / 33.0;
-        int px = (int) p.getX(), pz = (int) p.getZ();
         int rockets = countRockets(p);
+        // Show "煙火 80 / 嘗試 12" — if 嘗試 > 0 but the stack stays the same
+        // size, the server is silently rejecting our useItem (usually because
+        // server.isFallFlying disagrees with client). Lets the player tell
+        // "no rockets at all" from "rockets firing but ignored".
         String ammo = rockets > 0
-            ? String.format("§7煙火 §f%d", rockets)
+            ? String.format("§7煙火 §f%d §8/嘗試§f%d", rockets, firesAttempted)
             : "§c無煙火!";
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
+            String.format("§b[Goto v1.6.7] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
                 dist, etaSec, (int) p.getY(), ammo)), true);
     }
 }
