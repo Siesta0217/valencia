@@ -60,5 +60,9 @@ public class NoFallMod implements ClientModInitializer {
         KillAuraMod.bodyLock      = cfg.killBodyLock;
         KillAuraMod.visibleBody   = cfg.killVisBody;
         BHopMod.speedMultiplier  = cfg.bhopSpeed;
+        BHopMod.lowHop           = cfg.bhopLowHop;
+        BHopMod.jumpHeight       = cfg.bhopJumpHeight;
+        BHopMod.boost            = cfg.bhopBoost;
+        BHopMod.kbBoost          = cfg.bhopKBBoost;
     }
 }

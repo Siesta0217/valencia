@@ -7,6 +7,7 @@ import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -15,7 +16,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class BHopMixin {
 
     @Shadow protected boolean jumping;
+    @Shadow public    int     hurtTime;
+    @Shadow public    int     hurtDuration;
     @Shadow protected abstract void jumpFromGround();
+
+    @Unique private int bhop$prevHurtTime = 0;
 
     @Inject(method = "aiStep", at = @At("HEAD"))
     private void bhop$tick(CallbackInfo ci) {
@@ -24,6 +29,18 @@ public abstract class BHopMixin {
 
         LivingEntity self = (LivingEntity)(Object)this;
         LocalPlayer player = (LocalPlayer) self;
+
+        // KB Boost: on the tick we just got hit, redirect knockback to forward look dir.
+        // hurtTime jumps from 0 (or low) up to hurtDuration on the hit tick.
+        if (BHopMod.kbBoost && hurtTime > bhop$prevHurtTime && hurtTime >= hurtDuration - 1) {
+            Vec3 v = self.getDeltaMovement();
+            double hSpeed = Math.sqrt(v.x * v.x + v.z * v.z);
+            if (hSpeed > 0.05) {
+                float yr = (float) Math.toRadians(player.getYRot());
+                self.setDeltaMovement(-Math.sin(yr) * hSpeed, v.y, Math.cos(yr) * hSpeed);
+            }
+        }
+        bhop$prevHurtTime = hurtTime;
 
         long handle = GLFW.glfwGetCurrentContext();
         if (handle == 0L) return;
@@ -38,10 +55,21 @@ public abstract class BHopMixin {
             // Auto-jump when any WASD key held; skip if vanilla jump key already pressed
             if (!moving || jumping) return;
             jumpFromGround();
+
             float mult = BHopMod.speedMultiplier;
             if (mult != 1.0f) {
                 Vec3 nv = self.getDeltaMovement();
                 self.setDeltaMovement(nv.x * mult, nv.y, nv.z * mult);
+            }
+
+            if (BHopMod.lowHop) {
+                Vec3 v = self.getDeltaMovement();
+                self.setDeltaMovement(v.x, v.y * BHopMod.jumpHeight, v.z);
+            }
+
+            if (BHopMod.boost > 1.0f) {
+                Vec3 v = self.getDeltaMovement();
+                self.setDeltaMovement(v.x * BHopMod.boost, v.y, v.z * BHopMod.boost);
             }
         } else {
             // Air steering: velocity direction = wish direction, speed preserved

@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.1.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.2.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -15,7 +15,7 @@ Latest: **v1.1.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 | **MaceAura** | `Z` | 手持重錘自動鎖定 + silent aim 攻擊，可選 Hostile / Animals / Players 目標 |
 | **KillAura** | `K` | 全武器 aura，switch/single 模式可選，目標範圍 / 種類 / 攻速可調 |
 | **NoSlow** | `G` | 使用物品時不減速 |
-| **BHop** | `B` | 自動跳躍保持最高速度，W/A/S/D 及斜向全支援，速度倍率可調 |
+| **BHop** | `B` | 自動跳躍保持最高速度，可選 LowHop（低跳）/ Boost（每跳複合加速）/ KB Boost（受擊反 velocity） |
 | **Step** | `H` | 步高提升（透過 `STEP_HEIGHT` attribute，1.0–3.0 可調） |
 | **Velocity** | `C` | 受擊擊退倍率調整（水平 / 垂直 0–200%） |
 | **FastPlace** | `F` | 移除右鍵放置冷卻 |
@@ -28,7 +28,7 @@ Latest: **v1.1.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 - **KillAura**：範圍、攻擊範圍、攻擊延遲、Single 模式、目標篩選、Raycast、Skip Invisible、平滑旋轉、Body Lock
 - **MaceAura**：偵測範圍、攻擊範圍、Hostile / Animals / Players 目標篩選
 - **Step**：步高滑桿（1.0×–3.0×）
-- **BHop**：速度倍率滑桿（0.5×–2.5×）
+- **BHop**：速度倍率（0.5×–2.5×）、Low Hop + Jump Height（0.1–1.0）、Boost（1.0–1.5 每跳複合）、KB Boost（受擊把擊退轉為前進）
 - **Scaffold**：Tower / Tower Move / Tower Speed / Fake Hand / Silent Rot / Auto Switch / Switch Back / Place Delay
 - **Velocity**：水平 / 垂直擊退倍率
 - **Theme Color**：主題色 RGB + 背景透明度
@@ -78,7 +78,7 @@ Latest: **v1.1.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.1.0.jar
+# JAR → build/libs/valencia-1.2.0.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -87,6 +87,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.2.0
+- **BHop** 新增三個子選項：
+  - **Low Hop**：自訂跳躍高度倍率（0.1–1.0），讓 bhop 看起來像在地面滑行
+  - **Boost**：每次跳躍把水平速度乘上 1.0–1.5（複合，多跳幾次可衝出高速）
+  - **KB Boost**：受擊瞬間把擊退向量旋轉成玩家面向方向，把被打變成往前衝
 
 ### v1.1.0
 - **Step** 修復：改用 `Attributes.STEP_HEIGHT`（取代 1.20.5+ 移除的 `maxUpStep`），新增高度滑桿 1.0–3.0

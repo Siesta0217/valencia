@@ -45,7 +45,11 @@ public class ModConfig {
     public boolean killPlayers   = false;
 
     // BHop tuning
-    public float bhopSpeed = 1.0f;
+    public float   bhopSpeed      = 1.0f;
+    public boolean bhopLowHop     = false;
+    public float   bhopJumpHeight = 0.5f;
+    public float   bhopBoost      = 1.0f;
+    public boolean bhopKBBoost    = false;
 
     // KillAura mode
     public boolean killSingle      = false;

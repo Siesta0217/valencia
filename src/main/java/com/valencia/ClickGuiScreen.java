@@ -131,8 +131,12 @@ public class ClickGuiScreen extends Screen {
         mods.add(new ModEntry("BHop", Category.MOVEMENT,
             BHopMod::isEnabled, BHopMod::toggle, true,
             List.of(
-                new SliderS("Speed", () -> (double)cfg.bhopSpeed, v -> { cfg.bhopSpeed = (float)v; BHopMod.speedMultiplier = (float)v; cfg.save(); }, 0.5, 2.5),
-                new KeyS("Key",      () -> cfg.bhopKey,           v -> { cfg.bhopKey = v; cfg.save(); })
+                new SliderS("Speed",     () -> (double)cfg.bhopSpeed,      v -> { cfg.bhopSpeed      = (float)v; BHopMod.speedMultiplier = (float)v; cfg.save(); }, 0.5, 2.5),
+                new BoolS("Low Hop",     () -> cfg.bhopLowHop,             () -> { cfg.bhopLowHop    = !cfg.bhopLowHop;          BHopMod.lowHop     = cfg.bhopLowHop;     cfg.save(); }),
+                new SliderS("Jump Hgt",  () -> (double)cfg.bhopJumpHeight, v -> { cfg.bhopJumpHeight = (float)v; BHopMod.jumpHeight     = (float)v; cfg.save(); }, 0.1, 1.0),
+                new SliderS("Boost",     () -> (double)cfg.bhopBoost,      v -> { cfg.bhopBoost      = (float)v; BHopMod.boost          = (float)v; cfg.save(); }, 1.0, 1.5),
+                new BoolS("KB Boost",    () -> cfg.bhopKBBoost,            () -> { cfg.bhopKBBoost   = !cfg.bhopKBBoost;         BHopMod.kbBoost    = cfg.bhopKBBoost;    cfg.save(); }),
+                new KeyS("Key",          () -> cfg.bhopKey,                v -> { cfg.bhopKey = v; cfg.save(); })
             )));
 
         mods.add(new ModEntry("Velocity", Category.MOVEMENT,
