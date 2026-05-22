@@ -1,5 +1,6 @@
 package com.valencia.mixin;
 
+import com.valencia.ESPMod;
 import com.valencia.KillAuraMod;
 import com.valencia.MaceAuraMod;
 import net.minecraft.world.entity.Entity;
@@ -15,8 +16,9 @@ public abstract class GlowMixin {
     private void glow$target(CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValue()) return; // already glowing for another reason
         Entity self = (Entity)(Object)this;
-        if ((KillAuraMod.isEnabled()  && self == KillAuraMod.glowTarget)
-         || (MaceAuraMod.isEnabled()  && self == MaceAuraMod.glowTarget)) {
+        if ((KillAuraMod.isEnabled() && self == KillAuraMod.glowTarget)
+         || (MaceAuraMod.isEnabled() && self == MaceAuraMod.glowTarget)
+         || ESPMod.shouldGlow(self)) {
             cir.setReturnValue(true);
         }
     }

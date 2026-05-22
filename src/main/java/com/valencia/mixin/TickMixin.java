@@ -87,6 +87,7 @@ public abstract class TickMixin {
         if (FastPlaceMod.isActive()) rightClickDelay = 0;
 
         ElytraGotoMod.tick();
+        com.valencia.AutoFishMod.tick();
 
         nofall$prevN   = nDown;
         nofall$prevX   = xDown;

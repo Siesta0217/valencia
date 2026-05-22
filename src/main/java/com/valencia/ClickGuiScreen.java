@@ -151,6 +151,24 @@ public class ClickGuiScreen extends Screen {
             FastPlaceMod::isEnabled, FastPlaceMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.fastPlaceKey, v -> { cfg.fastPlaceKey = v; cfg.save(); }))));
 
+        mods.add(new ModEntry("AutoFish", Category.MOVEMENT,
+            AutoFishMod::isEnabled,
+            () -> {
+                AutoFishMod.toggle();
+                ModConfig.get().autoFishEnabled = AutoFishMod.isEnabled();
+                ModConfig.get().save();
+            },
+            true,
+            List.of(
+                new SliderS("Bite Vy", () -> (double)cfg.autoFishBiteVy,
+                    v -> { cfg.autoFishBiteVy = (float)v; AutoFishMod.biteVy = (float)v; cfg.save(); },
+                    -0.2, -0.01),
+                new SliderS("Recast", () -> (double)cfg.autoFishRecast,
+                    v -> { cfg.autoFishRecast = (int)v; AutoFishMod.recastDelay = (int)v; cfg.save(); },
+                    4, 40)
+            )
+        ));
+
         mods.add(new ModEntry("Scaffold", Category.MOVEMENT,
             ScaffoldMod::isEnabled, ScaffoldMod::toggle, true,
             List.of(
@@ -209,6 +227,26 @@ public class ClickGuiScreen extends Screen {
                 ModConfig.get().save();
             },
             true, List.<Setting>of()
+        ));
+
+        mods.add(new ModEntry("ESP", Category.VISUALS,
+            ESPMod::isEnabled,
+            () -> {
+                ESPMod.toggle();
+                ModConfig.get().espEnabled = ESPMod.isEnabled();
+                ModConfig.get().save();
+            },
+            true,
+            List.of(
+                new BoolS("Players", () -> cfg.espPlayers,
+                    () -> { cfg.espPlayers = !cfg.espPlayers; ESPMod.players = cfg.espPlayers; cfg.save(); }),
+                new BoolS("Hostile", () -> cfg.espHostile,
+                    () -> { cfg.espHostile = !cfg.espHostile; ESPMod.hostile = cfg.espHostile; cfg.save(); }),
+                new BoolS("Animals", () -> cfg.espAnimals,
+                    () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
+                new BoolS("Items",   () -> cfg.espItems,
+                    () -> { cfg.espItems   = !cfg.espItems;   ESPMod.items   = cfg.espItems;   cfg.save(); })
+            )
         ));
 
         // Settings — not toggleable, always show sliders

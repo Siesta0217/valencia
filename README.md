@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.5.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -24,6 +24,8 @@ Latest: **v1.5.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
+| **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物（牆後也看得到輪廓），用 vanilla glow shader |
+| **AutoFish** | — | 自動釣魚：偵測 bobber 下沉收竿 + 自動重丟，純 right-click 動作 |
 | **ClickGUI** | `右 Ctrl` | 可拖曳面板，展開每個模組的詳細設定 |
 
 ### ClickGUI 設定項
@@ -86,7 +88,7 @@ Latest: **v1.5.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.5.0.jar
+# JAR → build/libs/valencia-1.6.0.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -95,6 +97,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.0 — AutoFish + ESP
+- 新增 **AutoFish**：監聽手中釣竿的 bobber `getDeltaMovement().y`，垂直速度低於門檻（預設 -0.04）視為魚咬鉤 → 右鍵收竿 → 等 12 ticks 後再右鍵重新拋投。可調 Bite Vy / Recast Delay。
+- 新增 **ESP**：擴充原本 KillAura 的 `GlowMixin`，全域玩家 / 敵對怪 / 動物 / 掉落物可勾選，被勾的種類會走 vanilla 的 glow outline shader（穿牆顯示輪廓），自己永遠不會發光。
 
 ### v1.5.0 — DimCoord HUD
 - 新增 **DimCoord** 模組（Visuals 分類，預設 ON）：左上角 HUD 永遠顯示當前座標 + 另一維度的對應座標

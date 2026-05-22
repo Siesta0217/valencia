@@ -68,5 +68,13 @@ public class NoFallMod implements ClientModInitializer {
         TimerMod.speed           = cfg.timerSpeed;
         ElytraGotoMod.safeHpThreshold = cfg.elytraSafeHp;
         if (cfg.netherCoordEnabled != NetherCoordMod.isEnabled()) NetherCoordMod.toggle();
+        if (cfg.autoFishEnabled    != AutoFishMod.isEnabled())    AutoFishMod.toggle();
+        AutoFishMod.biteVy       = cfg.autoFishBiteVy;
+        AutoFishMod.recastDelay  = cfg.autoFishRecast;
+        if (cfg.espEnabled         != ESPMod.isEnabled())         ESPMod.toggle();
+        ESPMod.players  = cfg.espPlayers;
+        ESPMod.hostile  = cfg.espHostile;
+        ESPMod.animals  = cfg.espAnimals;
+        ESPMod.items    = cfg.espItems;
     }
 }

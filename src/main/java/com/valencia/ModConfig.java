@@ -94,6 +94,18 @@ public class ModConfig {
     // NetherCoord HUD
     public boolean netherCoordEnabled = true;
 
+    // AutoFish
+    public boolean autoFishEnabled = false;
+    public float   autoFishBiteVy  = -0.04f;
+    public int     autoFishRecast  = 12;
+
+    // ESP
+    public boolean espEnabled = false;
+    public boolean espPlayers = true;
+    public boolean espHostile = false;
+    public boolean espAnimals = false;
+    public boolean espItems   = false;
+
     // Scaffold tuning
     public boolean scaffoldTower      = false;
     public boolean scaffoldTowerMove  = true;
