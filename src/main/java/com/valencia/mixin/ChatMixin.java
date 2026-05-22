@@ -66,6 +66,7 @@ public class ChatMixin {
         if (parts.length == 3 && parts[2].equalsIgnoreCase("stop")) {
             ElytraGotoMod.stop();
             msg(mc, "§7[Goto] §cstopped");
+            msg(mc, "§8tip: 想走路請先脫掉鞘翅 — vanilla MC 機制下，穿著鞘翅按 SPACE 在空中會自動展翅");
             return;
         }
         // .nf goto X Y Z   (Y optional — defaults to 64)

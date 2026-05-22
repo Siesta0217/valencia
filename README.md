@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.1** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.2** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.1** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.1.jar
+# JAR → build/libs/valencia-1.6.2.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.2 — ElytraGoto bugfixes (no rocket, drop into sea, BHop + elytra loop)
+- **修飛海上掉海裡 / 不發煙火**：原本 ground check 用 `Fluid.ANY` 把水也當地面危險，飛海上水永遠在腳下 → rocket 永遠被擋 → 高度地板 -10° 爬不過去就掉水
+  - 主世界改成 `Fluid.NONE`（水不算地面），地獄維持 `Fluid.ANY`（岩漿要算）
+  - Rocket gating 改成只擋 **forward danger / landing**，ground danger 反而正是要 boost 爬升
+  - Altitude floor 改 scale 爬升：每低於 safeY 1 格多 -0.5°，最陡到 -30°
+- **修 BHop + 鞘翅死迴圈**：穿鞘翅時 BHop 不再自動跳。原本 BHop 跳 → 空中 + SPACE 按住 → vanilla 自動展翅 → 落地 → 又跳…的循環
+- **stop 後加提示**：聊天告訴你「想走路請先脫掉鞘翅」
 
 ### v1.6.1 — ElytraGoto bugfix
 - 修正視角會在還沒展翅時就被鎖定的問題 — 現在只有 `isFallFlying()` 為 true 才接管 yaw/pitch

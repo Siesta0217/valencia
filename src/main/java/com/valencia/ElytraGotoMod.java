@@ -155,16 +155,23 @@ public class ElytraGotoMod {
         else if (horizDist > 15)  pitch = 8f;
         else                      pitch = -2f;
 
-        // Altitude floor — climb when too low and still far from target
+        // Altitude floor — climb scales with how far below safeY we are. The
+        // further down, the steeper the forced climb. Maxes at -30° so the
+        // player has time to actually accelerate upward before stalling.
         double safeY = isNether() ? 80 : 120;
-        if (p.getY() < safeY - 5 && horizDist > 80) {
-            pitch = Math.min(pitch, -10f);
+        double yBelow = safeY - p.getY();
+        if (yBelow > 5 && horizDist > 80) {
+            float climbPitch = (float) Math.max(-30, -10 - yBelow * 0.5);
+            pitch = Math.min(pitch, climbPitch);
         }
 
-        // Speed-aware multi-ray danger detection
+        // Speed-aware multi-ray danger detection. Ground check uses Fluid.NONE
+        // in overworld so open ocean / lakes don't permanently flag groundDanger
+        // (which would block rockets and drop us into the sea). In nether we
+        // do want lava to count, so Fluid.ANY there.
         double speed = p.getDeltaMovement().horizontalDistance();
         double lookahead = Math.max(15, speed * 12);
-        boolean groundDanger  = nearestBelow(p, mc, 7) < Double.MAX_VALUE;
+        boolean groundDanger  = nearestBelow(p, mc, 7, isNether()) < Double.MAX_VALUE;
         double  forwardHit    = nearestAhead(p, mc, lookahead);
         boolean forwardDanger = forwardHit < lookahead;
         boolean ceilingDanger = isNether() && ceilingTooClose(p, mc, 4);
@@ -179,10 +186,12 @@ public class ElytraGotoMod {
 
         p.setXRot(pitch);
 
-        // Auto-rocket — skip when in danger or in landing approach
-        boolean inDanger = groundDanger || forwardDanger;
+        // Auto-rocket. Skip ONLY for forward danger (would crash into wall) or
+        // landing phase (want a slow glide-in). Ground danger doesn't skip —
+        // firing while pitched up is exactly the climb we need to escape.
         boolean landingPhase = horizDist < 50;
-        if (!inDanger && !landingPhase && rocketCooldown <= 0) {
+        boolean cantBoost = forwardDanger || landingPhase;
+        if (!cantBoost && rocketCooldown <= 0) {
             if (fireRocket(p, mc)) rocketCooldown = 60;
         }
         if (rocketCooldown > 0) rocketCooldown--;
@@ -213,12 +222,15 @@ public class ElytraGotoMod {
         return min;
     }
 
-    /** Straight down with Fluid.ANY — catches lava lakes / water as hazards. */
-    private static double nearestBelow(LocalPlayer p, Minecraft mc, double maxDist) {
+    /** Distance to nearest hit directly below. {@code includeFluids} controls
+     *  whether water/lava counts — in nether yes (lava kills), in overworld
+     *  no (water doesn't, and a 7m water column would constantly false-flag). */
+    private static double nearestBelow(LocalPlayer p, Minecraft mc, double maxDist, boolean includeFluids) {
         Vec3 from = p.position();
         Vec3 to   = from.add(0, -maxDist, 0);
+        ClipContext.Fluid fluidMode = includeFluids ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE;
         HitResult hit = mc.level.clip(new ClipContext(
-            from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, p));
+            from, to, ClipContext.Block.COLLIDER, fluidMode, p));
         return hit.getType() == HitResult.Type.MISS ? Double.MAX_VALUE : from.distanceTo(hit.getLocation());
     }
 
