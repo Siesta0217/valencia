@@ -11,6 +11,7 @@ import com.valencia.NoFallMod;
 import com.valencia.NoSlowMod;
 import com.valencia.ScaffoldMod;
 import com.valencia.StepMod;
+import com.valencia.TimerMod;
 import com.valencia.VelocityMod;
 import com.valencia.XRayMod;
 import net.minecraft.client.Minecraft;
@@ -40,6 +41,7 @@ public abstract class TickMixin {
     @Unique private boolean nofall$prevFP  = false;
     @Unique private boolean nofall$prevCr  = false;
     @Unique private boolean nofall$prevSc  = false;
+    @Unique private boolean nofall$prevTm  = false;
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void nofall$onTick(CallbackInfo ci) {
@@ -61,6 +63,7 @@ public abstract class TickMixin {
         boolean fpDown  = GLFW.glfwGetKey(handle, cfg.fastPlaceKey)  == GLFW.GLFW_PRESS;
         boolean crDown  = GLFW.glfwGetKey(handle, cfg.critKey)       == GLFW.GLFW_PRESS;
         boolean scDown  = GLFW.glfwGetKey(handle, cfg.scaffoldKey)   == GLFW.GLFW_PRESS;
+        boolean tmDown  = GLFW.glfwGetKey(handle, cfg.timerKey)      == GLFW.GLFW_PRESS;
 
         if (mc.screen == null) {
             if (nDown   && !nofall$prevN)   { NoFallMod.toggleManual();  saveEnabled(); msg(mc, "§7[NoFall] "     + state(NoFallMod.isEnabled()));     }
@@ -74,6 +77,7 @@ public abstract class TickMixin {
             if (fpDown  && !nofall$prevFP)  { FastPlaceMod.toggle();     saveEnabled(); msg(mc, "§7[FastPlace] "  + state(FastPlaceMod.isEnabled()));  }
             if (crDown  && !nofall$prevCr)  { CritMod.toggle();          saveEnabled(); msg(mc, "§7[CritHit] "    + state(CritMod.isEnabled()));       }
             if (scDown  && !nofall$prevSc)  { ScaffoldMod.toggle();      saveEnabled(); msg(mc, "§7[Scaffold] "   + state(ScaffoldMod.isEnabled()));   }
+            if (tmDown  && !nofall$prevTm)  { TimerMod.toggle();         saveEnabled(); msg(mc, "§7[Timer] "      + state(TimerMod.isEnabled()));      }
             if (guiDown && !nofall$prevGui) mc.setScreen(new ClickGuiScreen());
         } else if (mc.screen instanceof ClickGuiScreen && guiDown && !nofall$prevGui) {
             mc.setScreen(null);
@@ -93,6 +97,7 @@ public abstract class TickMixin {
         nofall$prevFP  = fpDown;
         nofall$prevCr  = crDown;
         nofall$prevSc  = scDown;
+        nofall$prevTm  = tmDown;
     }
 
     private static void saveEnabled() {
@@ -108,6 +113,7 @@ public abstract class TickMixin {
         cfg.fastPlaceEnabled  = FastPlaceMod.isEnabled();
         cfg.critEnabled       = CritMod.isEnabled();
         cfg.scaffoldEnabled   = ScaffoldMod.isEnabled();
+        cfg.timerEnabled      = TimerMod.isEnabled();
         cfg.save();
     }
 

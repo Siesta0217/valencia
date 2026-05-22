@@ -97,6 +97,14 @@ public abstract class BHopMixin {
             double baseSpeed = 0.22 * BHopMod.speedMultiplier;
             double targetSpeed = Math.max(hspeed, baseSpeed);
 
+            // Compound boost per air tick — needed because with LowHop the player
+            // spends so few ticks airborne that a per-jump boost gets eaten by
+            // ground friction (0.546) before the next jump.
+            if (BHopMod.boost > 1.0f) {
+                targetSpeed *= BHopMod.boost;
+                if (targetSpeed > 2.5) targetSpeed = 2.5;
+            }
+
             // Set horizontal velocity direction to wish direction at target speed
             self.setDeltaMovement(wishX * targetSpeed, vel.y, wishZ * targetSpeed);
         }

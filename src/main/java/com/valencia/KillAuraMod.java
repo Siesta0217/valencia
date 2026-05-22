@@ -5,7 +5,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
@@ -85,7 +85,7 @@ public class KillAuraMod {
             if (skipInvisible && e.isInvisible()) continue;
 
             boolean isPlayer   = e instanceof Player;
-            boolean isHostile  = e instanceof Monster;
+            boolean isHostile  = e instanceof Enemy;
             boolean isFriendly = e instanceof Animal;
             if (isPlayer   && !targetPlayers) continue;
             if (isHostile  && !targetHostile) continue;

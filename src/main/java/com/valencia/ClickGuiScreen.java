@@ -180,6 +180,13 @@ public class ClickGuiScreen extends Screen {
                 new KeyS("Key",       () -> cfg.stepKey,    v -> { cfg.stepKey = v; cfg.save(); })
             )));
 
+        mods.add(new ModEntry("Timer", Category.MOVEMENT,
+            TimerMod::isEnabled, TimerMod::toggle, true,
+            List.of(
+                new SliderS("Speed", () -> (double)cfg.timerSpeed, v -> { cfg.timerSpeed = (float)v; TimerMod.speed = (float)v; cfg.save(); }, 1.0, 3.0),
+                new KeyS("Key",      () -> cfg.timerKey,           v -> { cfg.timerKey = v; cfg.save(); })
+            )));
+
         // Visuals
         mods.add(new ModEntry("XRay", Category.VISUALS,
             XRayMod::isEnabled, XRayMod::toggle, true,
@@ -564,6 +571,7 @@ public class ClickGuiScreen extends Screen {
         cfg.fastPlaceEnabled  = FastPlaceMod.isEnabled();
         cfg.critEnabled       = CritMod.isEnabled();
         cfg.scaffoldEnabled   = ScaffoldMod.isEnabled();
+        cfg.timerEnabled      = TimerMod.isEnabled();
         cfg.save();
     }
 

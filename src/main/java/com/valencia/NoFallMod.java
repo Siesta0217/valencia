@@ -25,6 +25,7 @@ public class NoFallMod implements ClientModInitializer {
         if (cfg.fastPlaceEnabled  != FastPlaceMod.isEnabled())  FastPlaceMod.toggle();
         if (cfg.critEnabled       != CritMod.isEnabled())       CritMod.toggle();
         if (cfg.scaffoldEnabled   != ScaffoldMod.isEnabled())   ScaffoldMod.toggle();
+        if (cfg.timerEnabled      != TimerMod.isEnabled())      TimerMod.toggle();
 
         ScaffoldMod.tower      = cfg.scaffoldTower;
         ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;
@@ -64,5 +65,6 @@ public class NoFallMod implements ClientModInitializer {
         BHopMod.jumpHeight       = cfg.bhopJumpHeight;
         BHopMod.boost            = cfg.bhopBoost;
         BHopMod.kbBoost          = cfg.bhopKBBoost;
+        TimerMod.speed           = cfg.timerSpeed;
     }
 }

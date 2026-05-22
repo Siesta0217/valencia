@@ -26,6 +26,7 @@ public class ModConfig {
     public int fastPlaceKey  = GLFW.GLFW_KEY_F;
     public int critKey       = GLFW.GLFW_KEY_R;
     public int scaffoldKey   = GLFW.GLFW_KEY_J;
+    public int timerKey      = GLFW.GLFW_KEY_T;
 
     // MaceAura tuning
     public float maceDetectRange = 6.0f;
@@ -82,6 +83,10 @@ public class ModConfig {
     public boolean fastPlaceEnabled  = false;
     public boolean critEnabled       = false;
     public boolean scaffoldEnabled   = false;
+    public boolean timerEnabled      = false;
+
+    // Timer tuning
+    public float timerSpeed = 2.0f;
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;

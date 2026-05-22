@@ -5,7 +5,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
@@ -50,7 +50,7 @@ public class MaceAuraMod {
             if (e.isDeadOrDying()) continue;
 
             boolean isPlayer  = e instanceof Player;
-            boolean isHostile = e instanceof Monster;
+            boolean isHostile = e instanceof Enemy;
             boolean isAnimal  = e instanceof Animal;
             if (isPlayer  && !targetPlayers) continue;
             if (isHostile && !targetHostile) continue;

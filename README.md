@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.2.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.3.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -21,6 +21,7 @@ Latest: **v1.2.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 | **FastPlace** | `F` | 移除右鍵放置冷卻 |
 | **CritHit** | `R` | 自動 micro-hop 觸發暴擊 |
 | **Scaffold** | `J` | 自動橋方塊 + Tower 模式（按 SPACE 自動疊塔） |
+| **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
 | **ClickGUI** | `右 Ctrl` | 可拖曳面板，展開每個模組的詳細設定 |
 
 ### ClickGUI 設定項
@@ -28,7 +29,8 @@ Latest: **v1.2.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 - **KillAura**：範圍、攻擊範圍、攻擊延遲、Single 模式、目標篩選、Raycast、Skip Invisible、平滑旋轉、Body Lock
 - **MaceAura**：偵測範圍、攻擊範圍、Hostile / Animals / Players 目標篩選
 - **Step**：步高滑桿（1.0×–3.0×）
-- **BHop**：速度倍率（0.5×–2.5×）、Low Hop + Jump Height（0.1–1.0）、Boost（1.0–1.5 每跳複合）、KB Boost（受擊把擊退轉為前進）
+- **BHop**：速度倍率（0.5×–2.5×）、Low Hop + Jump Height（0.1–1.0）、Boost（1.0–1.5，**每 air tick 複合**，封頂 2.5）、KB Boost（受擊把擊退轉為前進）
+- **Timer**：玩家 tick 倍速滑桿（1.0×–3.0×）
 - **Scaffold**：Tower / Tower Move / Tower Speed / Fake Hand / Silent Rot / Auto Switch / Switch Back / Place Delay
 - **Velocity**：水平 / 垂直擊退倍率
 - **Theme Color**：主題色 RGB + 背景透明度
@@ -54,12 +56,12 @@ Latest: **v1.2.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 ```
 .nf bind <功能> <鍵名>
 功能：nofall / xray / maceaura / killaura / noslow / bhop / step
-       velocity / fastplace / crit / scaffold / gui
-鍵名：N  X  Z  K  G  B  H  C  F  R  J  RIGHT_CONTROL  F5  ...
+       velocity / fastplace / crit / scaffold / timer / gui
+鍵名：N  X  Z  K  G  B  H  C  F  R  J  T  RIGHT_CONTROL  F5  ...
        （GLFW 名稱去掉 GLFW_KEY_ 前綴）
 ```
 
-常用 key codes：`B=66  C=67  F=70  G=71  H=72  J=74  K=75  N=78  R=82  X=88  Z=90  RIGHT_CONTROL=345`
+常用 key codes：`B=66  C=67  F=70  G=71  H=72  J=74  K=75  N=78  R=82  T=84  X=88  Z=90  RIGHT_CONTROL=345`
 
 ---
 
@@ -78,7 +80,7 @@ Latest: **v1.2.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.2.0.jar
+# JAR → build/libs/valencia-1.3.0.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -87,6 +89,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.3.0
+- 新增 **Timer** 模組（預設 `T`）：每 game tick 額外 tick 玩家 N 次，1.0–3.0× 滑桿
+- **BHop Boost** 修復：原本只在 jump 那 tick 套用，搭配 LowHop 會被 ground friction (0.546) 吃光；現改成每個 air tick 都複合，並 cap 在 2.5 防止失控
+- **KillAura / MaceAura** 修復：原本用 `instanceof Monster` 判斷敵對生物，Phantom（`FlyingMob`）和 Slime（`Mob`）不繼承 Monster 所以被忽略；改用 `Enemy` interface 後三類敵對怪都會被偵測（Slime / Phantom / Ghast / Blaze / 末影龍 etc.）
 
 ### v1.2.0
 - **BHop** 新增三個子選項：
