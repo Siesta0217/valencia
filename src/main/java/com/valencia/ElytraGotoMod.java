@@ -3,6 +3,7 @@ package com.valencia;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -58,6 +59,7 @@ public class ElytraGotoMod {
         Minecraft mc = Minecraft.getInstance();
         targetDim = (mc.level != null) ? mc.level.dimension() : null;
         hasTarget = true;
+        rocketCooldown = 0;        // fresh flight — fire the first rocket ASAP
         if (!enabled) enabled = true;
     }
 
@@ -65,6 +67,7 @@ public class ElytraGotoMod {
         enabled = false;
         hasTarget = false;
         targetDim = null;
+        rocketCooldown = 0;
     }
 
     public static boolean inWrongDimension() {
@@ -244,18 +247,79 @@ public class ElytraGotoMod {
 
     private static boolean fireRocket(LocalPlayer p, Minecraft mc) {
         if (mc.gameMode == null) return false;
-        ItemStack main = p.getMainHandItem();
-        ItemStack off  = p.getOffhandItem();
-        InteractionHand hand;
-        if (main.is(Items.FIREWORK_ROCKET))      hand = InteractionHand.MAIN_HAND;
-        else if (off.is(Items.FIREWORK_ROCKET))  hand = InteractionHand.OFF_HAND;
-        else return false;
+
+        // Fast path: rocket already in either hand
+        if (p.getMainHandItem().is(Items.FIREWORK_ROCKET))
+            return useItemSafe(mc, p, InteractionHand.MAIN_HAND);
+        if (p.getOffhandItem().is(Items.FIREWORK_ROCKET))
+            return useItemSafe(mc, p, InteractionHand.OFF_HAND);
+
+        // Hotbar scan — auto-switch the selected slot to a rocket so the
+        // server sees a normal "swap hotbar then right-click" sequence.
+        int rocketSlot = -1;
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = p.getInventory().getItem(i);
+            if (stack.is(Items.FIREWORK_ROCKET)) { rocketSlot = i; break; }
+        }
+        if (rocketSlot >= 0) {
+            if (!setHotbarSlot(p, rocketSlot)) return false;
+            try {
+                if (p.connection != null) {
+                    p.connection.send(new ServerboundSetCarriedItemPacket(rocketSlot));
+                }
+            } catch (Throwable ignored) {}
+            return useItemSafe(mc, p, InteractionHand.MAIN_HAND);
+        }
+        return false;  // no rocket anywhere in hotbar
+    }
+
+    /** Set the selected hotbar slot — tries the modern method first, falls
+     *  back to writing the private {@code selected} field via reflection
+     *  (different MC builds expose this differently). */
+    private static boolean setHotbarSlot(LocalPlayer p, int slot) {
+        Object inv = p.getInventory();
+        // Try common setter names first
+        for (String name : new String[]{"setSelectedHotbarSlot", "setSelectedSlot"}) {
+            try {
+                java.lang.reflect.Method m = inv.getClass().getMethod(name, int.class);
+                m.invoke(inv, slot);
+                return true;
+            } catch (NoSuchMethodException e) {
+                // try next
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+        // Fall back to setting the field directly via reflection
+        try {
+            java.lang.reflect.Field f = inv.getClass().getDeclaredField("selected");
+            f.setAccessible(true);
+            f.setInt(inv, slot);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean useItemSafe(Minecraft mc, LocalPlayer p, InteractionHand hand) {
         try {
             mc.gameMode.useItem(p, hand);
             return true;
         } catch (Throwable t) {
             return false;
         }
+    }
+
+    /** Count firework rockets in the player's hotbar + offhand for the status display. */
+    private static int countRockets(LocalPlayer p) {
+        int n = 0;
+        for (int i = 0; i < 9; i++) {
+            ItemStack s = p.getInventory().getItem(i);
+            if (s.is(Items.FIREWORK_ROCKET)) n += s.getCount();
+        }
+        ItemStack off = p.getOffhandItem();
+        if (off.is(Items.FIREWORK_ROCKET)) n += off.getCount();
+        return n;
     }
 
     private static void showStatus(LocalPlayer p, double dist, String state) {
@@ -276,12 +340,12 @@ public class ElytraGotoMod {
         }
         double etaSec = dist / 33.0;
         int px = (int) p.getX(), pz = (int) p.getZ();
-        int tx = (int) targetX,  tz = (int) targetZ;
-        String other = isNether()
-            ? String.format("§7overworld §f%d,%d→%d,%d", px * 8, pz * 8, tx * 8, tz * 8)
-            : String.format("§7nether §f%d,%d→%d,%d",    px / 8, pz / 8, tx / 8, tz / 8);
+        int rockets = countRockets(p);
+        String ammo = rockets > 0
+            ? String.format("§7煙火 §f%d", rockets)
+            : "§c無煙火!";
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto] §f%.0fm  §7ETA §f%.0fs  §8| §7now §f%d,%d  §8| %s",
-                dist, etaSec, px, pz, other)), true);
+            String.format("§b[Goto] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
+                dist, etaSec, (int) p.getY(), ammo)), true);
     }
 }

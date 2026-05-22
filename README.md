@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.2** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.3** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.2** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.2.jar
+# JAR → build/libs/valencia-1.6.3.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.3 — ElytraGoto auto-switch to rocket slot
+- **真正修好不發煙火**：原本只認主手/副手裡的煙火，現在會掃熱鍵欄 9 格，找到後**自動切到那格**再發射（Inventory.selected 是 private，用反射 + setSelectedHotbarSlot 雙路徑寫入）
+- 動作列改顯示：`[Goto] <距離>m  ETA <秒>s  | Y <高度>  | 煙火 <剩餘數>` — 沒煙火時顯示紅字「無煙火!」
+- `.nf goto stop` / `setTarget` 時 reset `rocketCooldown = 0`，新航程第一發煙火不會被上次的冷卻擋掉
 
 ### v1.6.2 — ElytraGoto bugfixes (no rocket, drop into sea, BHop + elytra loop)
 - **修飛海上掉海裡 / 不發煙火**：原本 ground check 用 `Fluid.ANY` 把水也當地面危險，飛海上水永遠在腳下 → rocket 永遠被擋 → 高度地板 -10° 爬不過去就掉水
