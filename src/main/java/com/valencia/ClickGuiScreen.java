@@ -189,7 +189,11 @@ public class ClickGuiScreen extends Screen {
 
         mods.add(new ModEntry("ElytraGoto", Category.MOVEMENT,
             ElytraGotoMod::isEnabled, ElytraGotoMod::toggle, true,
-            List.<Setting>of()  // target is set via .nf goto X Y Z chat command
+            List.of(
+                new SliderS("Safe HP", () -> (double)cfg.elytraSafeHp,
+                    v -> { cfg.elytraSafeHp = (float)v; ElytraGotoMod.safeHpThreshold = (float)v; cfg.save(); },
+                    2, 20)
+            )
         ));
 
         // Visuals

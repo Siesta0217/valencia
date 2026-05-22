@@ -11,13 +11,21 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Auto-pilot for elytra: lock yaw to a target XYZ, manage pitch, and auto-fire
- * firework rockets from main/off hand. Every action it performs is a vanilla
- * input (rotation, useItem, tryToStartFallFlying), so a server can't tell it
- * apart from a real player flying.
+ * Auto-pilot for elytra: lock yaw to a target XYZ, manage pitch with terrain
+ * avoidance, and auto-fire firework rockets from main/off hand. Every action
+ * is a vanilla input (rotation, useItem, tryToStartFallFlying), so a server
+ * can't tell it apart from a real player flying.
  *
- * Set target via chat command `.nf goto <x> <y> <z>` — that command toggles
- * the module on. `.nf goto stop` turns it off.
+ * Set target via chat: `.nf goto <x> [y] <z>`. Stop with `.nf goto stop`.
+ *
+ * Safety layers (in priority order, each can override the base pitch):
+ *  - Death / HP &lt;= safeHpThreshold: full stop
+ *  - Wrong dimension: pause (keeps target for re-entry)
+ *  - Ground / lava within 7m below: pitch -25
+ *  - Obstacle / fluid within (15 + speed*12) ahead, 5-ray fan: pitch -30
+ *  - Nether ceiling within 4m: pitch +20
+ *  - Below safe altitude (Y &lt; 120 overworld / 80 nether): pitch -10
+ *  - Otherwise: distance-banded base pitch
  */
 public class ElytraGotoMod {
 
@@ -26,12 +34,15 @@ public class ElytraGotoMod {
     public static double  targetX = 0, targetY = 64, targetZ = 0;
     public static boolean hasTarget = false;
 
-    /** Dimension the target was set in (Object since ResourceKey isn't on the
-     *  compile classpath in this Lunar build — Object#equals handles it). */
+    /** Dimension the target was set in (Object because ResourceKey isn't on
+     *  the compile classpath in this Lunar build; Object#equals works). */
     public static Object  targetDim = null;
 
     /** Ticks until we may fire another rocket. */
     public static int rocketCooldown = 0;
+
+    /** Health (HP, 1 heart = 2) at or below which we stop the autopilot. */
+    public static float safeHpThreshold = 4.0f;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
@@ -83,19 +94,20 @@ public class ElytraGotoMod {
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
 
-        // Death / low HP abort — stops further packets being sent while dying
+        // Death / HP abort — stops further packets while dying / corpse falling
         if (!p.isAlive() || p.isDeadOrDying()) {
             p.displayClientMessage(Component.literal("§c[Goto] died — auto-pilot off"), false);
             stop();
             return;
         }
-        if (p.getHealth() <= 4.0f) {  // 2 hearts
-            p.displayClientMessage(Component.literal("§e[Goto] HP low — auto-pilot off"), false);
+        if (p.getHealth() <= safeHpThreshold) {
+            p.displayClientMessage(Component.literal(
+                String.format("§e[Goto] HP %.0f≤%.0f — auto-pilot off", p.getHealth(), safeHpThreshold)), false);
             stop();
             return;
         }
 
-        // Dimension mismatch — pause (don't clear, in case user portals back)
+        // Different dimension — pause (target preserved so portalling back resumes)
         if (inWrongDimension()) {
             p.displayClientMessage(Component.literal(
                 "§e[Goto] wrong dimension — paused, portal back to resume"), true);
@@ -113,24 +125,43 @@ public class ElytraGotoMod {
             return;
         }
 
-        // Aim yaw at the target on every tick
+        // Lock yaw on target
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         p.setYRot(yaw);
         p.setYHeadRot(yaw);
 
-        // Distance-banded base pitch (cruise → descend → dive)
+        // ── Distance-banded base pitch ───────────────────────────────────────
+        // Tightened curve near target so the player kisses the ground at low
+        // vertical speed instead of slamming in at 28° dive angle.
         float pitch;
-        if (horizDist > 200)      pitch = -3f;
-        else if (horizDist > 50)  pitch = 12f;
-        else                      pitch = 28f;
+        if      (horizDist > 200) pitch = -3f;     // cruise
+        else if (horizDist > 80)  pitch = 10f;     // descend
+        else if (horizDist > 30)  pitch = 20f;     // steep approach
+        else if (horizDist > 15)  pitch = 8f;      // flare for landing
+        else                      pitch = -2f;     // touch-down: level out
 
-        // Collision avoidance — overrides base pitch. Priority: ground > forward > ceiling.
-        if (groundTooClose(p, mc, 6)) {
-            pitch = -25f;                       // pull up hard
-        } else if (obstacleAhead(p, mc, 14)) {
-            pitch = -30f;                       // mountain/wall ahead → climb
-        } else if (isNether() && ceilingTooClose(p, mc, 4)) {
-            pitch = 20f;                        // nether ceiling → push down
+        // ── Altitude floor: climb to safe Y when too low and still far ──────
+        double safeY = isNether() ? 80 : 120;
+        if (p.getY() < safeY - 5 && horizDist > 80) {
+            pitch = Math.min(pitch, -10f);
+        }
+
+        // ── Speed-aware multi-ray danger detection ──────────────────────────
+        double speed = p.getDeltaMovement().horizontalDistance();
+        double lookahead = Math.max(15, speed * 12);     // ~12 ticks of flight
+        boolean groundDanger  = nearestBelow(p, mc, 7)      < Double.MAX_VALUE;
+        double  forwardHit    = nearestAhead(p, mc, lookahead);
+        boolean forwardDanger = forwardHit < lookahead;
+        boolean ceilingDanger = isNether() && ceilingTooClose(p, mc, 4);
+
+        // ── Avoidance overrides (highest priority wins) ─────────────────────
+        if (groundDanger) {
+            pitch = -25f;                            // pull up hard
+        } else if (forwardDanger) {
+            // Closer obstacle → steeper climb
+            pitch = forwardHit < lookahead * 0.4 ? -40f : -28f;
+        } else if (ceilingDanger) {
+            pitch = 20f;                             // push away from ceiling
         }
 
         p.setXRot(pitch);
@@ -140,8 +171,11 @@ public class ElytraGotoMod {
             try { p.tryToStartFallFlying(); } catch (Throwable ignored) {}
         }
 
-        // Auto-rocket while gliding and still far from destination
-        if (p.isFallFlying() && horizDist > 40 && rocketCooldown <= 0) {
+        // Auto-rocket — skip when in danger so we don't boost into the wall,
+        // and skip on landing approach so we glide in slowly.
+        boolean inDanger = groundDanger || forwardDanger;
+        boolean landingPhase = horizDist < 50;
+        if (p.isFallFlying() && !inDanger && !landingPhase && rocketCooldown <= 0) {
             if (fireRocket(p, mc)) rocketCooldown = 60;
         }
         if (rocketCooldown > 0) rocketCooldown--;
@@ -149,23 +183,36 @@ public class ElytraGotoMod {
         showStatus(p, horizDist, false);
     }
 
-    /** True if a solid block is within {@code maxDist} along the horizontal heading. */
-    private static boolean obstacleAhead(LocalPlayer p, Minecraft mc, double maxDist) {
-        float yawRad = (float) Math.toRadians(p.getYRot());
+    // ── Raycast helpers ──────────────────────────────────────────────────────
+
+    /** Cast 5 horizontal rays in a ±25° fan; returns the nearest block/fluid
+     *  hit distance, or maxDist if nothing within range. Fluid.ANY so lava
+     *  and water also count as obstacles. */
+    private static double nearestAhead(LocalPlayer p, Minecraft mc, double maxDist) {
+        float baseYaw = p.getYRot();
         Vec3 from = p.getEyePosition();
-        Vec3 dir  = new Vec3(-Math.sin(yawRad), 0, Math.cos(yawRad));
-        Vec3 to   = from.add(dir.scale(maxDist));
-        HitResult hit = mc.level.clip(new ClipContext(
-            from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        return hit.getType() == HitResult.Type.BLOCK;
+        double min = Double.MAX_VALUE;
+        for (float offset : new float[]{-25f, -12f, 0f, 12f, 25f}) {
+            float yawRad = (float) Math.toRadians(baseYaw + offset);
+            Vec3 dir = new Vec3(-Math.sin(yawRad), 0, Math.cos(yawRad));
+            Vec3 to  = from.add(dir.scale(maxDist));
+            HitResult hit = mc.level.clip(new ClipContext(
+                from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, p));
+            if (hit.getType() != HitResult.Type.MISS) {
+                double d = from.distanceTo(hit.getLocation());
+                if (d < min) min = d;
+            }
+        }
+        return min;
     }
 
-    private static boolean groundTooClose(LocalPlayer p, Minecraft mc, double maxDist) {
+    /** Straight down with Fluid.ANY — catches lava lakes / water as hazards. */
+    private static double nearestBelow(LocalPlayer p, Minecraft mc, double maxDist) {
         Vec3 from = p.position();
         Vec3 to   = from.add(0, -maxDist, 0);
         HitResult hit = mc.level.clip(new ClipContext(
-            from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        return hit.getType() == HitResult.Type.BLOCK;
+            from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, p));
+        return hit.getType() == HitResult.Type.MISS ? Double.MAX_VALUE : from.distanceTo(hit.getLocation());
     }
 
     private static boolean ceilingTooClose(LocalPlayer p, Minecraft mc, double maxDist) {
@@ -178,15 +225,12 @@ public class ElytraGotoMod {
 
     private static boolean fireRocket(LocalPlayer p, Minecraft mc) {
         if (mc.gameMode == null) return false;
-
         ItemStack main = p.getMainHandItem();
         ItemStack off  = p.getOffhandItem();
-
         InteractionHand hand;
         if (main.is(Items.FIREWORK_ROCKET))      hand = InteractionHand.MAIN_HAND;
         else if (off.is(Items.FIREWORK_ROCKET))  hand = InteractionHand.OFF_HAND;
         else return false;
-
         try {
             mc.gameMode.useItem(p, hand);
             return true;
@@ -201,21 +245,14 @@ public class ElytraGotoMod {
                 String.format("§a[Goto] arrived (%.0fm)", dist)), true);
             return;
         }
-        double etaSec = dist / 33.0;  // ~33 blocks/sec sustained elytra speed
+        double etaSec = dist / 33.0;
         int px = (int) p.getX(), pz = (int) p.getZ();
         int tx = (int) targetX,  tz = (int) targetZ;
-
-        // Show the other dimension's equivalent coord — divide by 8 when in
-        // overworld, multiply by 8 when in nether — so user can decide if
-        // portalling would be shorter.
-        String other;
-        if (isNether()) {
-            other = String.format("§7overworld §f%d,%d→%d,%d", px * 8, pz * 8, tx * 8, tz * 8);
-        } else {
-            other = String.format("§7nether §f%d,%d→%d,%d", px / 8, pz / 8, tx / 8, tz / 8);
-        }
-        String msg = String.format("§b[Goto] §f%.0fm  §7ETA §f%.0fs  §8| §7now §f%d,%d  §8| %s",
-            dist, etaSec, px, pz, other);
-        p.displayClientMessage(Component.literal(msg), true);
+        String other = isNether()
+            ? String.format("§7overworld §f%d,%d→%d,%d", px * 8, pz * 8, tx * 8, tz * 8)
+            : String.format("§7nether §f%d,%d→%d,%d",    px / 8, pz / 8, tx / 8, tz / 8);
+        p.displayClientMessage(Component.literal(
+            String.format("§b[Goto] §f%.0fm  §7ETA §f%.0fs  §8| §7now §f%d,%d  §8| %s",
+                dist, etaSec, px, pz, other)), true);
     }
 }

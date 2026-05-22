@@ -88,6 +88,9 @@ public class ModConfig {
     // Timer tuning
     public float timerSpeed = 2.0f;
 
+    // ElytraGoto tuning
+    public float elytraSafeHp = 4.0f;
+
     // Scaffold tuning
     public boolean scaffoldTower      = false;
     public boolean scaffoldTowerMove  = true;

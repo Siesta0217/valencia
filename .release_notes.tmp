@@ -1,0 +1,19 @@
+## v1.4.2 — ElytraGoto stronger protection
+
+### Better detection
+- **5-ray fan-out forward check** (±25° / ±12° / 0°)：繞角的山 / 樹冠 / 高塔都不會放過
+- **流體偵測 (Fluid.ANY)**：岩漿池 / 大水面也當障礙
+- **Speed-aware lookahead**：lookahead = max(15, speed × 12 ticks)，boost 中也來得及反應
+
+### Better avoidance
+- **Altitude floor**：主世界 Y < 120 / 地獄 Y < 80 強制爬升
+- **危險時不發煙火**：raycast 命中就 skip boost，避免火箭噴進牆
+- **降落 smoothing**：30m 內逐段拉平 (20°→8°→-2°)，不會高速 elytra 摔死
+
+### Tunable
+- **Safe HP slider** 2–20 HP（預設 4 = 2 顆心），ClickGUI ElytraGoto 展開可調
+
+### Install
+下載 `valencia-1.4.2.jar` 放到 mods 資料夾：
+- Lunar Client: `.lunarclient/profiles/lunar/1.21/mods/fabric-1.21.11/`
+- 一般 Fabric: `.minecraft/mods/`

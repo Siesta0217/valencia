@@ -66,5 +66,6 @@ public class NoFallMod implements ClientModInitializer {
         BHopMod.boost            = cfg.bhopBoost;
         BHopMod.kbBoost          = cfg.bhopKBBoost;
         TimerMod.speed           = cfg.timerSpeed;
+        ElytraGotoMod.safeHpThreshold = cfg.elytraSafeHp;
     }
 }

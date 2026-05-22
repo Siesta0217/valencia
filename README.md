@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.4.1** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.4.2** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -32,7 +32,7 @@ Latest: **v1.4.1** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 - **Step**：步高滑桿（1.0×–3.0×）
 - **BHop**：速度倍率（0.5×–2.5×）、Low Hop + Jump Height（0.1–1.0）、Boost（1.0–1.5，**每 air tick 複合**，封頂 2.5）、KB Boost（受擊把擊退轉為前進）
 - **Timer**：玩家 tick 倍速滑桿（1.0×–3.0×）
-- **ElytraGoto**：用 `.nf goto <x> [y] <z>` 設目標、`.nf goto stop` 停止；動作列顯示距離 / ETA / 主世界↔下界座標對照
+- **ElytraGoto**：用 `.nf goto <x> [y] <z>` 設目標、`.nf goto stop` 停止；ClickGUI 有 Safe HP slider 可調保護門檻；動作列顯示距離 / ETA / 主世界↔下界座標對照
 - **Scaffold**：Tower / Tower Move / Tower Speed / Fake Hand / Silent Rot / Auto Switch / Switch Back / Place Delay
 - **Velocity**：水平 / 垂直擊退倍率
 - **Theme Color**：主題色 RGB + 背景透明度
@@ -85,7 +85,7 @@ Latest: **v1.4.1** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.4.1.jar
+# JAR → build/libs/valencia-1.4.2.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -94,6 +94,15 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.4.2 — ElytraGoto stronger protection
+- **5-ray fan-out forward check** (±25° / ±12° / 0°)，繞角的山 / 樹冠 / 紅石高塔都會被偵測
+- **流體偵測**：raycast 改用 `Fluid.ANY`，岩漿池 / 大水面也算障礙會自動拉起
+- **Speed-aware lookahead**：速度越快看得越遠（lookahead = max(15, speed × 12 ticks)），boost 中也來得及反應
+- **Altitude floor**：主世界 Y < 120 / 地獄 Y < 80 時自動爬升
+- **危險時不發煙火**：raycast 命中就停 boost，免得火箭把你噴進牆
+- **可調 Safe HP slider** (2–20 HP)：ClickGUI ElytraGoto 展開可調，預設 4 = 2 顆心
+- **降落更平滑**：30m 內逐段拉平（20°→8°→-2°），不會 elytra 高速摔死
 
 ### v1.4.1 — ElytraGoto safety
 - **Dimension lock**：在主世界設目標後跨進地獄會自動暫停（保留目標，回到原 dimension 自動恢復），不會傻傻往錯地方飛
