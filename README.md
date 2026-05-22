@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.1** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.0.jar
+# JAR → build/libs/valencia-1.6.1.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.1 — ElytraGoto bugfix
+- 修正視角會在還沒展翅時就被鎖定的問題 — 現在只有 `isFallFlying()` 為 true 才接管 yaw/pitch
+- 修正從矮塔跳下展翅不開 — 拿掉 `y < 0` 限制，airborne 第一個 tick 就嘗試 `tryToStartFallFlying()`
+- 動作列新增三種狀態提示：`waiting — jump off something` / `deploying elytra…` / 正常飛行
+- 註記：vanilla MC 鞘翅展開後**只有觸地才會收回**，這不是模組的問題；`.nf goto stop` 只關掉自動駕駛，不會讓你在空中收翅
 
 ### v1.6.0 — AutoFish + ESP
 - 新增 **AutoFish**：監聽手中釣竿的 bobber `getDeltaMovement().y`，垂直速度低於門檻（預設 -0.04）視為魚咬鉤 → 右鍵收竿 → 等 12 ticks 後再右鍵重新拋投。可調 Bite Vy / Recast Delay。

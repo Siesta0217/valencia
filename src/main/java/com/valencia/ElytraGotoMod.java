@@ -120,67 +120,74 @@ public class ElytraGotoMod {
 
         // Arrived
         if (horizDist < 8) {
-            showStatus(p, horizDist, true);
+            showStatus(p, horizDist, "arrived");
             stop();
             return;
         }
+
+        // ── Pre-glide: NEVER touch rotation while the player is on the ground
+        //    or mid-jump. Only attempt to deploy elytra once airborne. This
+        //    fixes the "view locks before I can even jump" bug.
+        if (!p.isFallFlying()) {
+            if (p.onGround()) {
+                showStatus(p, horizDist, "jump");
+                return;
+            }
+            // Airborne but not gliding → try to deploy every tick. Removed
+            // the old `y < 0` gate so jumps off short ledges still trigger.
+            try { p.tryToStartFallFlying(); } catch (Throwable ignored) {}
+            showStatus(p, horizDist, "deploying");
+            return;
+        }
+
+        // ── From here on the player is gliding: full autopilot ──────────────
 
         // Lock yaw on target
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         p.setYRot(yaw);
         p.setYHeadRot(yaw);
 
-        // ── Distance-banded base pitch ───────────────────────────────────────
-        // Tightened curve near target so the player kisses the ground at low
-        // vertical speed instead of slamming in at 28° dive angle.
+        // Distance-banded base pitch (kisses the ground gently near the end)
         float pitch;
-        if      (horizDist > 200) pitch = -3f;     // cruise
-        else if (horizDist > 80)  pitch = 10f;     // descend
-        else if (horizDist > 30)  pitch = 20f;     // steep approach
-        else if (horizDist > 15)  pitch = 8f;      // flare for landing
-        else                      pitch = -2f;     // touch-down: level out
+        if      (horizDist > 200) pitch = -3f;
+        else if (horizDist > 80)  pitch = 10f;
+        else if (horizDist > 30)  pitch = 20f;
+        else if (horizDist > 15)  pitch = 8f;
+        else                      pitch = -2f;
 
-        // ── Altitude floor: climb to safe Y when too low and still far ──────
+        // Altitude floor — climb when too low and still far from target
         double safeY = isNether() ? 80 : 120;
         if (p.getY() < safeY - 5 && horizDist > 80) {
             pitch = Math.min(pitch, -10f);
         }
 
-        // ── Speed-aware multi-ray danger detection ──────────────────────────
+        // Speed-aware multi-ray danger detection
         double speed = p.getDeltaMovement().horizontalDistance();
-        double lookahead = Math.max(15, speed * 12);     // ~12 ticks of flight
-        boolean groundDanger  = nearestBelow(p, mc, 7)      < Double.MAX_VALUE;
+        double lookahead = Math.max(15, speed * 12);
+        boolean groundDanger  = nearestBelow(p, mc, 7) < Double.MAX_VALUE;
         double  forwardHit    = nearestAhead(p, mc, lookahead);
         boolean forwardDanger = forwardHit < lookahead;
         boolean ceilingDanger = isNether() && ceilingTooClose(p, mc, 4);
 
-        // ── Avoidance overrides (highest priority wins) ─────────────────────
         if (groundDanger) {
-            pitch = -25f;                            // pull up hard
+            pitch = -25f;
         } else if (forwardDanger) {
-            // Closer obstacle → steeper climb
             pitch = forwardHit < lookahead * 0.4 ? -40f : -28f;
         } else if (ceilingDanger) {
-            pitch = 20f;                             // push away from ceiling
+            pitch = 20f;
         }
 
         p.setXRot(pitch);
 
-        // Deploy elytra if airborne and falling but not gliding
-        if (!p.isFallFlying() && !p.onGround() && p.getDeltaMovement().y < 0) {
-            try { p.tryToStartFallFlying(); } catch (Throwable ignored) {}
-        }
-
-        // Auto-rocket — skip when in danger so we don't boost into the wall,
-        // and skip on landing approach so we glide in slowly.
+        // Auto-rocket — skip when in danger or in landing approach
         boolean inDanger = groundDanger || forwardDanger;
         boolean landingPhase = horizDist < 50;
-        if (p.isFallFlying() && !inDanger && !landingPhase && rocketCooldown <= 0) {
+        if (!inDanger && !landingPhase && rocketCooldown <= 0) {
             if (fireRocket(p, mc)) rocketCooldown = 60;
         }
         if (rocketCooldown > 0) rocketCooldown--;
 
-        showStatus(p, horizDist, false);
+        showStatus(p, horizDist, "flying");
     }
 
     // ── Raycast helpers ──────────────────────────────────────────────────────
@@ -239,10 +246,20 @@ public class ElytraGotoMod {
         }
     }
 
-    private static void showStatus(LocalPlayer p, double dist, boolean done) {
-        if (done) {
+    private static void showStatus(LocalPlayer p, double dist, String state) {
+        if ("arrived".equals(state)) {
             p.displayClientMessage(Component.literal(
                 String.format("§a[Goto] arrived (%.0fm)", dist)), true);
+            return;
+        }
+        if ("jump".equals(state)) {
+            p.displayClientMessage(Component.literal(
+                String.format("§e[Goto] §7waiting — jump off something (%.0fm to target)", dist)), true);
+            return;
+        }
+        if ("deploying".equals(state)) {
+            p.displayClientMessage(Component.literal(
+                "§e[Goto] §7deploying elytra…"), true);
             return;
         }
         double etaSec = dist / 33.0;
