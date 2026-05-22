@@ -1,5 +1,6 @@
 package com.valencia.mixin;
 
+import com.valencia.ElytraGotoMod;
 import com.valencia.ModConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -16,6 +17,11 @@ public class ChatMixin {
     @Inject(method = "handleChatInput",
             at = @At("HEAD"), cancellable = true, require = 0)
     private void nofall$interceptChat(String message, boolean addToHistory, CallbackInfo ci) {
+        if (message.startsWith(".nf goto")) {
+            ci.cancel();
+            handleGoto(message);
+            return;
+        }
         if (!message.startsWith(".nf bind ")) return;
         ci.cancel();
 
@@ -51,6 +57,32 @@ public class ChatMixin {
         }
         cfg.save();
         msg(mc, "§a[Valencia] §e" + target + " §arebound to §e" + keyName);
+    }
+
+    private static void handleGoto(String message) {
+        Minecraft mc = Minecraft.getInstance();
+        String[] parts = message.split("\\s+");
+        // .nf goto stop
+        if (parts.length == 3 && parts[2].equalsIgnoreCase("stop")) {
+            ElytraGotoMod.stop();
+            msg(mc, "§7[Goto] §cstopped");
+            return;
+        }
+        // .nf goto X Y Z   (Y optional — defaults to 64)
+        if (parts.length == 4 || parts.length == 5) {
+            try {
+                double x = Double.parseDouble(parts[2]);
+                double y = parts.length == 5 ? Double.parseDouble(parts[3]) : 64;
+                double z = Double.parseDouble(parts[parts.length - 1]);
+                ElytraGotoMod.setTarget(x, y, z);
+                double dist = ElytraGotoMod.horizontalDistance();
+                msg(mc, String.format("§a[Goto] §ftarget §e%.0f,%.0f,%.0f §7(%.0fm, ~%.0fs)",
+                    x, y, z, dist, dist / 33.0));
+                msg(mc, "§7Equip elytra + put fireworks in main/off hand, then jump off something.");
+                return;
+            } catch (NumberFormatException ignored) {}
+        }
+        msg(mc, "§cUsage: .nf goto <x> [y] <z>  |  .nf goto stop");
     }
 
     private static void msg(Minecraft mc, String text) {

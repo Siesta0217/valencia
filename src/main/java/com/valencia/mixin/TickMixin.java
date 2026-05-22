@@ -3,6 +3,7 @@ package com.valencia.mixin;
 import com.valencia.BHopMod;
 import com.valencia.ClickGuiScreen;
 import com.valencia.CritMod;
+import com.valencia.ElytraGotoMod;
 import com.valencia.FastPlaceMod;
 import com.valencia.KillAuraMod;
 import com.valencia.MaceAuraMod;
@@ -84,6 +85,8 @@ public abstract class TickMixin {
         }
 
         if (FastPlaceMod.isActive()) rightClickDelay = 0;
+
+        ElytraGotoMod.tick();
 
         nofall$prevN   = nDown;
         nofall$prevX   = xDown;

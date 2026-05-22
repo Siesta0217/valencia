@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.3.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.4.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -22,6 +22,7 @@ Latest: **v1.3.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 | **CritHit** | `R` | 自動 micro-hop 觸發暴擊 |
 | **Scaffold** | `J` | 自動橋方塊 + Tower 模式（按 SPACE 自動疊塔） |
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
+| **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **ClickGUI** | `右 Ctrl` | 可拖曳面板，展開每個模組的詳細設定 |
 
 ### ClickGUI 設定項
@@ -31,6 +32,7 @@ Latest: **v1.3.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 - **Step**：步高滑桿（1.0×–3.0×）
 - **BHop**：速度倍率（0.5×–2.5×）、Low Hop + Jump Height（0.1–1.0）、Boost（1.0–1.5，**每 air tick 複合**，封頂 2.5）、KB Boost（受擊把擊退轉為前進）
 - **Timer**：玩家 tick 倍速滑桿（1.0×–3.0×）
+- **ElytraGoto**：用 `.nf goto <x> [y] <z>` 設目標、`.nf goto stop` 停止；動作列顯示距離 / ETA / 主世界↔下界座標對照
 - **Scaffold**：Tower / Tower Move / Tower Speed / Fake Hand / Silent Rot / Auto Switch / Switch Back / Place Delay
 - **Velocity**：水平 / 垂直擊退倍率
 - **Theme Color**：主題色 RGB + 背景透明度
@@ -59,6 +61,9 @@ Latest: **v1.3.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
        velocity / fastplace / crit / scaffold / timer / gui
 鍵名：N  X  Z  K  G  B  H  C  F  R  J  T  RIGHT_CONTROL  F5  ...
        （GLFW 名稱去掉 GLFW_KEY_ 前綴）
+
+.nf goto <x> [y] <z>    # 設定 ElytraGoto 目標座標並啟動（Y 可省略，預設 64）
+.nf goto stop           # 取消目標 + 關掉自動駕駛
 ```
 
 常用 key codes：`B=66  C=67  F=70  G=71  H=72  J=74  K=75  N=78  R=82  T=84  X=88  Z=90  RIGHT_CONTROL=345`
@@ -80,7 +85,7 @@ Latest: **v1.3.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.3.0.jar
+# JAR → build/libs/valencia-1.4.0.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -89,6 +94,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.4.0
+- 新增 **ElytraGoto** 模組：輸入 `.nf goto <x> [y] <z>` 後自動鎖定 yaw 朝目標、依距離調整 pitch、自動發射主手 / 副手的煙火火箭，動作全是 vanilla 合法所以 anti-cheat 抓不到
+- 動作列同步顯示：剩餘距離 / ETA / 當前座標 / 主世界↔下界座標換算（除 8）
 
 ### v1.3.0
 - 新增 **Timer** 模組（預設 `T`）：每 game tick 額外 tick 玩家 N 次，1.0–3.0× 滑桿

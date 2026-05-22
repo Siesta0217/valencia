@@ -187,6 +187,11 @@ public class ClickGuiScreen extends Screen {
                 new KeyS("Key",      () -> cfg.timerKey,           v -> { cfg.timerKey = v; cfg.save(); })
             )));
 
+        mods.add(new ModEntry("ElytraGoto", Category.MOVEMENT,
+            ElytraGotoMod::isEnabled, ElytraGotoMod::toggle, true,
+            List.<Setting>of()  // target is set via .nf goto X Y Z chat command
+        ));
+
         // Visuals
         mods.add(new ModEntry("XRay", Category.VISUALS,
             XRayMod::isEnabled, XRayMod::toggle, true,
