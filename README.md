@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.12** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.13** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.12** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.12.jar
+# JAR → build/libs/valencia-1.6.13.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.13 — waifu 真的修好了（class 名稱搞錯）
+- 從 loom 抽出的 1.21.11 MC jar 確認三個關鍵差異：
+  - 在這個 Lunar build 裡 `net.minecraft.resources.ResourceLocation` 實際叫 `Identifier`（Yarn 名稱）
+  - `DynamicTexture(NativeImage)` constructor 不存在，要用 `DynamicTexture(Supplier<String>, NativeImage)`
+  - `GuiGraphics.blit` 的 9-arg 簽名是 `(Identifier, int, int, int, int, float, float, float, float)` — 跟我假設的 1.21 標準簽名不同
+- 整個 waifu 載入改用**直接 import**（不再反射），同時加 `waifuErr` 顯示實際錯誤訊息
+- 之前的「不會讀到」就是 `Class.forName("ResourceLocation")` 直接 throw → 被 catch 吞掉 → silent fail
 
 ### v1.6.12 — ElytraGoto 找到真正拒收原因：deploy 太早送
 - 使用者報告手動完全沒拒收問題（一跳一發就成功），但模組怎麼樣都被拒
