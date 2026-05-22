@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.4.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.4.1** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -85,7 +85,7 @@ Latest: **v1.4.0** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.4.0.jar
+# JAR → build/libs/valencia-1.4.1.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -94,6 +94,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.4.1 — ElytraGoto safety
+- **Dimension lock**：在主世界設目標後跨進地獄會自動暫停（保留目標，回到原 dimension 自動恢復），不會傻傻往錯地方飛
+- **障礙閃避**：raycast 偵測前方 14 格 / 下方 6 格 / 地獄天花板 4 格，撞到山或太靠近地面會自動 pull up（pitch -25° ~ -30°）
+- **死亡 / 殘血保護**：玩家死亡或 HP ≤ 2 顆心自動關閉，不會繼續發射煙火
+- **動作列雙向座標**：在主世界顯示「nether x/8」對照，在地獄顯示「overworld x*8」對照（方便決定要不要 portal）
 
 ### v1.4.0
 - 新增 **ElytraGoto** 模組：輸入 `.nf goto <x> [y] <z>` 後自動鎖定 yaw 朝目標、依距離調整 pitch、自動發射主手 / 副手的煙火火箭，動作全是 vanilla 合法所以 anti-cheat 抓不到
