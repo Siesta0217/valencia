@@ -448,10 +448,11 @@ public class ClickGuiScreen extends Screen {
         try {
             int dispH = Math.min(height / 3, 150);
             int dispW = waifuTexW * dispH / waifuTexH;
-            // 1.21.11 signature: blit(Identifier, int x, int y, int width, int height,
-            //                         float u, float v, float uWidth, float vHeight)
-            // u/v in pixels, divided internally by texture dimensions.
-            g.blit(waifuLoc, 4, height - dispH - 14, dispW, dispH, 0f, 0f, (float) waifuTexW, (float) waifuTexH);
+            // 1.21.11 signature: blit(Identifier, x1, y1, x2, y2, u1, u2, v1, v2)
+            // — corners, not (x,y,w,h). UV are normalized 0..1, not pixels.
+            int x1 = 4;
+            int y1 = height - dispH - 14;
+            g.blit(waifuLoc, x1, y1, x1 + dispW, y1 + dispH, 0f, 1f, 0f, 1f);
         } catch (Throwable t) {
             g.drawString(font, "§c[waifu render err] " + t.getClass().getSimpleName(),
                 4, height - 20, 0xFF888888, false);

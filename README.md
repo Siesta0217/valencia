@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.13** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.14** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -88,7 +88,7 @@ Latest: **v1.6.13** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.13.jar
+# JAR → build/libs/valencia-1.6.14.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +97,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.14 — waifu 終於顯示了（blit 參數順序搞錯）
+- v1.6.13 改對了 class 名稱（Identifier），但 `blit` 9-arg 簽名其實是 `(Identifier, x1, y1, x2, y2, u1, u2, v1, v2)` — 角座標 + normalize UV，不是 `(x, y, w, h, u, v, uW, vH)` + pixel UV
+- 從 loom jar 的 bytecode 確認：9-arg blit 內部呼叫 `innerBlit(pipeline, id, x1, x2, y1, y2, ...)`，且 UV 是 0..1 normalize
+- 原本傳的等於繪一個零寬度切片到鬼地方所以看不見，也不會 throw
 
 ### v1.6.13 — waifu 真的修好了（class 名稱搞錯）
 - 從 loom 抽出的 1.21.11 MC jar 確認三個關鍵差異：
