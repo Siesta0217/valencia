@@ -27,6 +27,9 @@ import java.lang.reflect.Field;
 public class ScaffoldMod {
 
     private static boolean enabled = false;
+    // Track whether last tick stamped tower velocity, so disable can detect
+    // leftover upward momentum and kill it.
+    private static boolean towerStamped = false;
 
     // ── User-facing settings ──────────────────────────────────────────────────
     public static boolean tower       = false;  // jump-up + auto place under foot
@@ -61,7 +64,36 @@ public class ScaffoldMod {
     private static void setSelected(Inventory inv, int slot)  { if (SELECTED_FIELD == null) return; try { SELECTED_FIELD.setInt(inv, slot); } catch (Exception ignored) {} }
 
     public static boolean isEnabled() { return enabled; }
-    public static void toggle()       { enabled = !enabled; }
+    public static void toggle() {
+        enabled = !enabled;
+        if (!enabled) onDisable();
+    }
+
+    /**
+     * Clean up state that, left untouched, can soft-lock left-click breaking
+     * for ~10–20 ticks after disabling Tower:
+     *  - leftover upward y-velocity keeps the player airborne with hitResult=null
+     *    → every left-click trips startAttack's miss-time guard (sets missTime=10).
+     *  - placeTimer leftover from the last cycle blocks the next enable.
+     *  - rightClickDelay reset is defensive; Minecraft.startUseItem leaves it
+     *    at 4 if our useItemOn ran in the same tick the user disabled.
+     */
+    private static void onDisable() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p != null && towerStamped) {
+            Vec3 v = p.getDeltaMovement();
+            if (v.y > 0) p.setDeltaMovement(v.x, 0, v.z);
+        }
+        towerStamped = false;
+        placeTimer = 0;
+        restoreSlot(mc);
+        try {
+            Field rcd = Minecraft.class.getDeclaredField("rightClickDelay");
+            rcd.setAccessible(true);
+            rcd.setInt(mc, 0);
+        } catch (Exception ignored) {}
+    }
 
     public static boolean isActive() {
         if (!enabled) return false;
@@ -98,6 +130,9 @@ public class ScaffoldMod {
             } else {
                 p.setDeltaMovement(0, y, 0);
             }
+            towerStamped = true;
+        } else {
+            towerStamped = false;
         }
 
         if (placeTimer > 0) { placeTimer--; return; }

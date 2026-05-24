@@ -69,21 +69,54 @@ public class ChatMixin {
             msg(mc, "§8tip: 想走路請先脫掉鞘翅 — vanilla MC 機制下，穿著鞘翅按 SPACE 在空中會自動展翅");
             return;
         }
-        // .nf goto X Y Z   (Y optional — defaults to 64)
-        if (parts.length == 4 || parts.length == 5) {
+
+        // Optional dimension-frame prefix: ow / nether (aliases: o / n).
+        // Lets the user say "these coords are in the overworld frame" so we
+        // auto-convert (÷8 or ×8) when standing in the other dimension. Y is
+        // never scaled — vanilla portals keep Y unchanged across dimensions.
+        int argStart = 2;
+        String frame = null;
+        if (parts.length >= 4) {
+            String tag = parts[2].toLowerCase();
+            if (tag.equals("ow") || tag.equals("o") || tag.equals("overworld")) {
+                frame = "ow"; argStart = 3;
+            } else if (tag.equals("nether") || tag.equals("n")) {
+                frame = "nether"; argStart = 3;
+            }
+        }
+
+        int argCount = parts.length - argStart;
+        // X Y Z, or X Z (Y defaults to 64)
+        if (argCount == 2 || argCount == 3) {
             try {
-                double x = Double.parseDouble(parts[2]);
-                double y = parts.length == 5 ? Double.parseDouble(parts[3]) : 64;
+                double x = Double.parseDouble(parts[argStart]);
+                double y = argCount == 3 ? Double.parseDouble(parts[argStart + 1]) : 64;
                 double z = Double.parseDouble(parts[parts.length - 1]);
+
+                boolean inNether = mc.level != null
+                    && mc.level.dimension().toString().contains("the_nether");
+                String note = null;
+                if ("ow".equals(frame) && inNether) {
+                    x /= 8.0; z /= 8.0;
+                    note = "OW→Nether ÷8";
+                } else if ("nether".equals(frame) && !inNether) {
+                    x *= 8.0; z *= 8.0;
+                    note = "Nether→OW ×8";
+                }
+
                 ElytraGotoMod.setTarget(x, y, z);
                 double dist = ElytraGotoMod.horizontalDistance();
-                msg(mc, String.format("§a[Goto] §ftarget §e%.0f,%.0f,%.0f §7(%.0fm, ~%.0fs)",
-                    x, y, z, dist, dist / 33.0));
+                String header = note != null
+                    ? String.format("§a[Goto] §ftarget §e%.0f,%.0f,%.0f §7(%s, %.0fm, ~%.0fs)",
+                        x, y, z, note, dist, dist / 33.0)
+                    : String.format("§a[Goto] §ftarget §e%.0f,%.0f,%.0f §7(%.0fm, ~%.0fs)",
+                        x, y, z, dist, dist / 33.0);
+                msg(mc, header);
                 msg(mc, "§7Equip elytra + put fireworks in main/off hand, then jump off something.");
                 return;
             } catch (NumberFormatException ignored) {}
         }
-        msg(mc, "§cUsage: .nf goto <x> [y] <z>  |  .nf goto stop");
+        msg(mc, "§cUsage: .nf goto [ow|nether] <x> [y] <z>  |  .nf goto stop");
     }
 
     private static void msg(Minecraft mc, String text) {

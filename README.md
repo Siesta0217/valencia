@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.14** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.16** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -65,8 +65,10 @@ Latest: **v1.6.14** — [Download JAR](https://github.com/Siesta0217/valencia/re
 鍵名：N  X  Z  K  G  B  H  C  F  R  J  T  RIGHT_CONTROL  F5  ...
        （GLFW 名稱去掉 GLFW_KEY_ 前綴）
 
-.nf goto <x> [y] <z>    # 設定 ElytraGoto 目標座標並啟動（Y 可省略，預設 64）
-.nf goto stop           # 取消目標 + 關掉自動駕駛
+.nf goto <x> [y] <z>           # 當前維度座標（Y 可省略，預設 64）
+.nf goto ow <x> [y] <z>        # 主世界座標，在地獄會自動 ÷8 換算
+.nf goto nether <x> [y] <z>    # 地獄座標，在主世界會自動 ×8 換算
+.nf goto stop                  # 取消目標 + 關掉自動駕駛
 ```
 
 常用 key codes：`B=66  C=67  F=70  G=71  H=72  J=74  K=75  N=78  R=82  T=84  X=88  Z=90  RIGHT_CONTROL=345`
@@ -88,7 +90,7 @@ Latest: **v1.6.14** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.14.jar
+# JAR → build/libs/valencia-1.6.16.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -97,6 +99,18 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.16 — ElytraGoto 支援 ow / nether 跨維度座標前綴
+- `.nf goto <x> [y] <z>` 維持原本「當前維度座標」行為
+- 新增 `.nf goto ow <x> [y] <z>`：宣告這組是主世界座標，在地獄會自動 ÷8 飛到對應的下界點；蓋傳送門出來就會落在原本指定的主世界座標附近
+- 新增 `.nf goto nether <x> [y] <z>`：反向，在主世界自動 ×8。簡寫 `o` / `n` 也支援
+- Y **不**換算（vanilla 傳送門 Y 是 1:1），只縮放 XZ
+- 換算完才呼叫 `setTarget()`，所以 `inWrongDimension` 暫停邏輯不受影響：過傳送門切維度後仍會暫停（這時繼續飛沒意義）
+- 動作列顯示 `(OW→Nether ÷8)` / `(Nether→OW ×8)` 註記讓使用者確認實際飛的座標
+
+### v1.6.15 — CritHit 真的會觸發暴擊 + Scaffold 關閉後不再卡攻擊
+- **CritHit**：原本只在 client-side 設 `fallDistance = 1.0f`，server 端完全看不到 → 永遠不會判 crit。從 bytecode 抽 `Player.canCriticalAttack()`：要 `fallDistance > 0 && !onGround && !sprinting && !水/梯子/載具 && target 是 LivingEntity && 攻擊冷卻 > 0.9`。新寫法：攻擊 HEAD 觸發時，地上 + 冷卻滿 + 非 sprint 時送三發 `ServerboundMovePlayerPacket.Pos(onGround=false)` mini-hop，server 端 `fallDistance` 變正、`onGround` 變 false → server-side crit 條件達成。視覺上 client 完全不動。Sprint 中不觸發（hypixel watchdog 對 sprint + crit 會抓），要 crit 就先放 sprint
+- **Scaffold tower**：關掉模組後一段時間打不到方塊 — root cause 是 tower mode 每 tick `setDeltaMovement(0, towerSpeed+0.08, 0)`，user disable 時 player 上升慣性還沒消失，繼續飛幾 tick → 期間 hitResult=null（看天空），每次按左鍵 `Minecraft.startAttack` 偵測到後設 `missTime=10`，累積成「破壞不了一段時間」。修法：disable 時殺掉殘留的上升動量（v.y > 0 設成 0），順便 reset `placeTimer` + `Minecraft.rightClickDelay` 防其他狀態 stuck
 
 ### v1.6.14 — waifu 終於顯示了（blit 參數順序搞錯）
 - v1.6.13 改對了 class 名稱（Identifier），但 `blit` 9-arg 簽名其實是 `(Identifier, x1, y1, x2, y2, u1, u2, v1, v2)` — 角座標 + normalize UV，不是 `(x, y, w, h, u, v, uW, vH)` + pixel UV

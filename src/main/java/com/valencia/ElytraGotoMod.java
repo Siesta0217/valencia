@@ -19,7 +19,10 @@ import net.minecraft.world.phys.Vec3;
  * is a vanilla input (rotation, useItem, tryToStartFallFlying), so a server
  * can't tell it apart from a real player flying.
  *
- * Set target via chat: `.nf goto <x> [y] <z>`. Stop with `.nf goto stop`.
+ * Set target via chat: `.nf goto [ow|nether] <x> [y] <z>`.
+ * Optional frame prefix (`ow` / `nether`) auto-converts the XZ pair
+ * by ÷8 / ×8 when standing in the other dimension; Y is never scaled
+ * because vanilla portals keep Y unchanged. Stop with `.nf goto stop`.
  *
  * Safety layers (in priority order, each can override the base pitch):
  *  - Death / HP &lt;= safeHpThreshold: full stop
@@ -547,7 +550,7 @@ public class ElytraGotoMod {
                 rockets, consumed, firesAttempted);
         }
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto v1.6.12] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
+            String.format("§b[Goto v1.6.16] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
                 dist, etaSec, (int) p.getY(), ammo)), true);
     }
 }
