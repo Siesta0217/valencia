@@ -3,6 +3,8 @@ package com.valencia.mixin;
 import com.valencia.HitboxMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,8 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Inflates {@code Entity.getBoundingBox()} returned AABB by
  * {@link HitboxMod#expand} so melee hit detection picks up edge swings.
- * Skips the local player (would mess up our own collision) and optionally
- * skips non-player entities when {@code playersOnly} is on.
+ * Skips the local player (would mess up our own collision) and gates
+ * each category (players / hostile / animals) on its own toggle so the
+ * user can keep PvP-only or PvE-only behavior.
  */
 @Mixin(Entity.class)
 public abstract class HitboxMixin {
@@ -32,7 +35,11 @@ public abstract class HitboxMixin {
         Minecraft mc = Minecraft.getInstance();
         if (self == mc.player) return;
 
-        if (HitboxMod.playersOnly && !(self instanceof Player)) return;
+        boolean match =
+            (HitboxMod.players && self instanceof Player) ||
+            (HitboxMod.hostile && self instanceof Enemy)  ||
+            (HitboxMod.animals && self instanceof Animal);
+        if (!match) return;
 
         AABB orig = cir.getReturnValue();
         if (orig == null) return;

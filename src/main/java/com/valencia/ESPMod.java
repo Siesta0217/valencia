@@ -23,16 +23,29 @@ public class ESPMod {
     public static boolean animals  = false;
     public static boolean items    = false;
 
+    /** Draw 2D screen-space rectangle around each target's bounding box.
+     *  Because {@link HitboxMod} inflates {@code getBoundingBox()} via mixin,
+     *  enabling Hitbox automatically grows the ESP rectangle too. */
+    public static boolean showBox = false;
+
+    /** ARGB color for the ESP box outline. Default opaque cyan. */
+    public static int boxColor = 0xFF00E5FF;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
-    public static boolean shouldGlow(Entity e) {
+    /** Whether ESP should target this entity (used by both glow + box). */
+    public static boolean targets(Entity e) {
         if (!enabled || e == null) return false;
-        if (e == Minecraft.getInstance().player) return false;   // never glow self
+        if (e == Minecraft.getInstance().player) return false;
         if (players  && e instanceof Player)     return true;
         if (hostile  && e instanceof Enemy)      return true;
         if (animals  && e instanceof Animal)     return true;
         if (items    && e instanceof ItemEntity) return true;
         return false;
+    }
+
+    public static boolean shouldGlow(Entity e) {
+        return targets(e);
     }
 }

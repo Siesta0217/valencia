@@ -154,10 +154,14 @@ public class ClickGuiScreen extends Screen {
             },
             true,
             List.of(
-                new SliderS("Expand",       () -> (double)cfg.hitboxExpand,
+                new SliderS("Expand",  () -> (double)cfg.hitboxExpand,
                     v -> { cfg.hitboxExpand = (float)v; HitboxMod.expand = (float)v; cfg.save(); }, 0.05, 1.0),
-                new BoolS("Players Only",   () -> cfg.hitboxPlayersOnly,
-                    () -> { cfg.hitboxPlayersOnly = !cfg.hitboxPlayersOnly; HitboxMod.playersOnly = cfg.hitboxPlayersOnly; cfg.save(); })
+                new BoolS("Players",   () -> cfg.hitboxPlayers,
+                    () -> { cfg.hitboxPlayers = !cfg.hitboxPlayers; HitboxMod.players = cfg.hitboxPlayers; cfg.save(); }),
+                new BoolS("Hostile",   () -> cfg.hitboxHostile,
+                    () -> { cfg.hitboxHostile = !cfg.hitboxHostile; HitboxMod.hostile = cfg.hitboxHostile; cfg.save(); }),
+                new BoolS("Animals",   () -> cfg.hitboxAnimals,
+                    () -> { cfg.hitboxAnimals = !cfg.hitboxAnimals; HitboxMod.animals = cfg.hitboxAnimals; cfg.save(); })
             )));
 
         // Movement
@@ -294,7 +298,9 @@ public class ClickGuiScreen extends Screen {
                 new BoolS("Animals", () -> cfg.espAnimals,
                     () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
                 new BoolS("Items",   () -> cfg.espItems,
-                    () -> { cfg.espItems   = !cfg.espItems;   ESPMod.items   = cfg.espItems;   cfg.save(); })
+                    () -> { cfg.espItems   = !cfg.espItems;   ESPMod.items   = cfg.espItems;   cfg.save(); }),
+                new BoolS("Show Box", () -> cfg.espShowBox,
+                    () -> { cfg.espShowBox = !cfg.espShowBox; ESPMod.showBox = cfg.espShowBox; cfg.save(); })
             )
         ));
 

@@ -29,10 +29,12 @@ public class HitboxMod {
     /** Amount to inflate AABB by (each axis, each side). 0.3 ≈ +60 cm wider. */
     public static float expand = 0.3f;
 
-    /** Restrict expansion to players only. Default false so PvE on servers
-     *  (mobs, animals) benefits too — flip on if pure PvP and you want to
-     *  minimise side-effects on mob AI / collision. */
-    public static boolean playersOnly = false;
+    /** Per-category toggles — same convention as KillAura / ESPMod. Default
+     *  all-on; flip individual categories off if you want to minimise side
+     *  effects on a specific entity class (e.g. mob AI pathfinding). */
+    public static boolean players = true;
+    public static boolean hostile = true;
+    public static boolean animals = true;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle() { enabled = !enabled; }

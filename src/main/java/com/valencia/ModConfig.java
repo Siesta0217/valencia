@@ -47,9 +47,11 @@ public class ModConfig {
     public float   noCrashMaxSpeed  = 0.4f;
 
     // Hitbox (entity bounding box expansion)
-    public boolean hitboxEnabled     = false;
-    public float   hitboxExpand      = 0.3f;
-    public boolean hitboxPlayersOnly = false;
+    public boolean hitboxEnabled = false;
+    public float   hitboxExpand  = 0.3f;
+    public boolean hitboxPlayers = true;
+    public boolean hitboxHostile = true;
+    public boolean hitboxAnimals = true;
 
     // MaceAura tuning
     public float maceDetectRange = 6.0f;
@@ -128,6 +130,8 @@ public class ModConfig {
     public boolean espHostile = false;
     public boolean espAnimals = false;
     public boolean espItems   = false;
+    public boolean espShowBox = false;
+    public int     espBoxColor = 0xFF00E5FF;
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;

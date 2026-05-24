@@ -1,5 +1,6 @@
 package com.valencia.mixin;
 
+import com.valencia.ESPRenderer;
 import com.valencia.NetherCoordMod;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
@@ -15,5 +16,6 @@ public abstract class HudMixin {
     @Inject(method = "render", at = @At("TAIL"))
     private void valencia$hud(GuiGraphics g, DeltaTracker delta, CallbackInfo ci) {
         NetherCoordMod.render(g);
+        ESPRenderer.render(g);
     }
 }

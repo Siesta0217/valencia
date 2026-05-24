@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.20** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.21** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -24,7 +24,7 @@ Latest: **v1.6.20** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
 | **SpearAura** | `U` | 1.21.11 Spear 武器自動鎖定 + silent aim，Jab / Charge / Auto 三模式，自動 step-back 避免太近戳不到 |
 | **NoCrash** | — | 鞘翅飛行中前方 raycast 偵測到牆自動減速到 0.4 b/t，server 看到的是自然減速不觸發 wall damage |
-| **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中（mixin 進 `Entity.getBoundingBox()` RETURN inflate），預設放大全部 |
+| **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中，Players / Hostile / Animals 三開關 |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
 | **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物（牆後也看得到輪廓），用 vanilla glow shader |
@@ -95,7 +95,7 @@ Latest: **v1.6.20** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.20.jar
+# JAR → build/libs/valencia-1.6.21.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -104,6 +104,15 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.21 — Hitbox 拆三開關（KillAura 風格）+ ESP 新增 2D hitbox 框顯示
+- **Hitbox 三開關**：`Players` / `Hostile` / `Animals`（取代原本的 `Players Only` 反向開關），跟 KillAura / ESP 同一套介面。預設全開
+- **ESP 新增 Show Box**：開啟後在每個 ESP 目標的螢幕投影位置畫 2D 矩形外框
+  - 投影邏輯：取 `entity.getBoundingBox()` 8 個角，用 camera 反向四元數 + perspective projection 換算到 GUI 座標，找 min/max 圍成矩形
+  - **自動跟著 HitboxMod 大小變化** — 因為 `getBoundingBox()` 就是 HitboxMixin mixin 的回傳，所以 HitboxMod 拉大 expand 滑桿時 ESP 框跟著變大
+  - 跟現有 glow ESP 獨立 — 兩個都可同時開、或只開一個
+  - 用 2D 而不是 3D wireframe 是因為 1.21.11 新 framegraph render pipeline 比較難 mixin；2D overlay 走 HudMixin 已驗證的渲染路徑
+- 顏色預設 cyan (`0xFF00E5FF`)，可在 `<config>/valencia.json` 改 `espBoxColor`
 
 ### v1.6.20 — Hitbox 預設改放大全部實體（PvE 友善）
 - `hitboxPlayersOnly` 預設 `true → false`：新安裝直接放大玩家 + mob + 動物，伺服器 PvE 也受益

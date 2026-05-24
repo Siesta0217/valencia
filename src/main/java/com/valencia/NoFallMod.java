@@ -33,8 +33,13 @@ public class NoFallMod implements ClientModInitializer {
         NoCrashMod.lookahead = cfg.noCrashLookAhead;
         NoCrashMod.maxSpeed  = cfg.noCrashMaxSpeed;
 
-        HitboxMod.expand      = cfg.hitboxExpand;
-        HitboxMod.playersOnly = cfg.hitboxPlayersOnly;
+        HitboxMod.expand  = cfg.hitboxExpand;
+        HitboxMod.players = cfg.hitboxPlayers;
+        HitboxMod.hostile = cfg.hitboxHostile;
+        HitboxMod.animals = cfg.hitboxAnimals;
+
+        ESPMod.showBox  = cfg.espShowBox;
+        ESPMod.boxColor = cfg.espBoxColor;
 
         SpearAuraMod.SCAN_RANGE         = cfg.spearScanRange;
         SpearAuraMod.MIN_REACH          = cfg.spearMinReach;
