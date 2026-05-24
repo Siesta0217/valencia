@@ -26,6 +26,17 @@ public class NoFallMod implements ClientModInitializer {
         if (cfg.critEnabled       != CritMod.isEnabled())       CritMod.toggle();
         if (cfg.scaffoldEnabled   != ScaffoldMod.isEnabled())   ScaffoldMod.toggle();
         if (cfg.timerEnabled      != TimerMod.isEnabled())      TimerMod.toggle();
+        if (cfg.spearAuraEnabled  != SpearAuraMod.isEnabled())  SpearAuraMod.toggle();
+
+        SpearAuraMod.SCAN_RANGE         = cfg.spearScanRange;
+        SpearAuraMod.MIN_REACH          = cfg.spearMinReach;
+        SpearAuraMod.MAX_REACH          = cfg.spearMaxReach;
+        SpearAuraMod.mode               = cfg.spearMode;
+        SpearAuraMod.targetPlayers      = cfg.spearPlayers;
+        SpearAuraMod.targetHostile      = cfg.spearHostile;
+        SpearAuraMod.targetAnimals      = cfg.spearAnimals;
+        SpearAuraMod.autoStepBack       = cfg.spearStepBack;
+        SpearAuraMod.chargeReleaseTicks = cfg.spearChargeTicks;
 
         ScaffoldMod.tower      = cfg.scaffoldTower;
         ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;

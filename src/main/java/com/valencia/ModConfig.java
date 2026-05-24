@@ -27,6 +27,19 @@ public class ModConfig {
     public int critKey       = GLFW.GLFW_KEY_R;
     public int scaffoldKey   = GLFW.GLFW_KEY_J;
     public int timerKey      = GLFW.GLFW_KEY_T;
+    public int spearAuraKey  = GLFW.GLFW_KEY_U;
+
+    // SpearAura tuning
+    public float spearScanRange   = 7.0f;
+    public float spearMinReach    = 1.6f;
+    public float spearMaxReach    = 5.5f;
+    public int   spearMode        = 2;    // 0=Jab, 1=Charge, 2=Auto
+    public boolean spearPlayers   = true;
+    public boolean spearHostile   = true;
+    public boolean spearAnimals   = false;
+    public boolean spearStepBack  = true;
+    public int   spearChargeTicks = 12;
+    public boolean spearAuraEnabled = false;
 
     // MaceAura tuning
     public float maceDetectRange = 6.0f;

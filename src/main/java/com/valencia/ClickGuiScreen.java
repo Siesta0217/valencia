@@ -125,6 +125,22 @@ public class ClickGuiScreen extends Screen {
                 new KeyS("Key",          () -> cfg.maceAuraKey,     v -> { cfg.maceAuraKey = v; cfg.save(); })
             )));
 
+        mods.add(new ModEntry("SpearAura", Category.COMBAT,
+            SpearAuraMod::isEnabled, SpearAuraMod::toggle, true,
+            List.of(
+                // Mode: 0=Jab, 1=Charge, 2=Auto (picks Charge if mounted or moving fast)
+                new SliderS("Mode",      () -> cfg.spearMode,        v -> { cfg.spearMode      = (int)v;   SpearAuraMod.mode               = (int)v;   cfg.save(); }, 0, 2),
+                new SliderS("Scan Rng",  () -> cfg.spearScanRange,   v -> { cfg.spearScanRange = (float)v; SpearAuraMod.SCAN_RANGE         = (float)v; cfg.save(); }, 3, 10),
+                new SliderS("Min Reach", () -> cfg.spearMinReach,    v -> { cfg.spearMinReach  = (float)v; SpearAuraMod.MIN_REACH          = (float)v; cfg.save(); }, 0.5, 3),
+                new SliderS("Max Reach", () -> cfg.spearMaxReach,    v -> { cfg.spearMaxReach  = (float)v; SpearAuraMod.MAX_REACH          = (float)v; cfg.save(); }, 2, 8),
+                new SliderS("Chg Ticks", () -> cfg.spearChargeTicks, v -> { cfg.spearChargeTicks = (int)v; SpearAuraMod.chargeReleaseTicks = (int)v;   cfg.save(); }, 4, 30),
+                new BoolS("Hostile",     () -> cfg.spearHostile,     () -> { cfg.spearHostile  = !cfg.spearHostile;  SpearAuraMod.targetHostile = cfg.spearHostile; cfg.save(); }),
+                new BoolS("Animals",     () -> cfg.spearAnimals,     () -> { cfg.spearAnimals  = !cfg.spearAnimals;  SpearAuraMod.targetAnimals = cfg.spearAnimals; cfg.save(); }),
+                new BoolS("Players",     () -> cfg.spearPlayers,     () -> { cfg.spearPlayers  = !cfg.spearPlayers;  SpearAuraMod.targetPlayers = cfg.spearPlayers; cfg.save(); }),
+                new BoolS("Step Back",   () -> cfg.spearStepBack,    () -> { cfg.spearStepBack = !cfg.spearStepBack; SpearAuraMod.autoStepBack  = cfg.spearStepBack; cfg.save(); }),
+                new KeyS("Key",          () -> cfg.spearAuraKey,     v -> { cfg.spearAuraKey = v; cfg.save(); })
+            )));
+
         mods.add(new ModEntry("CritHit", Category.COMBAT,
             CritMod::isEnabled, CritMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.critKey, v -> { cfg.critKey = v; cfg.save(); }))));

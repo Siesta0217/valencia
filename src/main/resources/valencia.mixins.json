@@ -8,6 +8,7 @@
     "XRayBlockMixin",
     "ChatMixin",
     "MaceAuraMixin",
+    "SpearAuraMixin",
     "NoSlowMixin",
     "BHopMixin",
     "KillAuraMixin",

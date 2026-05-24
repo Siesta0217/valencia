@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.16** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.17** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -22,6 +22,7 @@ Latest: **v1.6.16** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **CritHit** | `R` | 自動 micro-hop 觸發暴擊 |
 | **Scaffold** | `J` | 自動橋方塊 + Tower 模式（按 SPACE 自動疊塔） |
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
+| **SpearAura** | `U` | 1.21.11 Spear 武器自動鎖定 + silent aim，Jab / Charge / Auto 三模式，自動 step-back 避免太近戳不到 |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
 | **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物（牆後也看得到輪廓），用 vanilla glow shader |
@@ -69,6 +70,8 @@ Latest: **v1.6.16** — [Download JAR](https://github.com/Siesta0217/valencia/re
 .nf goto ow <x> [y] <z>        # 主世界座標，在地獄會自動 ÷8 換算
 .nf goto nether <x> [y] <z>    # 地獄座標，在主世界會自動 ×8 換算
 .nf goto stop                  # 取消目標 + 關掉自動駕駛
+
+.nf bind spearaura <鍵名>      # 重綁 SpearAura toggle key
 ```
 
 常用 key codes：`B=66  C=67  F=70  G=71  H=72  J=74  K=75  N=78  R=82  T=84  X=88  Z=90  RIGHT_CONTROL=345`
@@ -90,7 +93,7 @@ Latest: **v1.6.16** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.16.jar
+# JAR → build/libs/valencia-1.6.17.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -99,6 +102,20 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.17 — SpearAura：1.21.11 新武器 Spear 的 Aura 模組
+- **新模組 SpearAura**（預設 `U`）— 為 Mounts of Mayhem 更新加入的 Spear 武器設計
+- **三種攻擊模式**（ClickGUI 滑桿切換）：
+  - **Jab**：短按攻擊，silent aim 對準身體中心後送一發 `mc.gameMode.attack()`，等同 MaceAura 但用 Spear 的傷害公式
+  - **Charge**：自動 `keyAttack.setDown(true)` 蓄力 N ticks 後 release，期間每 tick 重新 silent aim 跟住會跑的目標
+  - **Auto**：騎馬 / 移動速度 > 0.15 blocks/tick 自動切 Charge，否則 Jab。讓 PvE 圈怪 + PvP 騎馬衝擊用同一個鍵
+- **Spear 專屬機制處理**：
+  - 使用 `ItemTags.SPEARS` 判斷手持，七種材質（wooden..netherite）都認得
+  - 目標篩選照 sweet spot 距離（`(MIN+MAX)/2`）打分，太近的目標扣 100 分，不會鎖一個壓在臉上根本戳不到的怪
+  - **Min Reach**（預設 1.6）：Spear 在這距離內傷害是 0，模組偵測到目標太近就不送 attack 浪費 swing
+  - **Auto Step Back**：太近時自動按 S 拉開距離回到 sweet spot，可在 ClickGUI 關掉
+- **Silent aim 對準身體中心**（`y + bbHeight * 0.5`，不是頭部也不是腳）— wiki 說 view angle 是傷害係數之一，crosshair 對 centroid 時傷害最高
+- 不主動觸發 Lunge 附魔（會耗飢餓）；vanilla 自己看玩家有沒有 Lunge 附魔處理
 
 ### v1.6.16 — ElytraGoto 支援 ow / nether 跨維度座標前綴
 - `.nf goto <x> [y] <z>` 維持原本「當前維度座標」行為

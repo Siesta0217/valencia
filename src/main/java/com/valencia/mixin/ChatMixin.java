@@ -50,8 +50,9 @@ public class ChatMixin {
             case "bhop"      -> cfg.bhopKey       = keyCode;
             case "step"      -> cfg.stepKey       = keyCode;
             case "killaura"  -> cfg.killAuraKey   = keyCode;
+            case "spearaura" -> cfg.spearAuraKey  = keyCode;
             default -> {
-                msg(mc, "§cUnknown module. Options: nofall / xray / maceaura / noslow / gui / bhop / step / killaura");
+                msg(mc, "§cUnknown module. Options: nofall / xray / maceaura / spearaura / noslow / gui / bhop / step / killaura");
                 return;
             }
         }
