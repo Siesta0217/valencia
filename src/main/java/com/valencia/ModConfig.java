@@ -41,6 +41,11 @@ public class ModConfig {
     public int   spearChargeTicks = 12;
     public boolean spearAuraEnabled = false;
 
+    // NoCrash (elytra wall damage mitigation)
+    public boolean noCrashEnabled  = false;
+    public float   noCrashLookAhead = 4.0f;
+    public float   noCrashMaxSpeed  = 0.4f;
+
     // MaceAura tuning
     public float maceDetectRange = 6.0f;
     public float maceAttackRange = 3.5f;

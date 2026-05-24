@@ -132,7 +132,7 @@ public class ClickGuiScreen extends Screen {
                 new SliderS("Mode",      () -> cfg.spearMode,        v -> { cfg.spearMode      = (int)v;   SpearAuraMod.mode               = (int)v;   cfg.save(); }, 0, 2),
                 new SliderS("Scan Rng",  () -> cfg.spearScanRange,   v -> { cfg.spearScanRange = (float)v; SpearAuraMod.SCAN_RANGE         = (float)v; cfg.save(); }, 3, 10),
                 new SliderS("Min Reach", () -> cfg.spearMinReach,    v -> { cfg.spearMinReach  = (float)v; SpearAuraMod.MIN_REACH          = (float)v; cfg.save(); }, 0.5, 3),
-                new SliderS("Max Reach", () -> cfg.spearMaxReach,    v -> { cfg.spearMaxReach  = (float)v; SpearAuraMod.MAX_REACH          = (float)v; cfg.save(); }, 2, 8),
+                new SliderS("Max Reach", () -> cfg.spearMaxReach,    v -> { cfg.spearMaxReach  = (float)v; SpearAuraMod.MAX_REACH          = (float)v; cfg.save(); }, 2, 12),
                 new SliderS("Chg Ticks", () -> cfg.spearChargeTicks, v -> { cfg.spearChargeTicks = (int)v; SpearAuraMod.chargeReleaseTicks = (int)v;   cfg.save(); }, 4, 30),
                 new BoolS("Hostile",     () -> cfg.spearHostile,     () -> { cfg.spearHostile  = !cfg.spearHostile;  SpearAuraMod.targetHostile = cfg.spearHostile; cfg.save(); }),
                 new BoolS("Animals",     () -> cfg.spearAnimals,     () -> { cfg.spearAnimals  = !cfg.spearAnimals;  SpearAuraMod.targetAnimals = cfg.spearAnimals; cfg.save(); }),
@@ -229,6 +229,22 @@ public class ClickGuiScreen extends Screen {
                 new SliderS("Safe HP", () -> (double)cfg.elytraSafeHp,
                     v -> { cfg.elytraSafeHp = (float)v; ElytraGotoMod.safeHpThreshold = (float)v; cfg.save(); },
                     2, 20)
+            )
+        ));
+
+        mods.add(new ModEntry("NoCrash", Category.MOVEMENT,
+            NoCrashMod::isEnabled,
+            () -> {
+                NoCrashMod.toggle();
+                ModConfig.get().noCrashEnabled = NoCrashMod.isEnabled();
+                ModConfig.get().save();
+            },
+            true,
+            List.of(
+                new SliderS("Look Ahead", () -> (double)cfg.noCrashLookAhead,
+                    v -> { cfg.noCrashLookAhead = (float)v; NoCrashMod.lookahead = (float)v; cfg.save(); }, 2, 10),
+                new SliderS("Max Speed",  () -> (double)cfg.noCrashMaxSpeed,
+                    v -> { cfg.noCrashMaxSpeed  = (float)v; NoCrashMod.maxSpeed  = (float)v; cfg.save(); }, 0.1, 1.0)
             )
         ));
 

@@ -92,6 +92,7 @@ public abstract class TickMixin {
 
         ElytraGotoMod.tick();
         com.valencia.AutoFishMod.tick();
+        com.valencia.NoCrashMod.tick();
 
         nofall$prevN   = nDown;
         nofall$prevX   = xDown;

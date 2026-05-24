@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.17** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.18** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -23,6 +23,7 @@ Latest: **v1.6.17** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **Scaffold** | `J` | 自動橋方塊 + Tower 模式（按 SPACE 自動疊塔） |
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
 | **SpearAura** | `U` | 1.21.11 Spear 武器自動鎖定 + silent aim，Jab / Charge / Auto 三模式，自動 step-back 避免太近戳不到 |
+| **NoCrash** | — | 鞘翅飛行中前方 raycast 偵測到牆自動減速到 0.4 b/t，server 看到的是自然減速不觸發 wall damage |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
 | **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物（牆後也看得到輪廓），用 vanilla glow shader |
@@ -93,7 +94,7 @@ Latest: **v1.6.17** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.17.jar
+# JAR → build/libs/valencia-1.6.18.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -102,6 +103,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.18 — SpearAura 擴大判定 + 新模組 NoCrash 解鞘翅撞牆動能傷害
+- **SpearAura Max Reach 滑桿上限 8 → 12**：單機 / 朋友自架（無 anti-cheat）可以拉到 vanilla server 接受的上限以上試。主流伺服器（Hypixel 等）attack distance 是 server 驗證的，超過 spear 原生 reach 一樣會被 reject
+- **新模組 NoCrash**：解 vanilla 鞘翅 `flyIntoWall` 動能傷害
+  - vanilla 算法：`change = previousSpeed - currentSpeed`，`change > 0.2` 時送 `(int)(change * 10)` 半心傷害，**server-authoritative**，純改 client 血量無效
+  - 策略：飛行中每 tick 朝速度方向 raycast `lookahead` 格（預設 4），偵測到 solid block 就把 `setDeltaMovement` 的水平分量 clamp 到 `maxSpeed`（預設 0.4 b/t）
+  - 因為**減速發生在 collision tick 之前**，server 看到的是平滑減速不是高速撞擊，`change` 始終 < 0.2 就不觸發 damage code path
+  - ClickGUI 兩個滑桿：Look Ahead（2–10 格）、Max Speed（0.1–1.0 b/t）。對手動飛 + ElytraGoto 自動駕駛都生效
 
 ### v1.6.17 — SpearAura：1.21.11 新武器 Spear 的 Aura 模組
 - **新模組 SpearAura**（預設 `U`）— 為 Mounts of Mayhem 更新加入的 Spear 武器設計

@@ -27,6 +27,10 @@ public class NoFallMod implements ClientModInitializer {
         if (cfg.scaffoldEnabled   != ScaffoldMod.isEnabled())   ScaffoldMod.toggle();
         if (cfg.timerEnabled      != TimerMod.isEnabled())      TimerMod.toggle();
         if (cfg.spearAuraEnabled  != SpearAuraMod.isEnabled())  SpearAuraMod.toggle();
+        if (cfg.noCrashEnabled    != NoCrashMod.isEnabled())    NoCrashMod.toggle();
+
+        NoCrashMod.lookahead = cfg.noCrashLookAhead;
+        NoCrashMod.maxSpeed  = cfg.noCrashMaxSpeed;
 
         SpearAuraMod.SCAN_RANGE         = cfg.spearScanRange;
         SpearAuraMod.MIN_REACH          = cfg.spearMinReach;
