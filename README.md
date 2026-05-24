@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.19** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.20** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -24,7 +24,7 @@ Latest: **v1.6.19** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
 | **SpearAura** | `U` | 1.21.11 Spear 武器自動鎖定 + silent aim，Jab / Charge / Auto 三模式，自動 step-back 避免太近戳不到 |
 | **NoCrash** | — | 鞘翅飛行中前方 raycast 偵測到牆自動減速到 0.4 b/t，server 看到的是自然減速不觸發 wall damage |
-| **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中（mixin 進 `Entity.getBoundingBox()` RETURN inflate），預設只放大玩家 |
+| **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中（mixin 進 `Entity.getBoundingBox()` RETURN inflate），預設放大全部 |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
 | **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物（牆後也看得到輪廓），用 vanilla glow shader |
@@ -95,7 +95,7 @@ Latest: **v1.6.19** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.19.jar
+# JAR → build/libs/valencia-1.6.20.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -104,6 +104,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.20 — Hitbox 預設改放大全部實體（PvE 友善）
+- `hitboxPlayersOnly` 預設 `true → false`：新安裝直接放大玩家 + mob + 動物，伺服器 PvE 也受益
+- 舊安裝者要更新行為：ClickGUI → Hitbox → 把 Players Only 那欄關掉（或刪掉 `<config>/valencia.json` 重置）
+- 純 PvP 想最小化 mob AI 副作用的話手動把 Players Only 打開即可
 
 ### v1.6.19 — 新模組 Hitbox：放大其他實體 bounding box 讓邊緣攻擊也命中
 - vanilla 近戰 pick 是 `ProjectileUtil.getEntityHitResult(..., entity.getBoundingBox().inflate(pickRadius), ...)` — 命中體積等於 entity bounding box + pickRadius，放大 bbox 等於放大命中區

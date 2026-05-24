@@ -49,7 +49,7 @@ public class ModConfig {
     // Hitbox (entity bounding box expansion)
     public boolean hitboxEnabled     = false;
     public float   hitboxExpand      = 0.3f;
-    public boolean hitboxPlayersOnly = true;
+    public boolean hitboxPlayersOnly = false;
 
     // MaceAura tuning
     public float maceDetectRange = 6.0f;
