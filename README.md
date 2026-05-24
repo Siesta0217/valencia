@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.21** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.22** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -95,7 +95,7 @@ Latest: **v1.6.21** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.21.jar
+# JAR → build/libs/valencia-1.6.22.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -104,6 +104,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.22 — ESP Show Box 升級成 3D wireframe（F3+B 風格）
+- 從 v1.6.21 的 2D 矩形升級成「投影 8 個角 + 畫 12 條邊」的 3D 線框，外觀跟 vanilla F3+B 一樣
+- AABB 8 個角各自做 perspective projection → 螢幕座標，再對 12 條邊 (`EDGES` 表) 跑 Bresenham 1px line
+- 角落在 camera 後方的標記 `Integer.MIN_VALUE`，畫線時對應的邊整條 skip — 走進實體裡某些邊會少，但正常觀看距離下完整線框照畫
+- 預設顏色從 cyan 改成 lime green (`0xFF80FF40`) 符合 F3+B 配色
+- 早退機制：兩端點都在同一螢幕邊外的邊直接 skip；單邊長 > 4000 px hard cap 避免一條失控的邊拖垮整個 frame
+- 效能：12 邊 × ~100 px × N entity，typical ~10 entities 在 60fps 沒問題；大量實體場景可能會卡（用 GuiGraphics.fill 而不是 native GL line batch 的代價）
 
 ### v1.6.21 — Hitbox 拆三開關（KillAura 風格）+ ESP 新增 2D hitbox 框顯示
 - **Hitbox 三開關**：`Players` / `Hostile` / `Animals`（取代原本的 `Players Only` 反向開關），跟 KillAura / ESP 同一套介面。預設全開

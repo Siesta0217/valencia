@@ -10,21 +10,37 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * 2D screen-space box ESP. For each ESP-targeted entity we project the 8
- * corners of its {@link Entity#getBoundingBox()} to screen-space and draw
- * an outline rectangle around the union of visible corners.
+ * 3D-look hitbox ESP. For each ESP-targeted entity we project the 8 corners
+ * of {@link Entity#getBoundingBox()} to screen-space and draw the 12 edges
+ * of the AABB connecting them — same visual as vanilla F3+B hitboxes.
  *
- * <p>The {@code getBoundingBox()} call deliberately uses the (potentially
- * mixin-inflated) box from {@link com.valencia.mixin.HitboxMixin}, so the
- * ESP rectangle automatically grows / shrinks with the Hitbox module's
- * {@code expand} value — what you see is what melee raycasts will hit.
+ * <p>The {@code getBoundingBox()} call goes through {@link com.valencia.mixin.HitboxMixin}
+ * so when the Hitbox module inflates the box, the ESP wireframe grows with
+ * it — what you see is what melee raycasts hit.
  *
- * <p>2D is used (instead of 3D wireframes via {@code LevelRenderer}) because
- * 1.21.11's framegraph-based render pipeline makes injecting into world
- * rendering fragile; a 2D overlay on top of the existing HUD is rock-solid
- * and works regardless of shader / depth state.
+ * <p>We project to 2D and draw via {@link GuiGraphics#fill} (Bresenham line)
+ * instead of using actual 3D line rendering because 1.21.11's framegraph
+ * pipeline ({@code LevelRenderer.addLateDebugPass} etc.) is fragile to
+ * mixins; routing the draw through HudMixin's already-validated render path
+ * is rock-solid regardless of shader / depth state.
+ *
+ * <p>Edges where either endpoint is behind the camera are skipped (vs.
+ * proper near-plane clipping) for simplicity — when you walk INTO an
+ * entity you'll see some edges disappear, but at normal viewing distance
+ * the full wireframe shows.
  */
 public class ESPRenderer {
+
+    /** 12 edges of an AABB, expressed as pairs of corner indices [0..7]
+     *  where bit 2 = X axis, bit 1 = Y axis, bit 0 = Z axis. */
+    private static final int[][] EDGES = {
+        {0, 1}, {0, 2}, {0, 4},   // edges from min corner
+        {1, 3}, {1, 5},
+        {2, 3}, {2, 6},
+        {3, 7},
+        {4, 5}, {4, 6},
+        {5, 7}, {6, 7}
+    };
 
     public static void render(GuiGraphics g) {
         if (!ESPMod.isEnabled() || !ESPMod.showBox) return;
@@ -33,13 +49,13 @@ public class ESPRenderer {
 
         Camera camera = mc.gameRenderer.getMainCamera();
         Vec3 camPos = camera.position();
-        // camera.rotation() rotates view-space → world-space; invert for world→view.
+        // camera.rotation() rotates view-space → world-space; invert for world → view.
         Quaternionf invRot = new Quaternionf(camera.rotation()).conjugate();
 
         double fovDeg = mc.options.fov().get().doubleValue();
         double tanHalfFov = Math.tan(Math.toRadians(fovDeg) / 2.0);
-        int viewportW = mc.getWindow().getGuiScaledWidth();
-        int viewportH = mc.getWindow().getGuiScaledHeight();
+        int viewW = mc.getWindow().getGuiScaledWidth();
+        int viewH = mc.getWindow().getGuiScaledHeight();
         double aspect = (double) mc.getWindow().getWidth() / mc.getWindow().getHeight();
 
         int color = ESPMod.boxColor;
@@ -48,71 +64,89 @@ public class ESPRenderer {
             if (!ESPMod.targets(e)) continue;
 
             AABB box = e.getBoundingBox();
-            int[] rect = projectBox(box, camPos, invRot, tanHalfFov, aspect, viewportW, viewportH);
-            if (rect == null) continue;
+            int[][] corners = projectCorners(box, camPos, invRot, tanHalfFov, aspect, viewW, viewH);
+            if (corners == null) continue;
 
-            drawOutline(g, rect[0], rect[1], rect[2], rect[3], color);
+            drawWireframe(g, corners, color, viewW, viewH);
         }
     }
 
-    /**
-     * Project the 8 corners of {@code box}, return the screen-space
-     * bounding rectangle {@code [minX, minY, maxX, maxY]} of the corners
-     * that are in front of the camera. Returns {@code null} if no corner
-     * is visible (entity entirely behind camera) or the rectangle would
-     * be off-screen.
-     */
-    private static int[] projectBox(
+    /** Project the 8 AABB corners. Returns int[8][2] of screen coords;
+     *  entries for corners behind the camera are marked with {@code Integer.MIN_VALUE}.
+     *  Returns {@code null} if every corner is behind the camera. */
+    private static int[][] projectCorners(
         AABB box, Vec3 camPos, Quaternionf invRot,
         double tanHalfFov, double aspect, int viewW, int viewH
     ) {
-        double[] xs = {box.minX, box.maxX};
-        double[] ys = {box.minY, box.maxY};
-        double[] zs = {box.minZ, box.maxZ};
+        double[][] vertices = {
+            {box.minX, box.minY, box.minZ},  // 0: --- (X-/Y-/Z-)
+            {box.minX, box.minY, box.maxZ},  // 1: --+
+            {box.minX, box.maxY, box.minZ},  // 2: -+-
+            {box.minX, box.maxY, box.maxZ},  // 3: -++
+            {box.maxX, box.minY, box.minZ},  // 4: +--
+            {box.maxX, box.minY, box.maxZ},  // 5: +-+
+            {box.maxX, box.maxY, box.minZ},  // 6: ++-
+            {box.maxX, box.maxY, box.maxZ},  // 7: +++
+        };
 
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-        boolean any = false;
-
-        for (double x : xs) for (double y : ys) for (double z : zs) {
-            Vector3f v = new Vector3f(
-                (float)(x - camPos.x),
-                (float)(y - camPos.y),
-                (float)(z - camPos.z)
+        int[][] out = new int[8][2];
+        boolean anyVisible = false;
+        for (int i = 0; i < 8; i++) {
+            double[] v = vertices[i];
+            Vector3f rel = new Vector3f(
+                (float)(v[0] - camPos.x),
+                (float)(v[1] - camPos.y),
+                (float)(v[2] - camPos.z)
             );
-            v.rotate(invRot);
-            // View-space: camera looks down -Z, so visible corners have z < 0.
-            if (v.z >= -0.05f) continue;  // behind camera or right on the plane
+            rel.rotate(invRot);
 
-            double ndcX = (double) v.x / (-v.z * tanHalfFov * aspect);
-            double ndcY = (double) v.y / (-v.z * tanHalfFov);
-            int sx = (int)(viewW / 2.0 + ndcX * viewW / 2.0);
-            int sy = (int)(viewH / 2.0 - ndcY * viewH / 2.0);  // Y flipped to screen-down
+            // View space: camera looks down -Z. Visible corners have z < 0.
+            if (rel.z >= -0.05f) {
+                out[i][0] = Integer.MIN_VALUE;
+                out[i][1] = Integer.MIN_VALUE;
+                continue;
+            }
 
-            if (sx < minX) minX = sx;
-            if (sy < minY) minY = sy;
-            if (sx > maxX) maxX = sx;
-            if (sy > maxY) maxY = sy;
-            any = true;
+            double ndcX = (double) rel.x / (-rel.z * tanHalfFov * aspect);
+            double ndcY = (double) rel.y / (-rel.z * tanHalfFov);
+            out[i][0] = (int)(viewW / 2.0 + ndcX * viewW / 2.0);
+            out[i][1] = (int)(viewH / 2.0 - ndcY * viewH / 2.0);  // flip Y to screen-down
+            anyVisible = true;
         }
-
-        if (!any) return null;
-        // Reject boxes fully off-screen
-        if (maxX < 0 || maxY < 0 || minX > viewW || minY > viewH) return null;
-        // Clamp to screen so off-screen overhang doesn't draw absurdly long lines
-        minX = Math.max(minX, 0);
-        minY = Math.max(minY, 0);
-        maxX = Math.min(maxX, viewW);
-        maxY = Math.min(maxY, viewH);
-        if (maxX - minX < 1 || maxY - minY < 1) return null;
-        return new int[]{minX, minY, maxX, maxY};
+        return anyVisible ? out : null;
     }
 
-    /** Draw a 1px rectangle outline via GuiGraphics fill calls. */
-    private static void drawOutline(GuiGraphics g, int x1, int y1, int x2, int y2, int color) {
-        g.fill(x1,     y1,     x2,     y1 + 1, color);  // top
-        g.fill(x1,     y2 - 1, x2,     y2,     color);  // bottom
-        g.fill(x1,     y1,     x1 + 1, y2,     color);  // left
-        g.fill(x2 - 1, y1,     x2,     y2,     color);  // right
+    private static void drawWireframe(GuiGraphics g, int[][] corners, int color, int viewW, int viewH) {
+        for (int[] edge : EDGES) {
+            int[] a = corners[edge[0]];
+            int[] b = corners[edge[1]];
+            if (a[0] == Integer.MIN_VALUE || b[0] == Integer.MIN_VALUE) continue;  // behind camera
+            drawLine(g, a[0], a[1], b[0], b[1], color, viewW, viewH);
+        }
+    }
+
+    /** Bresenham 1px line via 1×1 fills. Capped at 4000 steps so that
+     *  off-screen endpoints don't degenerate into a fill-storm. */
+    private static void drawLine(GuiGraphics g, int x0, int y0, int x1, int y1, int color, int viewW, int viewH) {
+        int dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+        // Cheap early-out: if both endpoints are off the same edge, skip entirely.
+        if ((x0 < 0 && x1 < 0) || (y0 < 0 && y1 < 0)) return;
+        if ((x0 > viewW && x1 > viewW) || (y0 > viewH && y1 > viewH)) return;
+        // Hard cap to keep one stray edge from melting the frame.
+        if (dx > 4000 || dy > 4000) return;
+
+        int sx = x0 < x1 ? 1 : -1;
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx - dy;
+        int steps = 0;
+        while (steps++ < 4000) {
+            if (x0 >= 0 && x0 < viewW && y0 >= 0 && y0 < viewH) {
+                g.fill(x0, y0, x0 + 1, y0 + 1, color);
+            }
+            if (x0 == x1 && y0 == y1) break;
+            int e2 = err << 1;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 <  dx) { err += dx; y0 += sy; }
+        }
     }
 }

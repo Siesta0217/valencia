@@ -28,8 +28,8 @@ public class ESPMod {
      *  enabling Hitbox automatically grows the ESP rectangle too. */
     public static boolean showBox = false;
 
-    /** ARGB color for the ESP box outline. Default opaque cyan. */
-    public static int boxColor = 0xFF00E5FF;
+    /** ARGB color for the ESP wireframe. Default lime green (F3+B-ish). */
+    public static int boxColor = 0xFF80FF40;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }

@@ -131,7 +131,7 @@ public class ModConfig {
     public boolean espAnimals = false;
     public boolean espItems   = false;
     public boolean espShowBox = false;
-    public int     espBoxColor = 0xFF00E5FF;
+    public int     espBoxColor = 0xFF80FF40;
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;
