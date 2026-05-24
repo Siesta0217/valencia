@@ -46,6 +46,11 @@ public class ModConfig {
     public float   noCrashLookAhead = 4.0f;
     public float   noCrashMaxSpeed  = 0.4f;
 
+    // Hitbox (entity bounding box expansion)
+    public boolean hitboxEnabled     = false;
+    public float   hitboxExpand      = 0.3f;
+    public boolean hitboxPlayersOnly = true;
+
     // MaceAura tuning
     public float maceDetectRange = 6.0f;
     public float maceAttackRange = 3.5f;

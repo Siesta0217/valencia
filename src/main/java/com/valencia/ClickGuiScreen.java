@@ -145,6 +145,21 @@ public class ClickGuiScreen extends Screen {
             CritMod::isEnabled, CritMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.critKey, v -> { cfg.critKey = v; cfg.save(); }))));
 
+        mods.add(new ModEntry("Hitbox", Category.COMBAT,
+            HitboxMod::isEnabled,
+            () -> {
+                HitboxMod.toggle();
+                ModConfig.get().hitboxEnabled = HitboxMod.isEnabled();
+                ModConfig.get().save();
+            },
+            true,
+            List.of(
+                new SliderS("Expand",       () -> (double)cfg.hitboxExpand,
+                    v -> { cfg.hitboxExpand = (float)v; HitboxMod.expand = (float)v; cfg.save(); }, 0.05, 1.0),
+                new BoolS("Players Only",   () -> cfg.hitboxPlayersOnly,
+                    () -> { cfg.hitboxPlayersOnly = !cfg.hitboxPlayersOnly; HitboxMod.playersOnly = cfg.hitboxPlayersOnly; cfg.save(); })
+            )));
+
         // Movement
         mods.add(new ModEntry("BHop", Category.MOVEMENT,
             BHopMod::isEnabled, BHopMod::toggle, true,

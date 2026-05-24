@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.18** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.19** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -24,6 +24,7 @@ Latest: **v1.6.18** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
 | **SpearAura** | `U` | 1.21.11 Spear 武器自動鎖定 + silent aim，Jab / Charge / Auto 三模式，自動 step-back 避免太近戳不到 |
 | **NoCrash** | — | 鞘翅飛行中前方 raycast 偵測到牆自動減速到 0.4 b/t，server 看到的是自然減速不觸發 wall damage |
+| **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中（mixin 進 `Entity.getBoundingBox()` RETURN inflate），預設只放大玩家 |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
 | **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物（牆後也看得到輪廓），用 vanilla glow shader |
@@ -94,7 +95,7 @@ Latest: **v1.6.18** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.18.jar
+# JAR → build/libs/valencia-1.6.19.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -103,6 +104,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.19 — 新模組 Hitbox：放大其他實體 bounding box 讓邊緣攻擊也命中
+- vanilla 近戰 pick 是 `ProjectileUtil.getEntityHitResult(..., entity.getBoundingBox().inflate(pickRadius), ...)` — 命中體積等於 entity bounding box + pickRadius，放大 bbox 等於放大命中區
+- mixin 進 `Entity.getBoundingBox()` 的 RETURN，把回傳的 AABB `.inflate(expand)`，預設 0.3（每側 +0.3 格 ≈ 玩家箱子變兩倍寬）
+- 跳過本機玩家自己（不然會搞壞自身碰撞 / 鏡頭）
+- 預設「Players Only」=true，只放大玩家（PvP 用），mob 不動避免影響 AI 尋路 / 渲染
+- **server 端注意**：1.20+ vanilla server 會驗證玩家視角是否真的對到「真實」hitbox。放大太多（≥ 0.5）會被當作 hitbox cheat flag 掉，建議 0.2–0.4
+- **對 SpearAura 影響有限**：silent-aim 直接送 `attack(target)` 不靠視線 raycast；這個主要幫**手動瞄準近戰**邊緣擦到也算命中
 
 ### v1.6.18 — SpearAura 擴大判定 + 新模組 NoCrash 解鞘翅撞牆動能傷害
 - **SpearAura Max Reach 滑桿上限 8 → 12**：單機 / 朋友自架（無 anti-cheat）可以拉到 vanilla server 接受的上限以上試。主流伺服器（Hypixel 等）attack distance 是 server 驗證的，超過 spear 原生 reach 一樣會被 reject

@@ -9,6 +9,7 @@
     "ChatMixin",
     "MaceAuraMixin",
     "SpearAuraMixin",
+    "HitboxMixin",
     "NoSlowMixin",
     "BHopMixin",
     "KillAuraMixin",
