@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.22** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.23** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -95,7 +95,7 @@ Latest: **v1.6.22** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.22.jar
+# JAR → build/libs/valencia-1.6.23.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -104,6 +104,20 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.23 — ClickGUI 重寫 Discord 風格 + ESP 2D overlay（Name / Health / Corner Box）
+- **ClickGUI 完全重寫**：從 Faiths client 移植 Discord 風格三面板佈局
+  - 左側欄：分類按鈕 + Discord 風格 pill indicator（懸停 / 選中有白條）
+  - 中間：模組列表，`#` 前綴 + 綠色側邊條顯示啟用狀態，`›` 箭頭表示有子設定
+  - 右側：設定面板，滑桿 / 開關 / 按鍵綁定；模組名稱 + ON/OFF 切換按鈕在頂部
+  - 深色 Discord 配色（#1E1F22 / #2B2D31 / #313338）
+  - 左鍵選模組顯示設定、右鍵直接切換開關
+  - 可拖曳視窗 + 滾輪捲動
+- **ESP 新增 2D overlay**：從 Faiths PlayerESP 移植
+  - **Name Tag**：實體名稱置中顯示在頭頂，黑底白字
+  - **Health Bar**：左側垂直血量條，紅→綠漸層 + 受傷時顯示數值
+  - **Corner Box**：四角框風格（取代完整矩形），帶黑邊描邊
+  - 所有 overlay 走 AABB 8 角投影到螢幕座標，跟 Show Box wireframe 共用投影邏輯
 
 ### v1.6.22 — ESP Show Box 升級成 3D wireframe（F3+B 風格）
 - 從 v1.6.21 的 2D 矩形升級成「投影 8 個角 + 畫 12 條邊」的 3D 線框，外觀跟 vanilla F3+B 一樣

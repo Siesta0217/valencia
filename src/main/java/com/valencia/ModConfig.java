@@ -125,12 +125,15 @@ public class ModConfig {
     public int     autoFishRecast  = 12;
 
     // ESP
-    public boolean espEnabled = false;
-    public boolean espPlayers = true;
-    public boolean espHostile = false;
-    public boolean espAnimals = false;
-    public boolean espItems   = false;
-    public boolean espShowBox = false;
+    public boolean espEnabled  = false;
+    public boolean espPlayers  = true;
+    public boolean espHostile  = false;
+    public boolean espAnimals  = false;
+    public boolean espItems    = false;
+    public boolean espShowBox  = false;
+    public boolean espShowName   = true;
+    public boolean espShowHealth = true;
+    public boolean espCornerBox  = false;
     public int     espBoxColor = 0xFF80FF40;
 
     // Scaffold tuning

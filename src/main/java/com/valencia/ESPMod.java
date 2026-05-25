@@ -23,13 +23,15 @@ public class ESPMod {
     public static boolean animals  = false;
     public static boolean items    = false;
 
-    /** Draw 2D screen-space rectangle around each target's bounding box.
-     *  Because {@link HitboxMod} inflates {@code getBoundingBox()} via mixin,
-     *  enabling Hitbox automatically grows the ESP rectangle too. */
     public static boolean showBox = false;
+    public static boolean showName = true;
+    public static boolean showHealth = true;
+    public static boolean cornerBox = false;
 
-    /** ARGB color for the ESP wireframe. Default lime green (F3+B-ish). */
     public static int boxColor = 0xFF80FF40;
+    public static int nameColor = 0xFFFFFFFF;
+    public static int healthColorHigh = 0xFF00FF00;
+    public static int healthColorLow  = 0xFFFF0000;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }

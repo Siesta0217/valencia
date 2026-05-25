@@ -3,6 +3,7 @@ package com.valencia;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -20,9 +21,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import javax.imageio.ImageIO;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
@@ -31,7 +30,7 @@ import java.util.function.IntSupplier;
 
 public class ClickGuiScreen extends Screen {
 
-    // ── Categories ────────────────────────────────────────────────────────────
+    // ── Categories ───────────────────────────────────────────────────────────
     private enum Category {
         COMBAT("Combat"),
         MOVEMENT("Movement"),
@@ -41,13 +40,12 @@ public class ClickGuiScreen extends Screen {
         Category(String l) { label = l; }
     }
 
-    // ── Settings ──────────────────────────────────────────────────────────────
+    // ── Setting types ────────────────────────────────────────────────────────
     interface Setting {}
     record SliderS(String label, DoubleSupplier get, DoubleConsumer set, double min, double max) implements Setting {}
     record BoolS(String label, BooleanSupplier get, Runnable toggle) implements Setting {}
     record KeyS(String label, IntSupplier get, IntConsumer set) implements Setting {}
 
-    // ── Module entry ──────────────────────────────────────────────────────────
     record ModEntry(
         String name, Category cat,
         BooleanSupplier enabled, Runnable toggle,
@@ -55,29 +53,53 @@ public class ClickGuiScreen extends Screen {
         List<Setting> settings
     ) {}
 
-    // ── Layout ────────────────────────────────────────────────────────────────
-    private static final int COL_W  = 160;
-    private static final int COL_GAP = 6;
-    private static final int COL_Y  = 30;
-    private static final int HDR_H  = 22;
-    private static final int ROW_H  = 20;
-    private static final int SET_H  = 14;
-    private static final int INDENT = 6;
+    // ── Discord-inspired palette ─────────────────────────────────────────────
+    private static final int C_OUTER    = 0xFF1E1F22;
+    private static final int C_SIDEBAR  = 0xFF1E1F22;
+    private static final int C_LIST     = 0xFF2B2D31;
+    private static final int C_PANEL    = 0xFF313338;
+    private static final int C_DIV      = 0xFF1A1B1E;
+    private static final int C_HOVER    = 0xFF35373C;
+    private static final int C_SEL      = 0xFF404249;
+    private static final int C_GREEN    = 0xFF57F287;
+    private static final int C_RED      = 0xFFED4245;
+    private static final int C_TEXT     = 0xFFDBDEE1;
+    private static final int C_DIM      = 0xFF949BA4;
+    private static final int C_MUTE     = 0xFF6D6F78;
+    private static final int C_HASH     = 0xFF80848E;
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // ── Layout constants ─────────────────────────────────────────────────────
+    private static final int WIN_W     = 440;
+    private static final int WIN_H     = 310;
+    private static final int SIDE_W    = 44;
+    private static final int LIST_W    = 130;
+    private static final int HDR_H     = 28;
+    private static final int CAT_SZ    = 32;
+    private static final int CAT_GAP   = 5;
+    private static final int MOD_H     = 20;
+    private static final int SET_H     = 16;
+    private static final int PAD       = 6;
+
+    // ── GUI state ────────────────────────────────────────────────────────────
     private final List<ModEntry> mods = new ArrayList<>();
-    private final Set<String> expanded = new HashSet<>();
+    private Category selCat  = Category.COMBAT;
+    private String   selMod  = null;
+    private int modScroll    = 0;
+    private int setScroll    = 0;
     private String rebindMod = null;
     private int    rebindIdx = -1;
-    private String dragMod  = null;
-    private int    dragIdx  = -1;
+    private String dragMod   = null;
+    private int    dragIdx   = -1;
 
-    // ── Waifu ─────────────────────────────────────────────────────────────────
+    // window drag
+    private int  wx, wy;
+    private boolean wDrag = false;
+    private int  wdx, wdy;
+
+    // ── Waifu ────────────────────────────────────────────────────────────────
     private Identifier waifuLoc = null;
-    private int        waifuTexW = 0;
-    private int        waifuTexH = 0;
-    private String     waifuHint = null;
-    private String     waifuErr  = null;
+    private int        waifuTexW, waifuTexH;
+    private String     waifuHint, waifuErr;
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -89,7 +111,7 @@ public class ClickGuiScreen extends Screen {
 
     @Override public boolean isPauseScreen() { return false; }
 
-    // ── Module list ───────────────────────────────────────────────────────────
+    // ── Module list (kept verbatim) ──────────────────────────────────────────
     private void buildMods() {
         ModConfig cfg = ModConfig.get();
 
@@ -128,7 +150,6 @@ public class ClickGuiScreen extends Screen {
         mods.add(new ModEntry("SpearAura", Category.COMBAT,
             SpearAuraMod::isEnabled, SpearAuraMod::toggle, true,
             List.of(
-                // Mode: 0=Jab, 1=Charge, 2=Auto (picks Charge if mounted or moving fast)
                 new SliderS("Mode",      () -> cfg.spearMode,        v -> { cfg.spearMode      = (int)v;   SpearAuraMod.mode               = (int)v;   cfg.save(); }, 0, 2),
                 new SliderS("Scan Rng",  () -> cfg.spearScanRange,   v -> { cfg.spearScanRange = (float)v; SpearAuraMod.SCAN_RANGE         = (float)v; cfg.save(); }, 3, 10),
                 new SliderS("Min Reach", () -> cfg.spearMinReach,    v -> { cfg.spearMinReach  = (float)v; SpearAuraMod.MIN_REACH          = (float)v; cfg.save(); }, 0.5, 3),
@@ -147,11 +168,7 @@ public class ClickGuiScreen extends Screen {
 
         mods.add(new ModEntry("Hitbox", Category.COMBAT,
             HitboxMod::isEnabled,
-            () -> {
-                HitboxMod.toggle();
-                ModConfig.get().hitboxEnabled = HitboxMod.isEnabled();
-                ModConfig.get().save();
-            },
+            () -> { HitboxMod.toggle(); cfg.hitboxEnabled = HitboxMod.isEnabled(); cfg.save(); },
             true,
             List.of(
                 new SliderS("Expand",  () -> (double)cfg.hitboxExpand,
@@ -190,21 +207,14 @@ public class ClickGuiScreen extends Screen {
 
         mods.add(new ModEntry("AutoFish", Category.MOVEMENT,
             AutoFishMod::isEnabled,
-            () -> {
-                AutoFishMod.toggle();
-                ModConfig.get().autoFishEnabled = AutoFishMod.isEnabled();
-                ModConfig.get().save();
-            },
+            () -> { AutoFishMod.toggle(); cfg.autoFishEnabled = AutoFishMod.isEnabled(); cfg.save(); },
             true,
             List.of(
                 new SliderS("Bite Vy", () -> (double)cfg.autoFishBiteVy,
-                    v -> { cfg.autoFishBiteVy = (float)v; AutoFishMod.biteVy = (float)v; cfg.save(); },
-                    -0.2, -0.01),
+                    v -> { cfg.autoFishBiteVy = (float)v; AutoFishMod.biteVy = (float)v; cfg.save(); }, -0.2, -0.01),
                 new SliderS("Recast", () -> (double)cfg.autoFishRecast,
-                    v -> { cfg.autoFishRecast = (int)v; AutoFishMod.recastDelay = (int)v; cfg.save(); },
-                    4, 40)
-            )
-        ));
+                    v -> { cfg.autoFishRecast = (int)v; AutoFishMod.recastDelay = (int)v; cfg.save(); }, 4, 40)
+            )));
 
         mods.add(new ModEntry("Scaffold", Category.MOVEMENT,
             ScaffoldMod::isEnabled, ScaffoldMod::toggle, true,
@@ -246,26 +256,19 @@ public class ClickGuiScreen extends Screen {
             ElytraGotoMod::isEnabled, ElytraGotoMod::toggle, true,
             List.of(
                 new SliderS("Safe HP", () -> (double)cfg.elytraSafeHp,
-                    v -> { cfg.elytraSafeHp = (float)v; ElytraGotoMod.safeHpThreshold = (float)v; cfg.save(); },
-                    2, 20)
-            )
-        ));
+                    v -> { cfg.elytraSafeHp = (float)v; ElytraGotoMod.safeHpThreshold = (float)v; cfg.save(); }, 2, 20)
+            )));
 
         mods.add(new ModEntry("NoCrash", Category.MOVEMENT,
             NoCrashMod::isEnabled,
-            () -> {
-                NoCrashMod.toggle();
-                ModConfig.get().noCrashEnabled = NoCrashMod.isEnabled();
-                ModConfig.get().save();
-            },
+            () -> { NoCrashMod.toggle(); cfg.noCrashEnabled = NoCrashMod.isEnabled(); cfg.save(); },
             true,
             List.of(
                 new SliderS("Look Ahead", () -> (double)cfg.noCrashLookAhead,
                     v -> { cfg.noCrashLookAhead = (float)v; NoCrashMod.lookahead = (float)v; cfg.save(); }, 2, 10),
                 new SliderS("Max Speed",  () -> (double)cfg.noCrashMaxSpeed,
                     v -> { cfg.noCrashMaxSpeed  = (float)v; NoCrashMod.maxSpeed  = (float)v; cfg.save(); }, 0.1, 1.0)
-            )
-        ));
+            )));
 
         // Visuals
         mods.add(new ModEntry("XRay", Category.VISUALS,
@@ -274,21 +277,13 @@ public class ClickGuiScreen extends Screen {
 
         mods.add(new ModEntry("DimCoord", Category.VISUALS,
             NetherCoordMod::isEnabled,
-            () -> {
-                NetherCoordMod.toggle();
-                ModConfig.get().netherCoordEnabled = NetherCoordMod.isEnabled();
-                ModConfig.get().save();
-            },
+            () -> { NetherCoordMod.toggle(); cfg.netherCoordEnabled = NetherCoordMod.isEnabled(); cfg.save(); },
             true, List.<Setting>of()
         ));
 
         mods.add(new ModEntry("ESP", Category.VISUALS,
             ESPMod::isEnabled,
-            () -> {
-                ESPMod.toggle();
-                ModConfig.get().espEnabled = ESPMod.isEnabled();
-                ModConfig.get().save();
-            },
+            () -> { ESPMod.toggle(); cfg.espEnabled = ESPMod.isEnabled(); cfg.save(); },
             true,
             List.of(
                 new BoolS("Players", () -> cfg.espPlayers,
@@ -299,12 +294,17 @@ public class ClickGuiScreen extends Screen {
                     () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
                 new BoolS("Items",   () -> cfg.espItems,
                     () -> { cfg.espItems   = !cfg.espItems;   ESPMod.items   = cfg.espItems;   cfg.save(); }),
-                new BoolS("Show Box", () -> cfg.espShowBox,
-                    () -> { cfg.espShowBox = !cfg.espShowBox; ESPMod.showBox = cfg.espShowBox; cfg.save(); })
-            )
-        ));
+                new BoolS("Box",     () -> cfg.espShowBox,
+                    () -> { cfg.espShowBox = !cfg.espShowBox; ESPMod.showBox = cfg.espShowBox; cfg.save(); }),
+                new BoolS("Corner",  () -> cfg.espCornerBox,
+                    () -> { cfg.espCornerBox = !cfg.espCornerBox; ESPMod.cornerBox = cfg.espCornerBox; cfg.save(); }),
+                new BoolS("Name",    () -> cfg.espShowName,
+                    () -> { cfg.espShowName = !cfg.espShowName; ESPMod.showName = cfg.espShowName; cfg.save(); }),
+                new BoolS("Health",  () -> cfg.espShowHealth,
+                    () -> { cfg.espShowHealth = !cfg.espShowHealth; ESPMod.showHealth = cfg.espShowHealth; cfg.save(); })
+            )));
 
-        // Settings — not toggleable, always show sliders
+        // Settings — non-toggleable
         mods.add(new ModEntry("Theme Color", Category.SETTINGS,
             () -> false, () -> {}, false,
             List.of(
@@ -319,50 +319,35 @@ public class ClickGuiScreen extends Screen {
             List.of(new KeyS("Key", () -> cfg.guiKey, v -> { cfg.guiKey = v; cfg.save(); }))));
     }
 
-    // ── Waifu ─────────────────────────────────────────────────────────────────
-    // NativeImage only decodes PNG; other formats go through ImageIO first.
+    // ── Waifu loading ────────────────────────────────────────────────────────
     private static final String[] WAIFU_EXTS = {"png", "jpg", "jpeg", "bmp", "gif"};
 
     private void loadWaifu() {
         File dir = FabricLoader.getInstance().getConfigDir().resolve("valencia").toFile();
         waifuHint = dir.getAbsolutePath();
         try {
-            if (!dir.exists() || !dir.isDirectory()) {
-                waifuErr = "config dir 不存在";
-                return;
-            }
-
+            if (!dir.exists() || !dir.isDirectory()) { waifuErr = "config dir missing"; return; }
             File f = null;
             for (String ext : WAIFU_EXTS) {
-                File candidate = new File(dir, "waifu." + ext);
-                if (candidate.exists()) { f = candidate; break; }
+                File c = new File(dir, "waifu." + ext);
+                if (c.exists()) { f = c; break; }
             }
-            if (f == null) {
-                waifuErr = "找不到 waifu.{png,jpg,bmp,gif}";
-                return;
-            }
+            if (f == null) { waifuErr = "no waifu.{png,jpg,bmp,gif}"; return; }
 
-            // NativeImage only handles PNG; convert other formats via ImageIO
             InputStream pngStream;
-            String name = f.getName().toLowerCase();
-            if (name.endsWith(".png")) {
+            if (f.getName().toLowerCase().endsWith(".png")) {
                 pngStream = new FileInputStream(f);
             } else {
                 BufferedImage img = ImageIO.read(f);
-                if (img == null) { waifuErr = "ImageIO 解碼失敗"; return; }
+                if (img == null) { waifuErr = "decode failed"; return; }
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ImageIO.write(img, "png", baos);
                 pngStream = new ByteArrayInputStream(baos.toByteArray());
             }
-
             NativeImage ni = NativeImage.read(pngStream);
             waifuTexW = ni.getWidth();
             waifuTexH = ni.getHeight();
-
-            // DynamicTexture(Supplier<String>, NativeImage) — the (NativeImage)
-            // overload that older MC had is gone in 1.21.x.
             DynamicTexture dt = new DynamicTexture(() -> "valencia-waifu", ni);
-
             Identifier loc = Identifier.fromNamespaceAndPath("valencia", "waifu");
             Minecraft.getInstance().getTextureManager().register(loc, dt);
             waifuLoc = loc;
@@ -372,219 +357,306 @@ public class ClickGuiScreen extends Screen {
         }
     }
 
-    // ── Render ────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    //  RENDER — Discord-style 3-panel layout
+    // ══════════════════════════════════════════════════════════════════════════
     @Override
     public void render(GuiGraphics g, int mx, int my, float delta) {
         ModConfig cfg = ModConfig.get();
         int accent = accent(cfg, 255);
 
-        // Full-screen overlay
-        g.fill(0, 0, width, height, argb(cfg.bgAlpha, 0, 0, 0));
+        if (wx == 0 && wy == 0) { wx = (width - WIN_W) / 2; wy = (height - WIN_H) / 2; }
 
-        // Columns
-        int totalW = Category.values().length * COL_W + (Category.values().length - 1) * COL_GAP;
-        int startX = (width - totalW) / 2;
+        // dim overlay
+        g.fill(0, 0, width, height, 0x80000000);
 
+        int x0 = wx, y0 = wy, x1 = wx + WIN_W, y1 = wy + WIN_H;
+        int bodyY = y0 + HDR_H, bodyH = WIN_H - HDR_H;
+
+        // ── Header (accent-colored, draggable) ───────────────────────────────
+        g.fill(x0, y0, x1, y0 + HDR_H, accent);
+        g.drawCenteredString(font, "§lValencia", x0 + WIN_W / 2, y0 + (HDR_H - 8) / 2, 0xFFFFFFFF);
+
+        // ── Sidebar ──────────────────────────────────────────────────────────
+        g.fill(x0, bodyY, x0 + SIDE_W, y1, C_SIDEBAR);
+        g.fill(x0 + SIDE_W, bodyY, x0 + SIDE_W + 1, y1, C_DIV);
+
+        int cy = bodyY + CAT_GAP + 4;
         for (Category cat : Category.values()) {
-            int cx = startX + cat.ordinal() * (COL_W + COL_GAP);
-            renderColumn(g, cat, cx, mx, my, cfg, accent);
+            boolean sel = cat == selCat;
+            boolean hov = mx >= x0 + 4 && mx < x0 + SIDE_W - 2 && my >= cy && my < cy + CAT_SZ;
+
+            // pill indicator
+            if (sel)       g.fill(x0, cy + 4, x0 + 3, cy + CAT_SZ - 4, 0xFFFFFFFF);
+            else if (hov)  g.fill(x0, cy + 10, x0 + 3, cy + CAT_SZ - 10, 0xFFCCCCCC);
+
+            // button bg
+            int bx = x0 + 7;
+            g.fill(bx, cy, bx + CAT_SZ - 2, cy + CAT_SZ, sel ? accent : hov ? C_HOVER : 0xFF36393F);
+
+            // letter
+            g.drawCenteredString(font, cat.label.substring(0, 1), bx + (CAT_SZ - 2) / 2, cy + (CAT_SZ - 8) / 2, 0xFFFFFFFF);
+
+            // tooltip
+            if (hov && !sel) {
+                int tw = font.width(cat.label) + 8;
+                g.fill(x0 + SIDE_W + 4, cy + 8, x0 + SIDE_W + 4 + tw, cy + 20, 0xEE111111);
+                g.drawString(font, cat.label, x0 + SIDE_W + 8, cy + 10, 0xFFFFFFFF, false);
+            }
+
+            cy += CAT_SZ + CAT_GAP;
         }
 
+        // ── Module list ──────────────────────────────────────────────────────
+        int lx = x0 + SIDE_W + 1, lx1b = lx + LIST_W;
+        g.fill(lx, bodyY, lx1b, y1, C_LIST);
+
+        // category title
+        g.drawString(font, selCat.label, lx + PAD, bodyY + 6, C_DIM, false);
+        g.fill(lx + PAD, bodyY + 18, lx1b - PAD, bodyY + 19, C_DIV);
+
+        int modTop = bodyY + 22;
+        int my0 = modTop + modScroll;
+        for (ModEntry m : mods) {
+            if (m.cat() != selCat) continue;
+            if (my0 + MOD_H > modTop && my0 < y1) {
+                boolean on   = m.toggleable() && m.enabled().getAsBoolean();
+                boolean hov  = mx >= lx && mx < lx1b && my >= my0 && my < my0 + MOD_H && my >= modTop;
+                boolean isSel = m.name().equals(selMod);
+
+                if (isSel)      g.fill(lx, my0, lx1b, my0 + MOD_H, C_SEL);
+                else if (hov)   g.fill(lx, my0, lx1b, my0 + MOD_H, C_HOVER);
+
+                // enabled bar
+                if (on) g.fill(lx, my0, lx + 2, my0 + MOD_H, C_GREEN);
+
+                g.drawString(font, "#", lx + PAD + 1, my0 + (MOD_H - 8) / 2, C_HASH, false);
+                int nc = on ? C_GREEN : isSel ? C_TEXT : C_DIM;
+                g.drawString(font, m.name(), lx + PAD + 12, my0 + (MOD_H - 8) / 2, nc, false);
+
+                if (!m.settings().isEmpty())
+                    g.drawString(font, "›", lx1b - 10, my0 + (MOD_H - 8) / 2, C_MUTE, false);
+            }
+            my0 += MOD_H;
+        }
+
+        g.fill(lx1b, bodyY, lx1b + 1, y1, C_DIV);
+
+        // ── Settings panel ───────────────────────────────────────────────────
+        int px = lx1b + 1, pw = x1 - px;
+        g.fill(px, bodyY, x1, y1, C_PANEL);
+
+        if (selMod != null) {
+            ModEntry mod = findMod(selMod);
+            if (mod != null) renderSettings(g, mod, px, bodyY, pw, bodyH, mx, my, cfg, accent);
+        } else {
+            g.drawCenteredString(font, "§8← Select a module", px + pw / 2, bodyY + bodyH / 2 - 4, C_MUTE);
+        }
+
+        // ── Waifu ────────────────────────────────────────────────────────────
         renderWaifu(g);
 
-        g.drawString(font, "§7Right Ctrl to close", 4, height - 10, 0xFFAAAAAA, false);
+        // close hint
+        g.drawString(font, "§7" + shortKey(cfg.guiKey) + " to close",
+            x0 + 4, y1 + 3, 0xFF555555, false);
     }
 
-    private void renderColumn(GuiGraphics g, Category cat, int cx, int mx, int my, ModConfig cfg, int accent) {
-        int colH = HDR_H;
-        for (ModEntry m : mods) {
-            if (m.cat() != cat) continue;
-            colH += ROW_H;
-            if (expanded.contains(m.name())) colH += m.settings().size() * SET_H + 2;
+    // ── Settings panel rendering ─────────────────────────────────────────────
+    private void renderSettings(GuiGraphics g, ModEntry mod, int px, int topY, int pw, int h, int mx, int my, ModConfig cfg, int accent) {
+        boolean on = mod.toggleable() && mod.enabled().getAsBoolean();
+
+        // header row: name + ON/OFF toggle button
+        g.drawString(font, "§f" + mod.name(), px + PAD, topY + 6, C_TEXT, true);
+        if (mod.toggleable()) {
+            int tbx = px + pw - 44, tby = topY + 4;
+            g.fill(tbx, tby, tbx + 36, tby + 16, on ? accent : 0xFF4F545C);
+            g.drawCenteredString(font, on ? "ON" : "OFF", tbx + 18, tby + 4, 0xFFFFFFFF);
+        }
+        g.fill(px + PAD, topY + 22, px + pw - PAD, topY + 23, C_DIV);
+
+        if (mod.settings().isEmpty()) {
+            g.drawCenteredString(font, "§8No settings", px + pw / 2, topY + h / 2, C_MUTE);
+            return;
         }
 
-        g.fill(cx, COL_Y, cx + COL_W, COL_Y + colH, argb(180, 10, 10, 10));
-        g.fill(cx, COL_Y, cx + COL_W, COL_Y + HDR_H, accent);
-        g.drawCenteredString(font, cat.label, cx + COL_W / 2, COL_Y + (HDR_H - 8) / 2, 0xFFFFFFFF);
-
-        int y = COL_Y + HDR_H;
-        for (ModEntry m : mods) {
-            if (m.cat() != cat) continue;
-            y = renderRow(g, m, cx, y, mx, my, cfg, accent);
-        }
-    }
-
-    private int renderRow(GuiGraphics g, ModEntry m, int cx, int y, int mx, int my, ModConfig cfg, int accent) {
-        boolean on  = m.toggleable() && m.enabled().getAsBoolean();
-        boolean hov = mx >= cx && mx < cx + COL_W && my >= y && my < y + ROW_H;
-        boolean exp = expanded.contains(m.name());
-
-        int bg = on  ? accent(cfg, 100)
-               : hov ? argb(50, 255, 255, 255)
-               :        argb(20, 255, 255, 255);
-        g.fill(cx, y, cx + COL_W, y + ROW_H, bg);
-
-        if (on) g.fill(cx, y, cx + 3, y + ROW_H, accent);
-
-        int textCol = on ? 0xFFFFFFFF : 0xFFAAAAAA;
-        g.drawString(font, m.name(), cx + INDENT + (on ? 3 : 0), y + (ROW_H - 8) / 2, textCol, false);
-
-        if (!m.settings().isEmpty()) {
-            String arr = exp ? "v" : ">";
-            g.drawString(font, arr, cx + COL_W - 12, y + (ROW_H - 8) / 2, 0xFF666666, false);
-        }
-
-        y += ROW_H;
-
-        if (exp) {
-            for (int si = 0; si < m.settings().size(); si++) {
-                Setting s = m.settings().get(si);
-                g.fill(cx, y, cx + COL_W, y + SET_H, argb(120, 5, 5, 5));
-
-                if (s instanceof SliderS sl)    renderSlider(g, sl, cx, y, cfg);
-                else if (s instanceof BoolS bs) renderBool(g, bs, cx, y);
-                else if (s instanceof KeyS ks)  renderKey(g, ks, m, si, cx, y);
-
-                y += SET_H;
+        int setTop = topY + 26;
+        int sy = setTop + setScroll;
+        for (int i = 0; i < mod.settings().size(); i++) {
+            if (sy + SET_H > setTop && sy < topY + h) {
+                Setting s = mod.settings().get(i);
+                if (s instanceof SliderS sl)    renderSlider(g, sl, px, sy, pw, accent);
+                else if (s instanceof BoolS bs) renderBool(g, bs, px, sy, pw, accent);
+                else if (s instanceof KeyS ks)  renderKey(g, ks, mod, i, px, sy, pw);
             }
-            g.fill(cx, y, cx + COL_W, y + 2, accent(cfg, 80));
-            y += 2;
+            sy += SET_H;
         }
-
-        return y;
     }
 
-    private void renderSlider(GuiGraphics g, SliderS sl, int cx, int y, ModConfig cfg) {
-        int accent = accent(cfg, 255);
+    private void renderSlider(GuiGraphics g, SliderS sl, int px, int y, int pw, int accent) {
         double val = sl.get().getAsDouble();
         double pct = Math.max(0, Math.min(1, (val - sl.min()) / (sl.max() - sl.min())));
 
-        int tx = cx + INDENT;
-        int tw = COL_W - INDENT * 2 - 28;
-        int ty = y + SET_H / 2;
+        int labW = 52;
+        int valW = 30;
+        int trackX = px + PAD + labW;
+        int trackW = pw - PAD * 2 - labW - valW;
+        int trackY = y + SET_H / 2;
 
-        g.drawString(font, sl.label(), tx, y + 1, 0xFF888888, false);
-        g.fill(tx, ty, tx + tw, ty + 2, argb(80, 255, 255, 255));
-        g.fill(tx, ty, tx + (int)(tw * pct), ty + 2, accent);
-        int hx = tx + (int)(tw * pct);
+        g.drawString(font, sl.label(), px + PAD, y + 2, C_DIM, false);
+        g.fill(trackX, trackY, trackX + trackW, trackY + 2, 0xFF4F545C);
+        g.fill(trackX, trackY, trackX + (int)(trackW * pct), trackY + 2, accent);
+        int hx = trackX + (int)(trackW * pct);
         g.fill(hx - 2, y + 2, hx + 2, y + SET_H - 2, 0xFFFFFFFF);
 
-        String valStr = isIntSlider(sl)
-                      ? String.valueOf((int)Math.round(val))
-                      : String.format("%.1f", val);
-        g.drawString(font, valStr, cx + COL_W - 26, y + 1, 0xFFCCCCCC, false);
+        String valStr = isIntSlider(sl) ? String.valueOf((int)Math.round(val)) : String.format("%.1f", val);
+        g.drawString(font, valStr, px + pw - valW, y + 2, C_DIM, false);
     }
 
-    private void renderBool(GuiGraphics g, BoolS bs, int cx, int y) {
+    private void renderBool(GuiGraphics g, BoolS bs, int px, int y, int pw, int accent) {
         boolean on = bs.get().getAsBoolean();
-        g.drawString(font, bs.label(), cx + INDENT, y + 1, 0xFF888888, false);
-        String tag = on ? "§aON" : "§cOFF";
-        g.drawString(font, tag, cx + COL_W - 28, y + 1, 0xFFFFFFFF, false);
+        g.drawString(font, bs.label(), px + PAD, y + 2, C_DIM, false);
+        // toggle pill
+        int tx = px + pw - 34, ty = y + 2;
+        g.fill(tx, ty, tx + 24, ty + 12, on ? accent : 0xFF4F545C);
+        int kx = on ? tx + 14 : tx + 2;
+        g.fill(kx, ty + 2, kx + 8, ty + 10, 0xFFFFFFFF);
     }
 
-    private void renderKey(GuiGraphics g, KeyS ks, ModEntry m, int si, int cx, int y) {
+    private void renderKey(GuiGraphics g, KeyS ks, ModEntry m, int si, int px, int y, int pw) {
         boolean waiting = m.name().equals(rebindMod) && rebindIdx == si;
-        g.drawString(font, ks.label(), cx + INDENT, y + 1, 0xFF888888, false);
+        g.drawString(font, ks.label(), px + PAD, y + 2, C_DIM, false);
         String keyTxt = waiting ? "§e..." : "§7[" + shortKey(ks.get().getAsInt()) + "]";
-        g.drawString(font, keyTxt, cx + COL_W - 40, y + 1, 0xFFCCCCCC, false);
+        g.drawString(font, keyTxt, px + pw - 48, y + 2, C_DIM, false);
     }
 
-    // ── Waifu rendering ───────────────────────────────────────────────────────
+    // ── Waifu ────────────────────────────────────────────────────────────────
     private void renderWaifu(GuiGraphics g) {
         if (waifuLoc == null || waifuTexW <= 0 || waifuTexH <= 0) {
             String hint = waifuErr != null
-                ? "§c[waifu] " + waifuErr + " — 放在 " + waifuHint
+                ? "§c[waifu] " + waifuErr
                 : "§8[waifu: " + (waifuHint != null ? waifuHint : "config/valencia") + File.separator + "waifu.png]";
-            g.drawString(font, hint, 4, height - 20, 0xFF888888, false);
+            g.drawString(font, hint, 4, height - 12, 0xFF888888, false);
             return;
         }
         try {
             int dispH = Math.min(height / 3, 150);
             int dispW = waifuTexW * dispH / waifuTexH;
-            // 1.21.11 signature: blit(Identifier, x1, y1, x2, y2, u1, u2, v1, v2)
-            // — corners, not (x,y,w,h). UV are normalized 0..1, not pixels.
-            int x1 = 4;
-            int y1 = height - dispH - 14;
+            int x1 = 4, y1 = height - dispH - 14;
             g.blit(waifuLoc, x1, y1, x1 + dispW, y1 + dispH, 0f, 1f, 0f, 1f);
         } catch (Throwable t) {
-            g.drawString(font, "§c[waifu render err] " + t.getClass().getSimpleName(),
-                4, height - 20, 0xFF888888, false);
+            g.drawString(font, "§c[waifu err]", 4, height - 12, 0xFF888888, false);
         }
     }
 
-    // ── Mouse ─────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    //  INPUT
+    // ══════════════════════════════════════════════════════════════════════════
+
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean dbl) {
         int mx = (int)event.x(), my = (int)event.y(), btn = event.button();
-        if (btn != 0) return super.mouseClicked(event, dbl);
+        int bodyY = wy + HDR_H;
 
-        ModConfig cfg = ModConfig.get();
-        int totalW = Category.values().length * COL_W + (Category.values().length - 1) * COL_GAP;
-        int startX = (width - totalW) / 2;
+        // ── Header drag ──────────────────────────────────────────────────────
+        if (btn == 0 && mx >= wx && mx < wx + WIN_W && my >= wy && my < bodyY) {
+            wDrag = true; wdx = wx - mx; wdy = wy - my;
+            return true;
+        }
 
-        for (Category cat : Category.values()) {
-            int cx = startX + cat.ordinal() * (COL_W + COL_GAP);
-            int y  = COL_Y + HDR_H;
+        // ── Sidebar category ─────────────────────────────────────────────────
+        if (btn == 0) {
+            int cy = bodyY + CAT_GAP + 4;
+            for (Category cat : Category.values()) {
+                if (mx >= wx + 4 && mx < wx + SIDE_W - 2 && my >= cy && my < cy + CAT_SZ) {
+                    selCat = cat; selMod = null; modScroll = 0; setScroll = 0;
+                    return true;
+                }
+                cy += CAT_SZ + CAT_GAP;
+            }
+        }
 
+        // ── Module list ──────────────────────────────────────────────────────
+        int lx = wx + SIDE_W + 1, lx1b = lx + LIST_W;
+        int modTop = bodyY + 22;
+        if (mx >= lx && mx < lx1b && my >= modTop) {
+            int my0 = modTop + modScroll;
             for (ModEntry m : mods) {
-                if (m.cat() != cat) continue;
-
-                if (mx >= cx && mx < cx + COL_W && my >= y && my < y + ROW_H) {
-                    boolean hasSettings = !m.settings().isEmpty();
-                    boolean clickArrow  = hasSettings && mx >= cx + COL_W - 16;
-
-                    if (clickArrow || !m.toggleable()) {
-                        if (expanded.contains(m.name())) expanded.remove(m.name());
-                        else expanded.add(m.name());
-                    } else {
-                        m.toggle().run();
-                        saveEnabled(cfg);
+                if (m.cat() != selCat) continue;
+                if (my >= my0 && my < my0 + MOD_H && my0 + MOD_H > modTop) {
+                    if (btn == 0) {
+                        // left click: select (show settings)
+                        selMod = m.name().equals(selMod) ? null : m.name();
+                        setScroll = 0;
+                    } else if (btn == 1) {
+                        // right click: toggle on/off
+                        if (m.toggleable()) { m.toggle().run(); saveEnabled(ModConfig.get()); }
                     }
                     return true;
                 }
-                y += ROW_H;
+                my0 += MOD_H;
+            }
+        }
 
-                if (expanded.contains(m.name())) {
-                    for (int si = 0; si < m.settings().size(); si++) {
-                        if (my >= y && my < y + SET_H && mx >= cx && mx < cx + COL_W) {
-                            Setting s = m.settings().get(si);
-                            if (s instanceof SliderS sl) {
-                                int tx = cx + INDENT;
-                                int tw = COL_W - INDENT * 2 - 28;
-                                dragMod = m.name(); dragIdx = si;
-                                applySlider(sl, mx, tx, tw);
-                            } else if (s instanceof BoolS bs) {
-                                bs.toggle().run();
-                            } else if (s instanceof KeyS) {
-                                rebindMod = m.name(); rebindIdx = si;
-                            }
-                            return true;
-                        }
-                        y += SET_H;
-                    }
-                    y += 2;
+        // ── Settings panel: toggle button ────────────────────────────────────
+        int px = lx1b + 1, pw = wx + WIN_W - px;
+        if (btn == 0 && selMod != null && mx >= px) {
+            ModEntry mod = findMod(selMod);
+            if (mod != null && mod.toggleable()) {
+                int tbx = px + pw - 44, tby = bodyY + 4;
+                if (mx >= tbx && mx < tbx + 36 && my >= tby && my < tby + 20) {
+                    mod.toggle().run(); saveEnabled(ModConfig.get());
+                    return true;
                 }
             }
         }
+
+        // ── Settings panel: individual settings ──────────────────────────────
+        if (btn == 0 && selMod != null && mx >= px && mx < wx + WIN_W) {
+            ModEntry mod = findMod(selMod);
+            if (mod != null && !mod.settings().isEmpty()) {
+                int setTop = bodyY + 26;
+                int sy = setTop + setScroll;
+                for (int i = 0; i < mod.settings().size(); i++) {
+                    if (my >= sy && my < sy + SET_H && sy + SET_H > setTop) {
+                        Setting s = mod.settings().get(i);
+                        if (s instanceof SliderS sl) {
+                            dragMod = selMod; dragIdx = i;
+                            int trackX = px + PAD + 52;
+                            int trackW = pw - PAD * 2 - 52 - 30;
+                            applySlider(sl, mx, trackX, trackW);
+                        } else if (s instanceof BoolS bs) {
+                            bs.toggle().run();
+                        } else if (s instanceof KeyS) {
+                            rebindMod = mod.name(); rebindIdx = i;
+                        }
+                        return true;
+                    }
+                    sy += SET_H;
+                }
+            }
+        }
+
         return super.mouseClicked(event, dbl);
     }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-        if (dragMod != null) {
-            int mx = (int)event.x();
-            int totalW = Category.values().length * COL_W + (Category.values().length - 1) * COL_GAP;
-            int startX = (width - totalW) / 2;
+        int mx = (int)event.x(), my = (int)event.y();
 
-            for (ModEntry m : mods) {
-                if (!m.name().equals(dragMod)) continue;
-                int cx = startX + m.cat().ordinal() * (COL_W + COL_GAP);
-                if (dragIdx >= 0 && dragIdx < m.settings().size()) {
-                    Setting s = m.settings().get(dragIdx);
-                    if (s instanceof SliderS sl) {
-                        int tx = cx + INDENT, tw = COL_W - INDENT * 2 - 28;
-                        applySlider(sl, mx, tx, tw);
-                    }
+        // window drag
+        if (wDrag) { wx = wdx + mx; wy = wdy + my; return true; }
+
+        // slider drag
+        if (dragMod != null) {
+            ModEntry mod = findMod(dragMod);
+            if (mod != null && dragIdx >= 0 && dragIdx < mod.settings().size()) {
+                Setting s = mod.settings().get(dragIdx);
+                if (s instanceof SliderS sl) {
+                    int lx1b = wx + SIDE_W + 1 + LIST_W + 1;
+                    int pw = wx + WIN_W - lx1b;
+                    int trackX = lx1b + PAD + 52;
+                    int trackW = pw - PAD * 2 - 52 - 30;
+                    applySlider(sl, mx, trackX, trackW);
                 }
             }
             return true;
@@ -594,22 +666,45 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        dragMod = null; dragIdx = -1;
+        wDrag = false; dragMod = null; dragIdx = -1;
         return super.mouseReleased(event);
     }
 
-    // ── Keyboard ──────────────────────────────────────────────────────────────
+    // ── Scroll ───────────────────────────────────────────────────────────────
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        int mx = (int)mouseX, my = (int)mouseY;
+        int bodyY = wy + HDR_H;
+        int lx = wx + SIDE_W + 1, lx1b = lx + LIST_W;
+        int px = lx1b + 1;
+
+        int step = (int)(scrollY * 8);
+
+        // scroll module list
+        if (mx >= lx && mx < lx1b && my >= bodyY) {
+            modScroll += step;
+            if (modScroll > 0) modScroll = 0;
+            return true;
+        }
+        // scroll settings
+        if (mx >= px && mx < wx + WIN_W && my >= bodyY) {
+            setScroll += step;
+            if (setScroll > 0) setScroll = 0;
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    // ── Keyboard ─────────────────────────────────────────────────────────────
     @Override
     public boolean keyPressed(KeyEvent event) {
         int key = event.key();
         if (rebindMod != null) {
             if (key != GLFW.GLFW_KEY_ESCAPE) {
-                for (ModEntry m : mods) {
-                    if (!m.name().equals(rebindMod)) continue;
-                    if (rebindIdx >= 0 && rebindIdx < m.settings().size()) {
-                        Setting s = m.settings().get(rebindIdx);
-                        if (s instanceof KeyS ks) ks.set().accept(key);
-                    }
+                ModEntry mod = findMod(rebindMod);
+                if (mod != null && rebindIdx >= 0 && rebindIdx < mod.settings().size()) {
+                    Setting s = mod.settings().get(rebindIdx);
+                    if (s instanceof KeyS ks) ks.set().accept(key);
                 }
             }
             rebindMod = null; rebindIdx = -1;
@@ -619,14 +714,18 @@ public class ClickGuiScreen extends Screen {
         return super.keyPressed(event);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    //  HELPERS
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private ModEntry findMod(String name) {
+        for (ModEntry m : mods) if (m.name().equals(name)) return m;
+        return null;
+    }
+
     private void applySlider(SliderS sl, int mx, int tx, int tw) {
         double pct = Math.max(0, Math.min(1, (double)(mx - tx) / tw));
         double raw = sl.min() + pct * (sl.max() - sl.min());
-        // Treat as integer slider only when both bounds are whole numbers AND
-        // the range has enough steps to justify int-snapping. A 0–1 range with
-        // int snap collapses to just {0, 1} which is useless for floats like
-        // Tower Spd (which wants 0.1 granularity).
         boolean intRange = isIntSlider(sl);
         double val = intRange ? Math.round(raw) : Math.round(raw * 10.0) / 10.0;
         sl.set().accept(val);
