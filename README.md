@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.1** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -105,6 +105,18 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.1 — ESP 砍掉重寫：near-plane clipping，修全螢幕綠線 bug
+- **Bug**：站在實體附近 / 實體 AABB 跨越相機平面時，部分角的 `rel.z` 接近 0，投影 `1/-z` 爆炸 → 螢幕被巨大綠線塞滿
+- **修法**：對每條邊單獨做 near-plane clipping
+  - 兩端都在前 → 直接投影
+  - 兩端都在後 → 跳過整條邊
+  - 一前一後 → 算邊跟 `z = NEAR_Z (-0.1)` 平面的交點，用交點當端點
+- **2D 樣式的 bounding rect** 改成 clip 後 12 邊端點的 min/max（不是角點的 min/max），確保跨越相機平面的盒子也有合理的 2D 框
+- **projectX/Y 加 ±100000 clamp**：即便 `-rel.z = 0.1` 還是會放大 10×，clamp 防止整數溢位
+- 新增 `e.isAlive()` 過濾，跳過死掉的實體
+- 移除過時的 `int[] XS/YS + boolean[] VIS` scratch（不再需要每角獨立可見性）
+- 邊處理單一 loop：clip → project → 更新 bounds → 順便畫 hitbox edge，省一次遍歷
 
 ### v1.7.0 — ESP 設定面重寫
 - 設定面四個分區：**Targets / Box / Labels / Color**
