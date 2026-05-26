@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.1** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.2** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -105,6 +105,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.2 — NameTag 補上 near-plane 防護
+- NameTag 跟 ESP 同個病：`projectPoint()` 用 `rel.z >= -0.05` 當門檻 → 近距離 `1/-z` 爆炸，tag 飛到天邊或不顯示
+- NameTag 改用 `NEAR_Z = -0.5`（比 ESP 嚴格，nametag 在 0.5 格內顯示也沒意義）
+- 投影輸出加 ±100000 clamp
 
 ### v1.7.1 — ESP 砍掉重寫：near-plane clipping，修全螢幕綠線 bug
 - **Bug**：站在實體附近 / 實體 AABB 跨越相機平面時，部分角的 `rel.z` 接近 0，投影 `1/-z` 爆炸 → 螢幕被巨大綠線塞滿

@@ -172,6 +172,11 @@ public class NameTagRenderer {
         return 0xFFFF5555;
     }
 
+    // Stricter than ESP — a nametag at super-close range is useless and
+    // its projection blows up. -0.5 means "skip when entity is closer
+    // than half a block forward in view space".
+    private static final float NEAR_Z = -0.5f;
+
     private static int[] projectPoint(
         double wx, double wy, double wz,
         Vec3 camPos, Quaternionf invRot,
@@ -183,10 +188,11 @@ public class NameTagRenderer {
             (float)(wz - camPos.z)
         );
         rel.rotate(invRot);
-        if (rel.z >= -0.05f) return null;
+        if (rel.z >= NEAR_Z) return null;
         double invNegZ = 1.0 / -rel.z;
-        int sx = (int)(viewW / 2.0 + ((double) rel.x * m00 * invNegZ) * viewW / 2.0);
-        int sy = (int)(viewH / 2.0 - ((double) rel.y * m11 * invNegZ) * viewH / 2.0);
-        return new int[]{ sx, sy };
+        double vx = viewW / 2.0 + ((double) rel.x * m00 * invNegZ) * viewW / 2.0;
+        double vy = viewH / 2.0 - ((double) rel.y * m11 * invNegZ) * viewH / 2.0;
+        if (vx < -100000 || vx > 100000 || vy < -100000 || vy > 100000) return null;
+        return new int[]{ (int) vx, (int) vy };
     }
 }
