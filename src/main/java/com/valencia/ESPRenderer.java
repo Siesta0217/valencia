@@ -16,6 +16,11 @@ public class ESPRenderer {
 
     private static final int MIN_BOX_PX = 4;
 
+    // 8-corner index: bit 2 = X, bit 1 = Y, bit 0 = Z
+    private static final int[][] EDGES = {
+        {0,1},{0,2},{0,4},{1,3},{1,5},{2,3},{2,6},{3,7},{4,5},{4,6},{5,7},{6,7}
+    };
+
     public static void render(GuiGraphics g) {
         if (!ESPMod.isEnabled()) return;
         Minecraft mc = Minecraft.getInstance();
@@ -47,13 +52,14 @@ public class ESPRenderer {
             double distSq = dx * dx + dy * dy + dz * dz;
             if (distSq > maxDistSq) continue;
 
-            int[] rect = projectAABB(e.getBoundingBox(), camPos, invRot, tanHalfFov, aspect, viewW, viewH);
+            int[][] pts = project8(e.getBoundingBox(), camPos, invRot, tanHalfFov, aspect, viewW, viewH);
+            int[] rect = bounds(pts);
             if (rect == null) continue;
             int x1 = rect[0], y1 = rect[1], x2 = rect[2], y2 = rect[3];
             if (x2 - x1 < MIN_BOX_PX || y2 - y1 < MIN_BOX_PX) continue;
             if (x2 < 0 || y2 < 0 || x1 > viewW || y1 > viewH) continue;
 
-            drawBox(g, x1, y1, x2, y2, color, alphaBg);
+            drawShape(g, pts, x1, y1, x2, y2, color, alphaBg, viewW, viewH);
 
             if (ESPMod.showHp && e instanceof LivingEntity le) {
                 drawHpBar(g, le, x1, y1, y2);
@@ -68,15 +74,14 @@ public class ESPRenderer {
         }
     }
 
-    private static void drawBox(GuiGraphics g, int x1, int y1, int x2, int y2, int color, int alphaBg) {
+    private static void drawShape(GuiGraphics g, int[][] pts, int x1, int y1, int x2, int y2,
+                                  int color, int alphaBg, int viewW, int viewH) {
         int t = Math.max(1, Math.min(3, ESPMod.lineThickness));
         switch (ESPMod.style) {
-            case ESPMod.STYLE_FILLED -> {
-                g.fill(x1, y1, x2, y2, alphaBg);
-                outlineRect(g, x1, y1, x2, y2, t, color);
-            }
+            case ESPMod.STYLE_HITBOX  -> drawHitbox(g, pts, t, color, viewW, viewH);
+            case ESPMod.STYLE_FILLED  -> { g.fill(x1, y1, x2, y2, alphaBg); outlineRect(g, x1, y1, x2, y2, t, color); }
             case ESPMod.STYLE_OUTLINE -> outlineRect(g, x1, y1, x2, y2, t, color);
-            default -> drawCorners(g, x1, y1, x2, y2, t, color);
+            default                   -> drawCorners(g, x1, y1, x2, y2, t, color);
         }
     }
 
@@ -88,7 +93,7 @@ public class ESPRenderer {
     }
 
     private static void drawCorners(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
-        int len = Math.max(3, Math.min(10, (x2 - x1) / 4));
+        int len  = Math.max(3, Math.min(10, (x2 - x1) / 4));
         int lenV = Math.max(3, Math.min(10, (y2 - y1) / 4));
 
         g.fill(x1, y1,         x1 + len, y1 + t,    color);
@@ -99,6 +104,35 @@ public class ESPRenderer {
         g.fill(x1, y2 - lenV,  x1 + t,   y2,        color);
         g.fill(x2 - len, y2 - t,    x2, y2,         color);
         g.fill(x2 - t,   y2 - lenV, x2, y2,         color);
+    }
+
+    private static void drawHitbox(GuiGraphics g, int[][] pts, int t, int color, int viewW, int viewH) {
+        for (int[] e : EDGES) {
+            int[] a = pts[e[0]];
+            int[] b = pts[e[1]];
+            if (a == null || b == null) continue;
+            // cheap reject: both endpoints share an off-screen side
+            if ((a[0] < 0 && b[0] < 0) || (a[0] > viewW && b[0] > viewW)) continue;
+            if ((a[1] < 0 && b[1] < 0) || (a[1] > viewH && b[1] > viewH)) continue;
+            drawLine(g, a[0], a[1], b[0], b[1], t, color);
+        }
+    }
+
+    private static void drawLine(GuiGraphics g, int x0, int y0, int x1, int y1, int t, int color) {
+        int dx = Math.abs(x1 - x0);
+        int dy = Math.abs(y1 - y0);
+        int steps = Math.max(dx, dy);
+        if (steps == 0 || steps > 4000) return;
+        int sx = Integer.signum(x1 - x0);
+        int sy = Integer.signum(y1 - y0);
+        int err = dx - dy;
+        int x = x0, y = y0;
+        for (int i = 0; i <= steps; i++) {
+            g.fill(x, y, x + t, y + t, color);
+            int e2 = err << 1;
+            if (e2 > -dy) { err -= dy; x += sx; }
+            if (e2 <  dx) { err += dx; y += sy; }
+        }
     }
 
     private static void drawHpBar(GuiGraphics g, LivingEntity le, int x1, int y1, int y2) {
@@ -138,16 +172,8 @@ public class ESPRenderer {
     }
 
     private static void drawTracer(GuiGraphics g, int x, int y, int viewW, int viewH, int color) {
-        int sx = viewW / 2;
-        int sy = viewH;
-        int dx = x - sx, dy = y - sy;
-        int steps = Math.max(Math.abs(dx), Math.abs(dy));
-        if (steps == 0 || steps > 4000) return;
-        for (int i = 0; i <= steps; i++) {
-            int px = sx + (dx * i) / steps;
-            int py = sy + (dy * i) / steps;
-            g.fill(px, py, px + 1, py + 1, color);
-        }
+        int t = Math.max(1, Math.min(3, ESPMod.lineThickness));
+        drawLine(g, viewW / 2, viewH, x, y, t, color);
     }
 
     private static int hpColor(float frac) {
@@ -156,39 +182,41 @@ public class ESPRenderer {
         return 0xFFFF5555;
     }
 
-    private static int[] projectAABB(
+    private static int[][] project8(
         AABB box, Vec3 camPos, Quaternionf invRot,
         double tanHalfFov, double aspect, int viewW, int viewH
     ) {
-        double[][] verts = {
-            {box.minX, box.minY, box.minZ}, {box.minX, box.minY, box.maxZ},
-            {box.minX, box.maxY, box.minZ}, {box.minX, box.maxY, box.maxZ},
-            {box.maxX, box.minY, box.minZ}, {box.maxX, box.minY, box.maxZ},
-            {box.maxX, box.maxY, box.minZ}, {box.maxX, box.maxY, box.maxZ},
-        };
-
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-        int visible = 0;
-
-        for (double[] v : verts) {
+        int[][] pts = new int[8][];
+        for (int i = 0; i < 8; i++) {
+            double x = (i & 4) != 0 ? box.maxX : box.minX;
+            double y = (i & 2) != 0 ? box.maxY : box.minY;
+            double z = (i & 1) != 0 ? box.maxZ : box.minZ;
             Vector3f rel = new Vector3f(
-                (float)(v[0] - camPos.x),
-                (float)(v[1] - camPos.y),
-                (float)(v[2] - camPos.z)
+                (float)(x - camPos.x),
+                (float)(y - camPos.y),
+                (float)(z - camPos.z)
             );
             rel.rotate(invRot);
-            if (rel.z >= -0.05f) continue;
-
+            if (rel.z >= -0.05f) { pts[i] = null; continue; }
             int sx = (int)(viewW / 2.0 + ((double) rel.x / (-rel.z * tanHalfFov * aspect)) * viewW / 2.0);
             int sy = (int)(viewH / 2.0 - ((double) rel.y / (-rel.z * tanHalfFov)) * viewH / 2.0);
-            if (sx < minX) minX = sx;
-            if (sy < minY) minY = sy;
-            if (sx > maxX) maxX = sx;
-            if (sy > maxY) maxY = sy;
-            visible++;
+            pts[i] = new int[]{ sx, sy };
         }
+        return pts;
+    }
 
-        return visible >= 2 ? new int[]{minX, minY, maxX, maxY} : null;
+    private static int[] bounds(int[][] pts) {
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+        int n = 0;
+        for (int[] p : pts) {
+            if (p == null) continue;
+            if (p[0] < minX) minX = p[0];
+            if (p[1] < minY) minY = p[1];
+            if (p[0] > maxX) maxX = p[0];
+            if (p[1] > maxY) maxY = p[1];
+            n++;
+        }
+        return n >= 2 ? new int[]{minX, minY, maxX, maxY} : null;
     }
 }

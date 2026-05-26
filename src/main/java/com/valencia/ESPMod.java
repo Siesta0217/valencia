@@ -12,6 +12,7 @@ public class ESPMod {
     public static final int STYLE_CORNERS = 0;
     public static final int STYLE_OUTLINE = 1;
     public static final int STYLE_FILLED  = 2;
+    public static final int STYLE_HITBOX  = 3;
 
     private static boolean enabled = false;
 
@@ -22,7 +23,7 @@ public class ESPMod {
 
     public static int boxR = 128, boxG = 255, boxB = 64;
 
-    public static int     style         = STYLE_CORNERS;
+    public static int     style         = STYLE_HITBOX;
     public static boolean showName      = true;
     public static boolean showHp        = true;
     public static boolean showDistance  = true;

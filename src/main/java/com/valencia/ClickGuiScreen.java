@@ -231,7 +231,7 @@ public class ClickGuiScreen extends Screen {
             new BoolS("Hostile",  () -> cfg.espHostile,     () -> { cfg.espHostile = !cfg.espHostile; ESPMod.hostile = cfg.espHostile; cfg.save(); }),
             new BoolS("Animals",  () -> cfg.espAnimals,     () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
             new BoolS("Items",    () -> cfg.espItems,       () -> { cfg.espItems = !cfg.espItems;     ESPMod.items = cfg.espItems;     cfg.save(); }),
-            new SliderS("Style",  () -> cfg.espStyle,       v -> { cfg.espStyle = (int)v; ESPMod.style = (int)v; cfg.save(); }, 0, 2),
+            new SliderS("Style",  () -> cfg.espStyle,       v -> { cfg.espStyle = (int)v; ESPMod.style = (int)v; cfg.save(); }, 0, 3),
             new BoolS("Name",     () -> cfg.espShowName,    () -> { cfg.espShowName = !cfg.espShowName; ESPMod.showName = cfg.espShowName; cfg.save(); }),
             new BoolS("HP",       () -> cfg.espShowHp,      () -> { cfg.espShowHp = !cfg.espShowHp; ESPMod.showHp = cfg.espShowHp; cfg.save(); }),
             new BoolS("Distance", () -> cfg.espShowDistance,() -> { cfg.espShowDistance = !cfg.espShowDistance; ESPMod.showDistance = cfg.espShowDistance; cfg.save(); }),

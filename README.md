@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.26** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.27** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -105,6 +105,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.27 — ESP Hitbox 樣式（3D 線框）
+- Style slider 新增 `3 = Hitbox`：實體 AABB 完整 12 條邊線框，跟 vanilla F3+B 一樣的視覺
+- 新預設值改為 Hitbox
+- 投影流程改成「8 個角各自存 (sx, sy)」，2D 樣式仍從這 8 點算 min/max bounding rect，效能等價
+- 12 邊用 Bresenham 畫；endpoint 同側螢幕外 cheap-reject，避免畫到螢幕外
+- Tracer 也改用同一條 Bresenham，支援 Thick 滑桿粗細
+- 任一 endpoint 在相機後 (`rel.z >= -0.05`) 的 edge 直接跳過（無 near-plane clipping）
 
 ### v1.6.26 — ESP 重寫：三種框型 + Name/HP/Distance/Tracer + 距離 cull
 - **三種 box style**（Slider 切換）：
