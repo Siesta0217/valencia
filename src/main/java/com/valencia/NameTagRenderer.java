@@ -30,12 +30,13 @@ public class NameTagRenderer {
         Vec3 camPos = camera.position();
         Quaternionf invRot = new Quaternionf(camera.rotation()).conjugate();
 
-        double fovDeg = mc.options.fov().get().doubleValue();
-        double tanHalfFov = Math.tan(Math.toRadians(fovDeg) / 2.0);
+        float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+        org.joml.Matrix4f proj = mc.gameRenderer.getProjectionMatrix(partialTick);
+        double m00 = proj.m00();
+        double m11 = proj.m11();
         Window win = mc.getWindow();
         int viewW = win.getGuiScaledWidth();
         int viewH = win.getGuiScaledHeight();
-        double aspect = (double) win.getWidth() / win.getHeight();
 
         Font font = mc.font;
 
@@ -47,7 +48,7 @@ public class NameTagRenderer {
             double ty = e.getBoundingBox().maxY + 0.45;
             double tz = e.getZ();
 
-            int[] sp = projectPoint(tx, ty, tz, camPos, invRot, tanHalfFov, aspect, viewW, viewH);
+            int[] sp = projectPoint(tx, ty, tz, camPos, invRot, m00, m11, viewW, viewH);
             if (sp == null) continue;
 
             double dx = e.getX() - camPos.x;
@@ -174,7 +175,7 @@ public class NameTagRenderer {
     private static int[] projectPoint(
         double wx, double wy, double wz,
         Vec3 camPos, Quaternionf invRot,
-        double tanHalfFov, double aspect, int viewW, int viewH
+        double m00, double m11, int viewW, int viewH
     ) {
         Vector3f rel = new Vector3f(
             (float)(wx - camPos.x),
@@ -183,8 +184,9 @@ public class NameTagRenderer {
         );
         rel.rotate(invRot);
         if (rel.z >= -0.05f) return null;
-        int sx = (int)(viewW / 2.0 + ((double) rel.x / (-rel.z * tanHalfFov * aspect)) * viewW / 2.0);
-        int sy = (int)(viewH / 2.0 - ((double) rel.y / (-rel.z * tanHalfFov)) * viewH / 2.0);
+        double invNegZ = 1.0 / -rel.z;
+        int sx = (int)(viewW / 2.0 + ((double) rel.x * m00 * invNegZ) * viewW / 2.0);
+        int sy = (int)(viewH / 2.0 - ((double) rel.y * m11 * invNegZ) * viewH / 2.0);
         return new int[]{ sx, sy };
     }
 }

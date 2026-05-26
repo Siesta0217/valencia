@@ -10,6 +10,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3x2fStack;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -38,12 +39,15 @@ public class ESPRenderer {
         Vec3 camPos = camera.position();
         Quaternionf invRot = new Quaternionf(camera.rotation()).conjugate();
 
-        double fovDeg = mc.options.fov().get().doubleValue();
-        double tanHalfFov = Math.tan(Math.toRadians(fovDeg) / 2.0);
+        // Use the engine's actual projection matrix — picks up zoom mods,
+        // Lunar FOV overrides, anything that modifies the rendered FOV.
+        float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+        Matrix4f proj = mc.gameRenderer.getProjectionMatrix(partialTick);
+        double m00 = proj.m00();   // == 1 / (tanHalfFov * aspect)
+        double m11 = proj.m11();   // == 1 / tanHalfFov
         Window win = mc.getWindow();
         int viewW = win.getGuiScaledWidth();
         int viewH = win.getGuiScaledHeight();
-        double aspect = (double) win.getWidth() / win.getHeight();
 
         int color    = ESPMod.boxColor();
         int alphaBg  = (color & 0x00FFFFFF) | 0x40000000;
@@ -60,7 +64,7 @@ public class ESPRenderer {
             double distSq = dx * dx + dy * dy + dz * dz;
             if (distSq > maxDistSq) continue;
 
-            project8(e.getBoundingBox(), camPos, invRot, tanHalfFov, aspect, viewW, viewH);
+            project8(e.getBoundingBox(), camPos, invRot, m00, m11, viewW, viewH);
             int[] rect = bounds();
             if (rect == null) continue;
             int x1 = rect[0], y1 = rect[1], x2 = rect[2], y2 = rect[3];
@@ -203,7 +207,7 @@ public class ESPRenderer {
 
     private static void project8(
         AABB box, Vec3 camPos, Quaternionf invRot,
-        double tanHalfFov, double aspect, int viewW, int viewH
+        double m00, double m11, int viewW, int viewH
     ) {
         double cx = camPos.x, cy = camPos.y, cz = camPos.z;
         for (int i = 0; i < 8; i++) {
@@ -213,8 +217,9 @@ public class ESPRenderer {
             REL.set((float)(x - cx), (float)(y - cy), (float)(z - cz));
             REL.rotate(invRot);
             if (REL.z >= -0.05f) { VIS[i] = false; continue; }
-            XS[i]  = (int)(viewW / 2.0 + ((double) REL.x / (-REL.z * tanHalfFov * aspect)) * viewW / 2.0);
-            YS[i]  = (int)(viewH / 2.0 - ((double) REL.y / (-REL.z * tanHalfFov)) * viewH / 2.0);
+            double invNegZ = 1.0 / -REL.z;
+            XS[i]  = (int)(viewW / 2.0 + ((double) REL.x * m00 * invNegZ) * viewW / 2.0);
+            YS[i]  = (int)(viewH / 2.0 - ((double) REL.y * m11 * invNegZ) * viewH / 2.0);
             VIS[i] = true;
         }
     }

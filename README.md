@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.28** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.29** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -105,6 +105,13 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.29 — ESP / NameTag 修 zoom mod 投影跑掉
+- 改從 `GameRenderer.getProjectionMatrix(partialTick)` 抽 `m00 / m11`，等於 `1/(tanHalfFov*aspect)` 跟 `1/tanHalfFov`
+- 以前讀 `mc.options.fov()`（玩家設定的 base FOV），zoom mod 是修改渲染時的 effective FOV，沒抓到 → ESP 框 + NameTag 都會偏移 / 大小不對
+- 改用渲染矩陣後，任何走 `getProjectionMatrix` 的 FOV 改動（OptiFine zoom、Lunar 內建 zoom、Sodium 系 zoom）都自動吃到
+- `partialTick` 從 `mc.getDeltaTracker().getGameTimeDeltaPartialTick(true)` 拿，跟世界渲染同步
+- NameTagRenderer 同步修一樣的 bug
 
 ### v1.6.28 — ESP 效能優化
 - **線繪製改用旋轉 quad**：一條對角線從 N 個 `g.fill`（每像素一個 quad）改成 1 個 fill — 用 `Matrix3x2fStack.translate + rotate` 把長度 × thick 的軸對齊長方形旋轉到目標角度。Hitbox 樣式重度受益（12 邊 × 多實體 × N 像素 → 12 個 fill / 實體）
