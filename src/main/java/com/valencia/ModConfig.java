@@ -143,18 +143,16 @@ public class ModConfig {
     public boolean espHostile  = false;
     public boolean espAnimals  = false;
     public boolean espItems    = false;
-    public int     espBoxR     = 128;
-    public int     espBoxG     = 255;
-    public int     espBoxB     = 64;
-    public boolean espChroma      = false;
-    public float   espChromaSpeed = 0.5f;
     public int     espStyle        = 3;     // 0=Corners 1=Outline 2=Filled 3=Hitbox
+    public int     espLineThick    = 1;
+    public float   espMaxDistance  = 80.0f;
     public boolean espShowName     = true;
     public boolean espShowHp       = true;
     public boolean espShowDistance = true;
     public boolean espShowTracer   = false;
-    public float   espMaxDistance  = 80.0f;
-    public int     espLineThick    = 1;
+    public int     espColorMode    = 0;     // 0=Single 1=Category 2=Chroma
+    public float   espHue          = 100f;  // 0..360
+    public float   espChromaSpeed  = 0.5f;
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;

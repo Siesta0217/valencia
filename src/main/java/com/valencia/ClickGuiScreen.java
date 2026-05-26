@@ -227,22 +227,24 @@ public class ClickGuiScreen extends Screen {
 
         add(Cat.RENDER, new ModEntry("ESP",
             ESPMod::isEnabled, () -> { ESPMod.toggle(); cfg.espEnabled = ESPMod.isEnabled(); cfg.save(); }, true, List.of(
-            new BoolS("Players",  () -> cfg.espPlayers,     () -> { cfg.espPlayers = !cfg.espPlayers; ESPMod.players = cfg.espPlayers; cfg.save(); }),
-            new BoolS("Hostile",  () -> cfg.espHostile,     () -> { cfg.espHostile = !cfg.espHostile; ESPMod.hostile = cfg.espHostile; cfg.save(); }),
-            new BoolS("Animals",  () -> cfg.espAnimals,     () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
-            new BoolS("Items",    () -> cfg.espItems,       () -> { cfg.espItems = !cfg.espItems;     ESPMod.items = cfg.espItems;     cfg.save(); }),
-            new SliderS("Style",  () -> cfg.espStyle,       v -> { cfg.espStyle = (int)v; ESPMod.style = (int)v; cfg.save(); }, 0, 3),
-            new BoolS("Name",     () -> cfg.espShowName,    () -> { cfg.espShowName = !cfg.espShowName; ESPMod.showName = cfg.espShowName; cfg.save(); }),
-            new BoolS("HP",       () -> cfg.espShowHp,      () -> { cfg.espShowHp = !cfg.espShowHp; ESPMod.showHp = cfg.espShowHp; cfg.save(); }),
-            new BoolS("Distance", () -> cfg.espShowDistance,() -> { cfg.espShowDistance = !cfg.espShowDistance; ESPMod.showDistance = cfg.espShowDistance; cfg.save(); }),
-            new BoolS("Tracer",   () -> cfg.espShowTracer,  () -> { cfg.espShowTracer = !cfg.espShowTracer; ESPMod.showTracer = cfg.espShowTracer; cfg.save(); }),
-            new SliderS("MaxDist",() -> cfg.espMaxDistance, v -> { cfg.espMaxDistance = (float)v; ESPMod.maxDistance = (float)v; cfg.save(); }, 16, 200),
-            new SliderS("Thick",  () -> cfg.espLineThick,   v -> { cfg.espLineThick = (int)v; ESPMod.lineThickness = (int)v; cfg.save(); }, 1, 3),
-            new BoolS("Chroma",   () -> cfg.espChroma,      () -> { cfg.espChroma = !cfg.espChroma; ESPMod.chroma = cfg.espChroma; cfg.save(); }),
-            new SliderS("ChrSpd", () -> cfg.espChromaSpeed * 100, v -> { cfg.espChromaSpeed = (float)v / 100f; ESPMod.chromaSpeed = cfg.espChromaSpeed; cfg.save(); }, 10, 300),
-            new SliderS("Red",    () -> cfg.espBoxR,        v -> { cfg.espBoxR = (int)v; ESPMod.boxR = (int)v; cfg.save(); }, 0, 255),
-            new SliderS("Green",  () -> cfg.espBoxG,        v -> { cfg.espBoxG = (int)v; ESPMod.boxG = (int)v; cfg.save(); }, 0, 255),
-            new SliderS("Blue",   () -> cfg.espBoxB,        v -> { cfg.espBoxB = (int)v; ESPMod.boxB = (int)v; cfg.save(); }, 0, 255)
+            // Targets
+            new BoolS("Players",  () -> cfg.espPlayers, () -> { cfg.espPlayers = !cfg.espPlayers; ESPMod.players = cfg.espPlayers; cfg.save(); }),
+            new BoolS("Hostile",  () -> cfg.espHostile, () -> { cfg.espHostile = !cfg.espHostile; ESPMod.hostile = cfg.espHostile; cfg.save(); }),
+            new BoolS("Animals",  () -> cfg.espAnimals, () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
+            new BoolS("Items",    () -> cfg.espItems,   () -> { cfg.espItems   = !cfg.espItems;   ESPMod.items   = cfg.espItems;   cfg.save(); }),
+            // Box
+            new SliderS("Style",   () -> cfg.espStyle,       v -> { cfg.espStyle       = (int)v;   ESPMod.style         = (int)v;   cfg.save(); }, 0, 3),
+            new SliderS("Thick",   () -> cfg.espLineThick,   v -> { cfg.espLineThick   = (int)v;   ESPMod.lineThickness = (int)v;   cfg.save(); }, 1, 3),
+            new SliderS("MaxDist", () -> cfg.espMaxDistance, v -> { cfg.espMaxDistance = (float)v; ESPMod.maxDistance   = (float)v; cfg.save(); }, 16, 200),
+            // Labels
+            new BoolS("Name",     () -> cfg.espShowName,     () -> { cfg.espShowName     = !cfg.espShowName;     ESPMod.showName     = cfg.espShowName;     cfg.save(); }),
+            new BoolS("HP",       () -> cfg.espShowHp,       () -> { cfg.espShowHp       = !cfg.espShowHp;       ESPMod.showHp       = cfg.espShowHp;       cfg.save(); }),
+            new BoolS("Distance", () -> cfg.espShowDistance, () -> { cfg.espShowDistance = !cfg.espShowDistance; ESPMod.showDistance = cfg.espShowDistance; cfg.save(); }),
+            new BoolS("Tracer",   () -> cfg.espShowTracer,   () -> { cfg.espShowTracer   = !cfg.espShowTracer;   ESPMod.showTracer   = cfg.espShowTracer;   cfg.save(); }),
+            // Color (Mode 0=Single 1=Category 2=Chroma)
+            new SliderS("ColorMd", () -> cfg.espColorMode,        v -> { cfg.espColorMode = (int)v; ESPMod.colorMode = (int)v; cfg.save(); }, 0, 2),
+            new SliderS("Hue",     () -> cfg.espHue,              v -> { cfg.espHue = (float)v; ESPMod.hue = (float)v; cfg.save(); }, 0, 360),
+            new SliderS("ChrSpd",  () -> cfg.espChromaSpeed * 100, v -> { cfg.espChromaSpeed = (float)v / 100f; ESPMod.chromaSpeed = cfg.espChromaSpeed; cfg.save(); }, 10, 300)
         )));
 
         add(Cat.RENDER, new ModEntry("NameTag",

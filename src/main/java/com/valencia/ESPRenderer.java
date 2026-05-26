@@ -49,8 +49,6 @@ public class ESPRenderer {
         int viewW = win.getGuiScaledWidth();
         int viewH = win.getGuiScaledHeight();
 
-        int color    = ESPMod.boxColor();
-        int alphaBg  = (color & 0x00FFFFFF) | 0x40000000;
         Font font    = mc.font;
 
         double maxDistSq = (double) ESPMod.maxDistance * ESPMod.maxDistance;
@@ -70,6 +68,9 @@ public class ESPRenderer {
             int x1 = rect[0], y1 = rect[1], x2 = rect[2], y2 = rect[3];
             if (x2 - x1 < MIN_BOX_PX || y2 - y1 < MIN_BOX_PX) continue;
             if (x2 < 0 || y2 < 0 || x1 > viewW || y1 > viewH) continue;
+
+            int color   = ESPMod.colorFor(e);
+            int alphaBg = (color & 0x00FFFFFF) | 0x40000000;
 
             drawShape(g, x1, y1, x2, y2, color, alphaBg, viewW, viewH);
 

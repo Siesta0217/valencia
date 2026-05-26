@@ -38,10 +38,8 @@ public class NoFallMod implements ClientModInitializer {
         HitboxMod.hostile = cfg.hitboxHostile;
         HitboxMod.animals = cfg.hitboxAnimals;
 
-        ESPMod.boxR = cfg.espBoxR;
-        ESPMod.boxG = cfg.espBoxG;
-        ESPMod.boxB = cfg.espBoxB;
-        ESPMod.chroma      = cfg.espChroma;
+        ESPMod.colorMode   = cfg.espColorMode;
+        ESPMod.hue         = cfg.espHue;
         ESPMod.chromaSpeed = cfg.espChromaSpeed;
 
         SpearAuraMod.SCAN_RANGE         = cfg.spearScanRange;

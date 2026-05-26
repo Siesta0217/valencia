@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.30** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.0** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -105,6 +105,16 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.0 — ESP 設定面重寫
+- 設定面四個分區：**Targets / Box / Labels / Color**
+- **去掉** Red / Green / Blue 三個獨立滑桿 + Chroma boolean → 改成單一 **Hue** 滑桿（0–360°，HSV saturation=1, value=1）+ **ColorMd** 選擇器
+- **ColorMd**（0–2）：
+  - `0 Single`：所有實體用 Hue 滑桿的顏色
+  - `1 Category`：玩家紅 / 敵對橘 / 動物綠 / 物品黃，固定 hue
+  - `2 Chroma`：色相按時間循環，速度看 ChrSpd
+- `ESPMod.colorFor(Entity)` 統一出口，render loop 每實體現算
+- 舊 config 欄位 `espBoxR/G/B/espChroma` 移除，Gson 自動忽略殘留 JSON
 
 ### v1.6.30 — ESP Chroma 跑馬燈色
 - 新增 **Chroma** 開關（ClickGUI ESP）：開啟後 box / name / hp 顏色按 hue 自動循環，現有 Red/Green/Blue 滑桿被忽略
