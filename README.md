@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.23** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.24** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 

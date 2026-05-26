@@ -14,12 +14,7 @@ import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import javax.imageio.ImageIO;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -27,299 +22,527 @@ import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
+import javax.imageio.ImageIO;
 
+/**
+ * Raven-style ClickGUI ported to Valencia / Fabric 1.21.11.
+ *
+ * Layout mimics Raven B++: draggable category panels, left-click toggle,
+ * right-click expand settings, gradient enabled/disabled module rows,
+ * half-scale labels, rounded slider bars, toggle switches.
+ */
 public class ClickGuiScreen extends Screen {
 
-    // ── Categories ───────────────────────────────────────────────────────────
-    private enum Category {
-        COMBAT("Combat"),
-        MOVEMENT("Movement"),
-        VISUALS("Visuals"),
-        SETTINGS("Settings");
+    // ── Inner types ─────────────────────────────────────────────────────────
+    enum Cat {
+        COMBAT("Combat"), MOVEMENT("Movement"), PLAYER("Player"),
+        RENDER("Render"), CLIENT("Client");
         final String label;
-        Category(String l) { label = l; }
+        Cat(String l) { label = l; }
     }
 
-    // ── Setting types ────────────────────────────────────────────────────────
     interface Setting {}
     record SliderS(String label, DoubleSupplier get, DoubleConsumer set, double min, double max) implements Setting {}
     record BoolS(String label, BooleanSupplier get, Runnable toggle) implements Setting {}
     record KeyS(String label, IntSupplier get, IntConsumer set) implements Setting {}
 
-    record ModEntry(
-        String name, Category cat,
-        BooleanSupplier enabled, Runnable toggle,
-        boolean toggleable,
-        List<Setting> settings
-    ) {}
+    static class ModEntry {
+        final String name;
+        final BooleanSupplier enabled;
+        final Runnable toggle;
+        final boolean toggleable;
+        final List<Setting> settings;
+        ModEntry(String n, BooleanSupplier e, Runnable t, boolean tog, List<Setting> s) {
+            name = n; enabled = e; toggle = t; toggleable = tog; settings = s;
+        }
+    }
 
-    // ── Discord-inspired palette ─────────────────────────────────────────────
-    private static final int C_OUTER    = 0xFF1E1F22;
-    private static final int C_SIDEBAR  = 0xFF1E1F22;
-    private static final int C_LIST     = 0xFF2B2D31;
-    private static final int C_PANEL    = 0xFF313338;
-    private static final int C_DIV      = 0xFF1A1B1E;
-    private static final int C_HOVER    = 0xFF35373C;
-    private static final int C_SEL      = 0xFF404249;
-    private static final int C_GREEN    = 0xFF57F287;
-    private static final int C_RED      = 0xFFED4245;
-    private static final int C_TEXT     = 0xFFDBDEE1;
-    private static final int C_DIM      = 0xFF949BA4;
-    private static final int C_MUTE     = 0xFF6D6F78;
-    private static final int C_HASH     = 0xFF80848E;
+    static class Panel {
+        final Cat cat;
+        int x, y;
+        boolean open = true;
+        boolean dragging;
+        int dragOX, dragOY;
+        ModEntry expanded;
+        int scrollOff;          // scroll offset for expanded settings
+        final List<ModEntry> mods = new ArrayList<>();
+        Panel(Cat c) { cat = c; }
+    }
 
-    // ── Layout constants ─────────────────────────────────────────────────────
-    private static final int WIN_W     = 440;
-    private static final int WIN_H     = 310;
-    private static final int SIDE_W    = 44;
-    private static final int LIST_W    = 130;
-    private static final int HDR_H     = 28;
-    private static final int CAT_SZ    = 32;
-    private static final int CAT_GAP   = 5;
-    private static final int MOD_H     = 20;
-    private static final int SET_H     = 16;
-    private static final int PAD       = 6;
+    // ── Sizes (Raven-style) ─────────────────────────────────────────────────
+    private static final int HDR       = 15;   // category header height
+    private static final int MOD_H     = 20;   // module row height (Raven=20)
+    private static final int S_SLIDER  = 16;   // slider setting height
+    private static final int S_BOOL    = 14;   // bool toggle height
+    private static final int S_BIND    = 14;   // key bind height
+    private static final int MAX_SET_H = 260;  // max visible settings height before scroll
+    private int PANEL_W = 92;                  // panel width (Raven=92)
 
-    // ── GUI state ────────────────────────────────────────────────────────────
-    private final List<ModEntry> mods = new ArrayList<>();
-    private Category selCat  = Category.COMBAT;
-    private String   selMod  = null;
-    private int modScroll    = 0;
-    private int setScroll    = 0;
-    private String rebindMod = null;
-    private int    rebindIdx = -1;
-    private String dragMod   = null;
-    private int    dragIdx   = -1;
+    // ── State ───────────────────────────────────────────────────────────────
+    private final List<Panel> panels = new ArrayList<>();
+    private Panel  sliderPanel;
+    private int    sliderIdx  = -1;
+    private Panel  rebindPanel;
+    private int    rebindIdx  = -1;
+    private long   openTime;
 
-    // window drag
-    private int  wx, wy;
-    private boolean wDrag = false;
-    private int  wdx, wdy;
+    // ── Waifu ───────────────────────────────────────────────────────────────
+    private Identifier waifuLoc;
+    private int waifuTexW, waifuTexH;
+    private String waifuHint, waifuErr;
 
-    // ── Waifu ────────────────────────────────────────────────────────────────
-    private Identifier waifuLoc = null;
-    private int        waifuTexW, waifuTexH;
-    private String     waifuHint, waifuErr;
-
-    // ─────────────────────────────────────────────────────────────────────────
-
+    // ═════════════════════════════════════════════════════════════════════════
     public ClickGuiScreen() {
         super(Component.empty());
-        buildMods();
+        buildPanels();
         loadWaifu();
+        openTime = System.currentTimeMillis();
     }
 
     @Override public boolean isPauseScreen() { return false; }
 
-    // ── Module list (kept verbatim) ──────────────────────────────────────────
-    private void buildMods() {
+    // ── Build module/panel data ─────────────────────────────────────────────
+    private void buildPanels() {
+        for (Cat c : Cat.values()) panels.add(new Panel(c));
         ModConfig cfg = ModConfig.get();
 
-        // Combat
-        mods.add(new ModEntry("KillAura", Category.COMBAT,
-            KillAuraMod::isEnabled, KillAuraMod::toggle, true,
-            List.of(
-                new SliderS("Range",     () -> cfg.killRange,        v -> { cfg.killRange        = (float)v; KillAuraMod.RANGE        = (float)v; cfg.save(); }, 1, 10),
-                new SliderS("Atk Range", () -> cfg.killAttackRange,  v -> { cfg.killAttackRange  = (float)v; KillAuraMod.ATTACK_RANGE = (float)v; cfg.save(); }, 1, 8),
-                new SliderS("Atk Delay", () -> cfg.killAttackDelay,  v -> { cfg.killAttackDelay  = (int)v;   KillAuraMod.attackDelay  = (int)v;   cfg.save(); }, 2, 20),
-                new BoolS("Single",      () -> cfg.killSingle,       () -> { cfg.killSingle      = !cfg.killSingle;      KillAuraMod.singleMode    = cfg.killSingle;      cfg.save(); }),
-                new BoolS("Hostile",     () -> cfg.killHostile,      () -> { cfg.killHostile     = !cfg.killHostile;     KillAuraMod.targetHostile = cfg.killHostile;     cfg.save(); }),
-                new BoolS("Animals",     () -> cfg.killAnimals,      () -> { cfg.killAnimals     = !cfg.killAnimals;     KillAuraMod.targetAnimals = cfg.killAnimals;     cfg.save(); }),
-                new BoolS("Players",     () -> cfg.killPlayers,      () -> { cfg.killPlayers     = !cfg.killPlayers;     KillAuraMod.targetPlayers = cfg.killPlayers;     cfg.save(); }),
-                new BoolS("Raycast",     () -> cfg.killRaycast,      () -> { cfg.killRaycast     = !cfg.killRaycast;     KillAuraMod.raycast       = cfg.killRaycast;     cfg.save(); }),
-                new BoolS("Skip Invis",  () -> cfg.killSkipInvis,    () -> { cfg.killSkipInvis   = !cfg.killSkipInvis;   KillAuraMod.skipInvisible = cfg.killSkipInvis;   cfg.save(); }),
-                new BoolS("Wait Cool",   () -> cfg.killWaitCool,     () -> { cfg.killWaitCool    = !cfg.killWaitCool;    KillAuraMod.waitCooldown  = cfg.killWaitCool;    cfg.save(); }),
-                new BoolS("Smooth Rot",  () -> cfg.killSmoothRot,    () -> { cfg.killSmoothRot   = !cfg.killSmoothRot;   KillAuraMod.smoothRot     = cfg.killSmoothRot;   cfg.save(); }),
-                new SliderS("Max Turn",  () -> cfg.killMaxTurn,      v -> { cfg.killMaxTurn      = (int)v;               KillAuraMod.maxTurnDeg    = (int)v;               cfg.save(); }, 10, 180),
-                new BoolS("Body Lock",   () -> cfg.killBodyLock,     () -> { cfg.killBodyLock    = !cfg.killBodyLock;    KillAuraMod.bodyLock      = cfg.killBodyLock;    cfg.save(); }),
-                new BoolS("Vis Body",    () -> cfg.killVisBody,      () -> { cfg.killVisBody     = !cfg.killVisBody;     KillAuraMod.visibleBody   = cfg.killVisBody;     cfg.save(); }),
-                new KeyS("Key",          () -> cfg.killAuraKey,      v -> { cfg.killAuraKey = v; cfg.save(); })
-            )));
+        // ── Combat ──────────────────────────────────────────────────────────
+        add(Cat.COMBAT, new ModEntry("KillAura", KillAuraMod::isEnabled, KillAuraMod::toggle, true, List.of(
+            new SliderS("Range",     () -> cfg.killRange,       v -> { cfg.killRange = (float)v;       KillAuraMod.RANGE = (float)v;          cfg.save(); }, 1, 10),
+            new SliderS("Atk Range", () -> cfg.killAttackRange, v -> { cfg.killAttackRange = (float)v; KillAuraMod.ATTACK_RANGE = (float)v;   cfg.save(); }, 1, 8),
+            new SliderS("Atk Delay", () -> cfg.killAttackDelay, v -> { cfg.killAttackDelay = (int)v;   KillAuraMod.attackDelay = (int)v;       cfg.save(); }, 2, 20),
+            new BoolS("Single",  () -> cfg.killSingle,    () -> { cfg.killSingle = !cfg.killSingle;       KillAuraMod.singleMode = cfg.killSingle;       cfg.save(); }),
+            new BoolS("Hostile", () -> cfg.killHostile,   () -> { cfg.killHostile = !cfg.killHostile;     KillAuraMod.targetHostile = cfg.killHostile;   cfg.save(); }),
+            new BoolS("Animals", () -> cfg.killAnimals,   () -> { cfg.killAnimals = !cfg.killAnimals;     KillAuraMod.targetAnimals = cfg.killAnimals;   cfg.save(); }),
+            new BoolS("Players", () -> cfg.killPlayers,   () -> { cfg.killPlayers = !cfg.killPlayers;     KillAuraMod.targetPlayers = cfg.killPlayers;   cfg.save(); }),
+            new BoolS("Raycast", () -> cfg.killRaycast,   () -> { cfg.killRaycast = !cfg.killRaycast;     KillAuraMod.raycast = cfg.killRaycast;         cfg.save(); }),
+            new BoolS("Skip Inv",() -> cfg.killSkipInvis, () -> { cfg.killSkipInvis = !cfg.killSkipInvis; KillAuraMod.skipInvisible = cfg.killSkipInvis; cfg.save(); }),
+            new BoolS("Wait CD", () -> cfg.killWaitCool,  () -> { cfg.killWaitCool = !cfg.killWaitCool;   KillAuraMod.waitCooldown = cfg.killWaitCool;   cfg.save(); }),
+            new BoolS("Smooth",  () -> cfg.killSmoothRot, () -> { cfg.killSmoothRot = !cfg.killSmoothRot; KillAuraMod.smoothRot = cfg.killSmoothRot;    cfg.save(); }),
+            new SliderS("Max Turn", () -> cfg.killMaxTurn, v -> { cfg.killMaxTurn = (int)v; KillAuraMod.maxTurnDeg = (int)v; cfg.save(); }, 10, 180),
+            new BoolS("Body Lock",() -> cfg.killBodyLock, () -> { cfg.killBodyLock = !cfg.killBodyLock;   KillAuraMod.bodyLock = cfg.killBodyLock;       cfg.save(); }),
+            new BoolS("Vis Body",() -> cfg.killVisBody,   () -> { cfg.killVisBody = !cfg.killVisBody;     KillAuraMod.visibleBody = cfg.killVisBody;     cfg.save(); }),
+            new KeyS("Key", () -> cfg.killAuraKey, v -> { cfg.killAuraKey = v; cfg.save(); })
+        )));
 
-        mods.add(new ModEntry("MaceAura", Category.COMBAT,
-            MaceAuraMod::isEnabled, MaceAuraMod::toggle, true,
-            List.of(
-                new SliderS("Det Range", () -> cfg.maceDetectRange, v -> { cfg.maceDetectRange = (float)v; MaceAuraMod.RANGE        = (float)v; cfg.save(); }, 1, 12),
-                new SliderS("Atk Range", () -> cfg.maceAttackRange, v -> { cfg.maceAttackRange = (float)v; MaceAuraMod.ATTACK_RANGE = (float)v; cfg.save(); }, 1, 8),
-                new BoolS("Hostile",     () -> cfg.maceHostile,     () -> { cfg.maceHostile = !cfg.maceHostile; MaceAuraMod.targetHostile = cfg.maceHostile; cfg.save(); }),
-                new BoolS("Animals",     () -> cfg.maceAnimals,     () -> { cfg.maceAnimals = !cfg.maceAnimals; MaceAuraMod.targetAnimals = cfg.maceAnimals; cfg.save(); }),
-                new BoolS("Players",     () -> cfg.macePlayers,     () -> { cfg.macePlayers = !cfg.macePlayers; MaceAuraMod.targetPlayers = cfg.macePlayers; cfg.save(); }),
-                new KeyS("Key",          () -> cfg.maceAuraKey,     v -> { cfg.maceAuraKey = v; cfg.save(); })
-            )));
+        add(Cat.COMBAT, new ModEntry("MaceAura", MaceAuraMod::isEnabled, MaceAuraMod::toggle, true, List.of(
+            new SliderS("Det Range", () -> cfg.maceDetectRange, v -> { cfg.maceDetectRange = (float)v; MaceAuraMod.RANGE = (float)v;        cfg.save(); }, 1, 12),
+            new SliderS("Atk Range", () -> cfg.maceAttackRange, v -> { cfg.maceAttackRange = (float)v; MaceAuraMod.ATTACK_RANGE = (float)v; cfg.save(); }, 1, 8),
+            new BoolS("Hostile", () -> cfg.maceHostile, () -> { cfg.maceHostile = !cfg.maceHostile; MaceAuraMod.targetHostile = cfg.maceHostile; cfg.save(); }),
+            new BoolS("Animals", () -> cfg.maceAnimals, () -> { cfg.maceAnimals = !cfg.maceAnimals; MaceAuraMod.targetAnimals = cfg.maceAnimals; cfg.save(); }),
+            new BoolS("Players", () -> cfg.macePlayers, () -> { cfg.macePlayers = !cfg.macePlayers; MaceAuraMod.targetPlayers = cfg.macePlayers; cfg.save(); }),
+            new KeyS("Key", () -> cfg.maceAuraKey, v -> { cfg.maceAuraKey = v; cfg.save(); })
+        )));
 
-        mods.add(new ModEntry("SpearAura", Category.COMBAT,
-            SpearAuraMod::isEnabled, SpearAuraMod::toggle, true,
-            List.of(
-                new SliderS("Mode",      () -> cfg.spearMode,        v -> { cfg.spearMode      = (int)v;   SpearAuraMod.mode               = (int)v;   cfg.save(); }, 0, 2),
-                new SliderS("Scan Rng",  () -> cfg.spearScanRange,   v -> { cfg.spearScanRange = (float)v; SpearAuraMod.SCAN_RANGE         = (float)v; cfg.save(); }, 3, 10),
-                new SliderS("Min Reach", () -> cfg.spearMinReach,    v -> { cfg.spearMinReach  = (float)v; SpearAuraMod.MIN_REACH          = (float)v; cfg.save(); }, 0.5, 3),
-                new SliderS("Max Reach", () -> cfg.spearMaxReach,    v -> { cfg.spearMaxReach  = (float)v; SpearAuraMod.MAX_REACH          = (float)v; cfg.save(); }, 2, 12),
-                new SliderS("Chg Ticks", () -> cfg.spearChargeTicks, v -> { cfg.spearChargeTicks = (int)v; SpearAuraMod.chargeReleaseTicks = (int)v;   cfg.save(); }, 4, 30),
-                new BoolS("Hostile",     () -> cfg.spearHostile,     () -> { cfg.spearHostile  = !cfg.spearHostile;  SpearAuraMod.targetHostile = cfg.spearHostile; cfg.save(); }),
-                new BoolS("Animals",     () -> cfg.spearAnimals,     () -> { cfg.spearAnimals  = !cfg.spearAnimals;  SpearAuraMod.targetAnimals = cfg.spearAnimals; cfg.save(); }),
-                new BoolS("Players",     () -> cfg.spearPlayers,     () -> { cfg.spearPlayers  = !cfg.spearPlayers;  SpearAuraMod.targetPlayers = cfg.spearPlayers; cfg.save(); }),
-                new BoolS("Step Back",   () -> cfg.spearStepBack,    () -> { cfg.spearStepBack = !cfg.spearStepBack; SpearAuraMod.autoStepBack  = cfg.spearStepBack; cfg.save(); }),
-                new KeyS("Key",          () -> cfg.spearAuraKey,     v -> { cfg.spearAuraKey = v; cfg.save(); })
-            )));
+        add(Cat.COMBAT, new ModEntry("SpearAura", SpearAuraMod::isEnabled, SpearAuraMod::toggle, true, List.of(
+            new SliderS("Mode",      () -> cfg.spearMode,        v -> { cfg.spearMode = (int)v;        SpearAuraMod.mode = (int)v;                     cfg.save(); }, 0, 2),
+            new SliderS("Scan Rng",  () -> cfg.spearScanRange,   v -> { cfg.spearScanRange = (float)v; SpearAuraMod.SCAN_RANGE = (float)v;             cfg.save(); }, 3, 10),
+            new SliderS("Min Reach", () -> cfg.spearMinReach,    v -> { cfg.spearMinReach = (float)v;  SpearAuraMod.MIN_REACH = (float)v;              cfg.save(); }, 0.5, 3),
+            new SliderS("Max Reach", () -> cfg.spearMaxReach,    v -> { cfg.spearMaxReach = (float)v;  SpearAuraMod.MAX_REACH = (float)v;              cfg.save(); }, 2, 12),
+            new SliderS("Chg Ticks", () -> cfg.spearChargeTicks, v -> { cfg.spearChargeTicks = (int)v; SpearAuraMod.chargeReleaseTicks = (int)v;       cfg.save(); }, 4, 30),
+            new BoolS("Hostile",  () -> cfg.spearHostile,  () -> { cfg.spearHostile = !cfg.spearHostile;   SpearAuraMod.targetHostile = cfg.spearHostile; cfg.save(); }),
+            new BoolS("Animals",  () -> cfg.spearAnimals,  () -> { cfg.spearAnimals = !cfg.spearAnimals;   SpearAuraMod.targetAnimals = cfg.spearAnimals; cfg.save(); }),
+            new BoolS("Players",  () -> cfg.spearPlayers,  () -> { cfg.spearPlayers = !cfg.spearPlayers;   SpearAuraMod.targetPlayers = cfg.spearPlayers; cfg.save(); }),
+            new BoolS("Step Back",() -> cfg.spearStepBack, () -> { cfg.spearStepBack = !cfg.spearStepBack; SpearAuraMod.autoStepBack = cfg.spearStepBack; cfg.save(); }),
+            new KeyS("Key", () -> cfg.spearAuraKey, v -> { cfg.spearAuraKey = v; cfg.save(); })
+        )));
 
-        mods.add(new ModEntry("CritHit", Category.COMBAT,
-            CritMod::isEnabled, CritMod::toggle, true,
+        add(Cat.COMBAT, new ModEntry("CritHit", CritMod::isEnabled, CritMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.critKey, v -> { cfg.critKey = v; cfg.save(); }))));
 
-        mods.add(new ModEntry("Hitbox", Category.COMBAT,
-            HitboxMod::isEnabled,
-            () -> { HitboxMod.toggle(); cfg.hitboxEnabled = HitboxMod.isEnabled(); cfg.save(); },
-            true,
-            List.of(
-                new SliderS("Expand",  () -> (double)cfg.hitboxExpand,
-                    v -> { cfg.hitboxExpand = (float)v; HitboxMod.expand = (float)v; cfg.save(); }, 0.05, 1.0),
-                new BoolS("Players",   () -> cfg.hitboxPlayers,
-                    () -> { cfg.hitboxPlayers = !cfg.hitboxPlayers; HitboxMod.players = cfg.hitboxPlayers; cfg.save(); }),
-                new BoolS("Hostile",   () -> cfg.hitboxHostile,
-                    () -> { cfg.hitboxHostile = !cfg.hitboxHostile; HitboxMod.hostile = cfg.hitboxHostile; cfg.save(); }),
-                new BoolS("Animals",   () -> cfg.hitboxAnimals,
-                    () -> { cfg.hitboxAnimals = !cfg.hitboxAnimals; HitboxMod.animals = cfg.hitboxAnimals; cfg.save(); })
-            )));
+        add(Cat.COMBAT, new ModEntry("Hitbox",
+            HitboxMod::isEnabled, () -> { HitboxMod.toggle(); cfg.hitboxEnabled = HitboxMod.isEnabled(); cfg.save(); }, true, List.of(
+            new SliderS("Expand", () -> (double)cfg.hitboxExpand, v -> { cfg.hitboxExpand = (float)v; HitboxMod.expand = (float)v; cfg.save(); }, 0.05, 1.0),
+            new BoolS("Players", () -> cfg.hitboxPlayers, () -> { cfg.hitboxPlayers = !cfg.hitboxPlayers; HitboxMod.players = cfg.hitboxPlayers; cfg.save(); }),
+            new BoolS("Hostile", () -> cfg.hitboxHostile, () -> { cfg.hitboxHostile = !cfg.hitboxHostile; HitboxMod.hostile = cfg.hitboxHostile; cfg.save(); }),
+            new BoolS("Animals", () -> cfg.hitboxAnimals, () -> { cfg.hitboxAnimals = !cfg.hitboxAnimals; HitboxMod.animals = cfg.hitboxAnimals; cfg.save(); })
+        )));
 
-        // Movement
-        mods.add(new ModEntry("BHop", Category.MOVEMENT,
-            BHopMod::isEnabled, BHopMod::toggle, true,
-            List.of(
-                new SliderS("Speed",     () -> (double)cfg.bhopSpeed,      v -> { cfg.bhopSpeed      = (float)v; BHopMod.speedMultiplier = (float)v; cfg.save(); }, 0.5, 2.5),
-                new BoolS("Low Hop",     () -> cfg.bhopLowHop,             () -> { cfg.bhopLowHop    = !cfg.bhopLowHop;          BHopMod.lowHop     = cfg.bhopLowHop;     cfg.save(); }),
-                new SliderS("Jump Hgt",  () -> (double)cfg.bhopJumpHeight, v -> { cfg.bhopJumpHeight = (float)v; BHopMod.jumpHeight     = (float)v; cfg.save(); }, 0.1, 1.0),
-                new SliderS("Boost",     () -> (double)cfg.bhopBoost,      v -> { cfg.bhopBoost      = (float)v; BHopMod.boost          = (float)v; cfg.save(); }, 1.0, 1.5),
-                new BoolS("KB Boost",    () -> cfg.bhopKBBoost,            () -> { cfg.bhopKBBoost   = !cfg.bhopKBBoost;         BHopMod.kbBoost    = cfg.bhopKBBoost;    cfg.save(); }),
-                new KeyS("Key",          () -> cfg.bhopKey,                v -> { cfg.bhopKey = v; cfg.save(); })
-            )));
+        // ── Movement ────────────────────────────────────────────────────────
+        add(Cat.MOVEMENT, new ModEntry("BHop", BHopMod::isEnabled, BHopMod::toggle, true, List.of(
+            new SliderS("Speed",    () -> (double)cfg.bhopSpeed,      v -> { cfg.bhopSpeed = (float)v;      BHopMod.speedMultiplier = (float)v; cfg.save(); }, 0.5, 2.5),
+            new BoolS("Low Hop",    () -> cfg.bhopLowHop,             () -> { cfg.bhopLowHop = !cfg.bhopLowHop;       BHopMod.lowHop = cfg.bhopLowHop;     cfg.save(); }),
+            new SliderS("Jump Hgt", () -> (double)cfg.bhopJumpHeight, v -> { cfg.bhopJumpHeight = (float)v; BHopMod.jumpHeight = (float)v;     cfg.save(); }, 0.1, 1.0),
+            new SliderS("Boost",    () -> (double)cfg.bhopBoost,      v -> { cfg.bhopBoost = (float)v;      BHopMod.boost = (float)v;          cfg.save(); }, 1.0, 1.5),
+            new BoolS("KB Boost",   () -> cfg.bhopKBBoost,            () -> { cfg.bhopKBBoost = !cfg.bhopKBBoost;     BHopMod.kbBoost = cfg.bhopKBBoost;   cfg.save(); }),
+            new KeyS("Key", () -> cfg.bhopKey, v -> { cfg.bhopKey = v; cfg.save(); })
+        )));
 
-        mods.add(new ModEntry("Velocity", Category.MOVEMENT,
-            VelocityMod::isEnabled, VelocityMod::toggle, true,
-            List.of(
-                new SliderS("Horiz", () -> cfg.velocityHoriz, v -> { cfg.velocityHoriz = (int)v; VelocityMod.horizontal = (int)v; cfg.save(); }, 0, 200),
-                new SliderS("Vert",  () -> cfg.velocityVert,  v -> { cfg.velocityVert  = (int)v; VelocityMod.vertical   = (int)v; cfg.save(); }, 0, 200),
-                new KeyS("Key",      () -> cfg.velocityKey,   v -> { cfg.velocityKey = v; cfg.save(); })
-            )));
+        add(Cat.MOVEMENT, new ModEntry("Velocity", VelocityMod::isEnabled, VelocityMod::toggle, true, List.of(
+            new SliderS("Horiz", () -> cfg.velocityHoriz, v -> { cfg.velocityHoriz = (int)v; VelocityMod.horizontal = (int)v; cfg.save(); }, 0, 200),
+            new SliderS("Vert",  () -> cfg.velocityVert,  v -> { cfg.velocityVert = (int)v;  VelocityMod.vertical = (int)v;   cfg.save(); }, 0, 200),
+            new KeyS("Key", () -> cfg.velocityKey, v -> { cfg.velocityKey = v; cfg.save(); })
+        )));
 
-        mods.add(new ModEntry("FastPlace", Category.MOVEMENT,
-            FastPlaceMod::isEnabled, FastPlaceMod::toggle, true,
-            List.of(new KeyS("Key", () -> cfg.fastPlaceKey, v -> { cfg.fastPlaceKey = v; cfg.save(); }))));
-
-        mods.add(new ModEntry("AutoFish", Category.MOVEMENT,
-            AutoFishMod::isEnabled,
-            () -> { AutoFishMod.toggle(); cfg.autoFishEnabled = AutoFishMod.isEnabled(); cfg.save(); },
-            true,
-            List.of(
-                new SliderS("Bite Vy", () -> (double)cfg.autoFishBiteVy,
-                    v -> { cfg.autoFishBiteVy = (float)v; AutoFishMod.biteVy = (float)v; cfg.save(); }, -0.2, -0.01),
-                new SliderS("Recast", () -> (double)cfg.autoFishRecast,
-                    v -> { cfg.autoFishRecast = (int)v; AutoFishMod.recastDelay = (int)v; cfg.save(); }, 4, 40)
-            )));
-
-        mods.add(new ModEntry("Scaffold", Category.MOVEMENT,
-            ScaffoldMod::isEnabled, ScaffoldMod::toggle, true,
-            List.of(
-                new BoolS("Tower",       () -> cfg.scaffoldTower,         () -> { cfg.scaffoldTower      = !cfg.scaffoldTower;      ScaffoldMod.tower      = cfg.scaffoldTower;      cfg.save(); }),
-                new BoolS("Tower Move",  () -> cfg.scaffoldTowerMove,     () -> { cfg.scaffoldTowerMove  = !cfg.scaffoldTowerMove;  ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;  cfg.save(); }),
-                new SliderS("Tower Spd", () -> cfg.scaffoldTowerSpeed,    v -> { cfg.scaffoldTowerSpeed = (float)v;                ScaffoldMod.towerSpeed = (float)v;               cfg.save(); }, 0.0, 1.0),
-                new BoolS("Fake Hand",   () -> cfg.scaffoldFakeHand,      () -> { cfg.scaffoldFakeHand   = !cfg.scaffoldFakeHand;   ScaffoldMod.fakeHand   = cfg.scaffoldFakeHand;   cfg.save(); }),
-                new BoolS("Silent Rot",  () -> cfg.scaffoldSilentRot,     () -> { cfg.scaffoldSilentRot  = !cfg.scaffoldSilentRot;  ScaffoldMod.silentRot  = cfg.scaffoldSilentRot;  cfg.save(); }),
-                new BoolS("Auto Sw",     () -> cfg.scaffoldAutoSwitch,    () -> { cfg.scaffoldAutoSwitch = !cfg.scaffoldAutoSwitch; ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch; cfg.save(); }),
-                new BoolS("Sw Back",     () -> cfg.scaffoldSwitchBack,    () -> { cfg.scaffoldSwitchBack = !cfg.scaffoldSwitchBack; ScaffoldMod.switchBack = cfg.scaffoldSwitchBack; cfg.save(); }),
-                new SliderS("Delay",     () -> cfg.scaffoldPlaceDelay,    v -> { cfg.scaffoldPlaceDelay  = (int)v;                  ScaffoldMod.placeDelay = (int)v;                  cfg.save(); }, 0, 10),
-                new KeyS("Key",          () -> cfg.scaffoldKey,           v -> { cfg.scaffoldKey         = v;                       cfg.save(); })
-            )));
-
-        mods.add(new ModEntry("NoFall", Category.MOVEMENT,
-            NoFallMod::isEnabled, NoFallMod::toggleManual, true,
+        add(Cat.MOVEMENT, new ModEntry("NoFall", NoFallMod::isEnabled, NoFallMod::toggleManual, true,
             List.of(new KeyS("Key", () -> cfg.nofallKey, v -> { cfg.nofallKey = v; cfg.save(); }))));
-
-        mods.add(new ModEntry("NoSlow", Category.MOVEMENT,
-            NoSlowMod::isEnabled, NoSlowMod::toggle, true,
+        add(Cat.MOVEMENT, new ModEntry("NoSlow", NoSlowMod::isEnabled, NoSlowMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.noSlowKey, v -> { cfg.noSlowKey = v; cfg.save(); }))));
 
-        mods.add(new ModEntry("Step", Category.MOVEMENT,
-            StepMod::isEnabled, StepMod::toggle, true,
-            List.of(
-                new SliderS("Height", () -> cfg.stepHeight, v -> { cfg.stepHeight = (float)v; StepMod.stepHeight = (float)v; cfg.save(); }, 1.0, 3.0),
-                new KeyS("Key",       () -> cfg.stepKey,    v -> { cfg.stepKey = v; cfg.save(); })
-            )));
+        add(Cat.MOVEMENT, new ModEntry("Step", StepMod::isEnabled, StepMod::toggle, true, List.of(
+            new SliderS("Height", () -> cfg.stepHeight, v -> { cfg.stepHeight = (float)v; StepMod.stepHeight = (float)v; cfg.save(); }, 1.0, 3.0),
+            new KeyS("Key", () -> cfg.stepKey, v -> { cfg.stepKey = v; cfg.save(); })
+        )));
 
-        mods.add(new ModEntry("Timer", Category.MOVEMENT,
-            TimerMod::isEnabled, TimerMod::toggle, true,
-            List.of(
-                new SliderS("Speed", () -> (double)cfg.timerSpeed, v -> { cfg.timerSpeed = (float)v; TimerMod.speed = (float)v; cfg.save(); }, 1.0, 3.0),
-                new KeyS("Key",      () -> cfg.timerKey,           v -> { cfg.timerKey = v; cfg.save(); })
-            )));
+        add(Cat.MOVEMENT, new ModEntry("Timer", TimerMod::isEnabled, TimerMod::toggle, true, List.of(
+            new SliderS("Speed", () -> (double)cfg.timerSpeed, v -> { cfg.timerSpeed = (float)v; TimerMod.speed = (float)v; cfg.save(); }, 1.0, 3.0),
+            new KeyS("Key", () -> cfg.timerKey, v -> { cfg.timerKey = v; cfg.save(); })
+        )));
 
-        mods.add(new ModEntry("ElytraGoto", Category.MOVEMENT,
-            ElytraGotoMod::isEnabled, ElytraGotoMod::toggle, true,
-            List.of(
-                new SliderS("Safe HP", () -> (double)cfg.elytraSafeHp,
-                    v -> { cfg.elytraSafeHp = (float)v; ElytraGotoMod.safeHpThreshold = (float)v; cfg.save(); }, 2, 20)
-            )));
+        add(Cat.MOVEMENT, new ModEntry("FastPlace", FastPlaceMod::isEnabled, FastPlaceMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.fastPlaceKey, v -> { cfg.fastPlaceKey = v; cfg.save(); }))));
 
-        mods.add(new ModEntry("NoCrash", Category.MOVEMENT,
-            NoCrashMod::isEnabled,
-            () -> { NoCrashMod.toggle(); cfg.noCrashEnabled = NoCrashMod.isEnabled(); cfg.save(); },
-            true,
-            List.of(
-                new SliderS("Look Ahead", () -> (double)cfg.noCrashLookAhead,
-                    v -> { cfg.noCrashLookAhead = (float)v; NoCrashMod.lookahead = (float)v; cfg.save(); }, 2, 10),
-                new SliderS("Max Speed",  () -> (double)cfg.noCrashMaxSpeed,
-                    v -> { cfg.noCrashMaxSpeed  = (float)v; NoCrashMod.maxSpeed  = (float)v; cfg.save(); }, 0.1, 1.0)
-            )));
+        // ── Player ──────────────────────────────────────────────────────────
+        add(Cat.PLAYER, new ModEntry("Scaffold", ScaffoldMod::isEnabled, ScaffoldMod::toggle, true, List.of(
+            new BoolS("Tower",     () -> cfg.scaffoldTower,      () -> { cfg.scaffoldTower = !cfg.scaffoldTower;           ScaffoldMod.tower = cfg.scaffoldTower;           cfg.save(); }),
+            new BoolS("Twr Move",  () -> cfg.scaffoldTowerMove,  () -> { cfg.scaffoldTowerMove = !cfg.scaffoldTowerMove;   ScaffoldMod.towerMove = cfg.scaffoldTowerMove;   cfg.save(); }),
+            new SliderS("Twr Spd", () -> cfg.scaffoldTowerSpeed, v -> { cfg.scaffoldTowerSpeed = (float)v; ScaffoldMod.towerSpeed = (float)v; cfg.save(); }, 0.0, 1.0),
+            new BoolS("Fake Hand", () -> cfg.scaffoldFakeHand,   () -> { cfg.scaffoldFakeHand = !cfg.scaffoldFakeHand;     ScaffoldMod.fakeHand = cfg.scaffoldFakeHand;     cfg.save(); }),
+            new BoolS("Silent Rt", () -> cfg.scaffoldSilentRot,  () -> { cfg.scaffoldSilentRot = !cfg.scaffoldSilentRot;   ScaffoldMod.silentRot = cfg.scaffoldSilentRot;   cfg.save(); }),
+            new BoolS("Auto Sw",   () -> cfg.scaffoldAutoSwitch, () -> { cfg.scaffoldAutoSwitch = !cfg.scaffoldAutoSwitch; ScaffoldMod.autoSwitch = cfg.scaffoldAutoSwitch; cfg.save(); }),
+            new BoolS("Sw Back",   () -> cfg.scaffoldSwitchBack, () -> { cfg.scaffoldSwitchBack = !cfg.scaffoldSwitchBack; ScaffoldMod.switchBack = cfg.scaffoldSwitchBack; cfg.save(); }),
+            new SliderS("Delay",   () -> cfg.scaffoldPlaceDelay, v -> { cfg.scaffoldPlaceDelay = (int)v; ScaffoldMod.placeDelay = (int)v; cfg.save(); }, 0, 10),
+            new KeyS("Key", () -> cfg.scaffoldKey, v -> { cfg.scaffoldKey = v; cfg.save(); })
+        )));
 
-        // Visuals
-        mods.add(new ModEntry("XRay", Category.VISUALS,
-            XRayMod::isEnabled, XRayMod::toggle, true,
+        add(Cat.PLAYER, new ModEntry("AutoFish",
+            AutoFishMod::isEnabled, () -> { AutoFishMod.toggle(); cfg.autoFishEnabled = AutoFishMod.isEnabled(); cfg.save(); }, true, List.of(
+            new SliderS("Bite Vy", () -> (double)cfg.autoFishBiteVy, v -> { cfg.autoFishBiteVy = (float)v; AutoFishMod.biteVy = (float)v;       cfg.save(); }, -0.2, -0.01),
+            new SliderS("Recast",  () -> (double)cfg.autoFishRecast, v -> { cfg.autoFishRecast = (int)v;    AutoFishMod.recastDelay = (int)v;    cfg.save(); }, 4, 40)
+        )));
+
+        add(Cat.PLAYER, new ModEntry("ElytraGoto", ElytraGotoMod::isEnabled, ElytraGotoMod::toggle, true, List.of(
+            new SliderS("Safe HP", () -> (double)cfg.elytraSafeHp, v -> { cfg.elytraSafeHp = (float)v; ElytraGotoMod.safeHpThreshold = (float)v; cfg.save(); }, 2, 20)
+        )));
+
+        add(Cat.PLAYER, new ModEntry("NoCrash",
+            NoCrashMod::isEnabled, () -> { NoCrashMod.toggle(); cfg.noCrashEnabled = NoCrashMod.isEnabled(); cfg.save(); }, true, List.of(
+            new SliderS("Look Ahd", () -> (double)cfg.noCrashLookAhead, v -> { cfg.noCrashLookAhead = (float)v; NoCrashMod.lookahead = (float)v; cfg.save(); }, 2, 10),
+            new SliderS("Max Spd",  () -> (double)cfg.noCrashMaxSpeed,  v -> { cfg.noCrashMaxSpeed = (float)v;  NoCrashMod.maxSpeed = (float)v;  cfg.save(); }, 0.1, 1.0)
+        )));
+
+        // ── Render ──────────────────────────────────────────────────────────
+        add(Cat.RENDER, new ModEntry("XRay", XRayMod::isEnabled, XRayMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.xrayKey, v -> { cfg.xrayKey = v; cfg.save(); }))));
 
-        mods.add(new ModEntry("DimCoord", Category.VISUALS,
-            NetherCoordMod::isEnabled,
-            () -> { NetherCoordMod.toggle(); cfg.netherCoordEnabled = NetherCoordMod.isEnabled(); cfg.save(); },
-            true, List.<Setting>of()
-        ));
+        add(Cat.RENDER, new ModEntry("ESP",
+            ESPMod::isEnabled, () -> { ESPMod.toggle(); cfg.espEnabled = ESPMod.isEnabled(); cfg.save(); }, true, List.of(
+            new BoolS("Players", () -> cfg.espPlayers, () -> { cfg.espPlayers = !cfg.espPlayers; ESPMod.players = cfg.espPlayers; cfg.save(); }),
+            new BoolS("Hostile", () -> cfg.espHostile, () -> { cfg.espHostile = !cfg.espHostile; ESPMod.hostile = cfg.espHostile; cfg.save(); }),
+            new BoolS("Animals", () -> cfg.espAnimals, () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
+            new BoolS("Items",   () -> cfg.espItems,   () -> { cfg.espItems = !cfg.espItems;     ESPMod.items = cfg.espItems;     cfg.save(); }),
+            new SliderS("Red",   () -> cfg.espBoxR,    v -> { cfg.espBoxR = (int)v; ESPMod.boxR = (int)v; cfg.save(); }, 0, 255),
+            new SliderS("Green", () -> cfg.espBoxG,    v -> { cfg.espBoxG = (int)v; ESPMod.boxG = (int)v; cfg.save(); }, 0, 255),
+            new SliderS("Blue",  () -> cfg.espBoxB,    v -> { cfg.espBoxB = (int)v; ESPMod.boxB = (int)v; cfg.save(); }, 0, 255)
+        )));
 
-        mods.add(new ModEntry("ESP", Category.VISUALS,
-            ESPMod::isEnabled,
-            () -> { ESPMod.toggle(); cfg.espEnabled = ESPMod.isEnabled(); cfg.save(); },
-            true,
-            List.of(
-                new BoolS("Players", () -> cfg.espPlayers,
-                    () -> { cfg.espPlayers = !cfg.espPlayers; ESPMod.players = cfg.espPlayers; cfg.save(); }),
-                new BoolS("Hostile", () -> cfg.espHostile,
-                    () -> { cfg.espHostile = !cfg.espHostile; ESPMod.hostile = cfg.espHostile; cfg.save(); }),
-                new BoolS("Animals", () -> cfg.espAnimals,
-                    () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
-                new BoolS("Items",   () -> cfg.espItems,
-                    () -> { cfg.espItems   = !cfg.espItems;   ESPMod.items   = cfg.espItems;   cfg.save(); }),
-                new BoolS("Box",     () -> cfg.espShowBox,
-                    () -> { cfg.espShowBox = !cfg.espShowBox; ESPMod.showBox = cfg.espShowBox; cfg.save(); }),
-                new BoolS("Corner",  () -> cfg.espCornerBox,
-                    () -> { cfg.espCornerBox = !cfg.espCornerBox; ESPMod.cornerBox = cfg.espCornerBox; cfg.save(); }),
-                new BoolS("Name",    () -> cfg.espShowName,
-                    () -> { cfg.espShowName = !cfg.espShowName; ESPMod.showName = cfg.espShowName; cfg.save(); }),
-                new BoolS("Health",  () -> cfg.espShowHealth,
-                    () -> { cfg.espShowHealth = !cfg.espShowHealth; ESPMod.showHealth = cfg.espShowHealth; cfg.save(); })
-            )));
+        add(Cat.RENDER, new ModEntry("DimCoord",
+            NetherCoordMod::isEnabled, () -> { NetherCoordMod.toggle(); cfg.netherCoordEnabled = NetherCoordMod.isEnabled(); cfg.save(); },
+            true, List.of()));
 
-        // Settings — non-toggleable
-        mods.add(new ModEntry("Theme Color", Category.SETTINGS,
-            () -> false, () -> {}, false,
-            List.of(
-                new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
-                new SliderS("Green",    () -> cfg.accentG, v -> { cfg.accentG = (int)v; cfg.save(); }, 0, 255),
-                new SliderS("Blue",     () -> cfg.accentB, v -> { cfg.accentB = (int)v; cfg.save(); }, 0, 255),
-                new SliderS("BG Alpha", () -> cfg.bgAlpha, v -> { cfg.bgAlpha = (int)v; cfg.save(); }, 60, 240)
-            )));
-
-        mods.add(new ModEntry("GUI Key", Category.SETTINGS,
-            () -> false, () -> {}, false,
+        // ── Client ──────────────────────────────────────────────────────────
+        add(Cat.CLIENT, new ModEntry("Theme", () -> false, () -> {}, false, List.of(
+            new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
+            new SliderS("Green",    () -> cfg.accentG, v -> { cfg.accentG = (int)v; cfg.save(); }, 0, 255),
+            new SliderS("Blue",     () -> cfg.accentB, v -> { cfg.accentB = (int)v; cfg.save(); }, 0, 255),
+            new SliderS("BG Alpha", () -> cfg.bgAlpha, v -> { cfg.bgAlpha = (int)v; cfg.save(); }, 60, 240)
+        )));
+        add(Cat.CLIENT, new ModEntry("GUI Key", () -> false, () -> {}, false,
             List.of(new KeyS("Key", () -> cfg.guiKey, v -> { cfg.guiKey = v; cfg.save(); }))));
     }
 
-    // ── Waifu loading ────────────────────────────────────────────────────────
+    private void add(Cat cat, ModEntry m) {
+        for (Panel p : panels) if (p.cat == cat) { p.mods.add(m); return; }
+    }
+
+    // ── Layout ──────────────────────────────────────────────────────────────
+    private boolean layoutDone = false;
+
+    @Override
+    protected void init() {
+        super.init();
+        if (!layoutDone) {
+            PANEL_W = 92;
+            int gap = 5;
+            int xOff = gap, yOff = 5;
+            for (Panel p : panels) {
+                p.x = xOff;
+                p.y = yOff;
+                xOff += PANEL_W + gap;
+                if (xOff + PANEL_W > width) {
+                    xOff = gap;
+                    yOff += 120;
+                }
+            }
+            layoutDone = true;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    //  RENDERING — Raven style
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /** Astolfo / rainbow color cycle (Raven-style). */
+    private static int astolfo(int yOffset, float speed) {
+        float hue = (float)((System.currentTimeMillis() % (long)speed) + yOffset) / speed;
+        return java.awt.Color.HSBtoRGB(hue % 1f, 0.55f, 1.0f);
+    }
+
+    /** Smooth gradient from top to bottom color. */
+    private static int gradVert(int y, int topColor, int botColor) {
+        // just return topColor; Raven uses GL shading — we approximate with solid
+        return topColor;
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mx, int my, float dt) {
+        super.render(g, mx, my, dt);
+        ModConfig cfg = ModConfig.get();
+
+        int accent = 0xFF000000 | (cfg.accentR << 16) | (cfg.accentG << 8) | cfg.accentB;
+
+        // semi-transparent dark background (Raven-style)
+        float openAnim = Math.min(1f, (System.currentTimeMillis() - openTime) / 400f);
+        int bgA = (int)(cfg.bgAlpha * openAnim);
+        g.fill(0, 0, width, height, (bgA << 24));
+
+        // waifu
+        renderWaifu(g);
+
+        // version string at bottom-left (Raven-style)
+        Font font = Minecraft.getInstance().font;
+        String verStr = "Valencia";
+        int verColor = astolfo(0, 4890f) | 0xFF000000;
+        g.drawString(font, verStr, 5, height - font.lineHeight - 3, verColor, true);
+
+        // panels
+        for (Panel p : panels) renderPanel(g, p, mx, my, accent, font);
+    }
+
+    private void renderPanel(GuiGraphics g, Panel p, int mx, int my, int accent, Font font) {
+        int ph = panelH(p);
+        int x1 = p.x, y1 = p.y, x2 = p.x + PANEL_W, y2 = p.y + ph;
+
+        // ── panel background ────────────────────────────────────────────────
+        g.fill(x1, y1, x2, y2, 0xC8141414);
+
+        // ── header ──────────────────────────────────────────────────────────
+        boolean hoverHdr = mx >= x1 && mx < x2 && my >= y1 && my < y1 + HDR;
+        g.fill(x1, y1, x2, y1 + HDR, hoverHdr ? 0xFF2D2D2D : 0xFF1E1E1E);
+
+        // category name (left side)
+        g.drawString(font, p.cat.label, x1 + 3, y1 + (HDR - font.lineHeight) / 2 + 1, accent, false);
+
+        // +/- indicator (right side, Raven-style: green when open, red when closed)
+        String sym = p.open ? "-" : "+";
+        int symColor = p.open ? 0xFF55FF55 : 0xFFFF5555;
+        g.drawString(font, sym, x2 - font.width(sym) - 3, y1 + (HDR - font.lineHeight) / 2 + 1, symColor, false);
+
+        // thin accent line under header
+        g.fill(x1, y1 + HDR - 1, x2, y1 + HDR, accent);
+
+        if (!p.open) return;
+
+        if (p.expanded != null)
+            drawExpanded(g, p, mx, my, font, accent);
+        else
+            drawModList(g, p, mx, my, font, accent);
+
+        // border (Raven-style: outer border)
+        boolean hoverPanel = mx >= x1 && mx < x2 && my >= y1 && my < y2;
+        int borderColor = hoverPanel ? (accent & 0x00FFFFFF) | 0x80000000 : 0x40FFFFFF;
+        drawBorder(g, x1, y1, x2, y2, borderColor);
+    }
+
+    // ── Module list (Raven: gradient bg for enabled, centered text) ──────────
+    private void drawModList(GuiGraphics g, Panel p, int mx, int my, Font font, int accent) {
+        int yo = p.y + HDR;
+        for (ModEntry m : p.mods) {
+            boolean hover = mx >= p.x && mx < p.x + PANEL_W && my >= yo && my < yo + MOD_H;
+            boolean on = m.enabled.getAsBoolean();
+
+            // gradient background (Raven-style: top-to-bottom gradient for enabled modules)
+            if (on) {
+                // green-tinted gradient for enabled
+                int topC = (accent & 0x00FFFFFF) | 0xB0000000;
+                int botC = (accent & 0x00FFFFFF) | 0x60000000;
+                drawGradientV(g, p.x, yo, p.x + PANEL_W, yo + MOD_H, topC, botC);
+            } else if (hover) {
+                g.fill(p.x, yo, p.x + PANEL_W, yo + MOD_H, 0x40FFFFFF);
+            }
+
+            // centered module name (Raven-style)
+            int tc = on ? 0xFFFFFFFF : (m.toggleable ? 0xFFCCCCCC : 0xFF999999);
+            int tw = font.width(m.name);
+            g.drawString(font, m.name, p.x + (PANEL_W - tw) / 2, yo + (MOD_H - font.lineHeight) / 2, tc, true);
+
+            yo += MOD_H;
+        }
+    }
+
+    // ── Expanded settings view (Raven: replaces module list) ────────────────
+    private void drawExpanded(GuiGraphics g, Panel p, int mx, int my, Font font, int accent) {
+        ModEntry m = p.expanded;
+        int yo = p.y + HDR;
+
+        // module name row with back arrow
+        boolean on = m.enabled.getAsBoolean();
+        if (on) {
+            int topC = (accent & 0x00FFFFFF) | 0xB0000000;
+            int botC = (accent & 0x00FFFFFF) | 0x60000000;
+            drawGradientV(g, p.x, yo, p.x + PANEL_W, yo + MOD_H, topC, botC);
+        } else {
+            g.fill(p.x, yo, p.x + PANEL_W, yo + MOD_H, 0xFF2A2A2A);
+        }
+        g.drawString(font, "« " + m.name, p.x + 3, yo + (MOD_H - font.lineHeight) / 2, on ? 0xFFFFFFFF : 0xFFCCCCCC, true);
+        yo += MOD_H;
+
+        // settings area background
+        int settStart = yo;
+        int totalSettH = totalSettingsH(m);
+        int visH = Math.min(totalSettH, MAX_SET_H);
+        g.fill(p.x, settStart, p.x + PANEL_W, settStart + visH, 0xC0101010);
+
+        // clamp scroll
+        int maxScroll = Math.max(0, totalSettH - MAX_SET_H);
+        if (p.scrollOff > maxScroll) p.scrollOff = maxScroll;
+        if (p.scrollOff < 0) p.scrollOff = 0;
+
+        // draw settings with scroll offset
+        int sx = p.x + 4;
+        int sw = PANEL_W - 8;
+        int drawY = settStart - p.scrollOff;
+        for (int i = 0; i < m.settings.size(); i++) {
+            Setting s = m.settings.get(i);
+            int sh = settH(s);
+
+            // only draw if visible
+            if (drawY + sh > settStart && drawY < settStart + visH) {
+                if (s instanceof SliderS sl) {
+                    drawSlider(g, sl, sx, drawY, sw, font, accent);
+                } else if (s instanceof BoolS bs) {
+                    drawBool(g, bs, sx, drawY, font, accent);
+                } else if (s instanceof KeyS ks) {
+                    boolean binding = (rebindPanel == p && rebindIdx == i);
+                    drawBind(g, ks, sx, drawY, font, binding);
+                }
+            }
+            drawY += sh;
+        }
+
+        // scroll indicator
+        if (totalSettH > MAX_SET_H) {
+            float scrollPct = (float) p.scrollOff / maxScroll;
+            int barH = Math.max(8, visH * visH / totalSettH);
+            int barY = settStart + (int)((visH - barH) * scrollPct);
+            g.fill(p.x + PANEL_W - 2, barY, p.x + PANEL_W, barY + barH, 0x80FFFFFF);
+        }
+    }
+
+    // ── Slider (Raven-style: half-scale label + rounded bar) ────────────────
+    private void drawSlider(GuiGraphics g, SliderS sl, int x, int y, int w, Font font, int accent) {
+        double val = sl.get().getAsDouble();
+        String txt = sl.label() + ": " + fmtVal(val);
+
+        // half-scale label (Raven-style)
+        g.pose().pushMatrix();
+        g.pose().scale(0.5f, 0.5f);
+        g.drawString(font, txt, x * 2, y * 2, 0xFEFFFFFF, false);
+        g.pose().popMatrix();
+
+        // slider bar
+        int barY = y + 6;
+        int barH = S_SLIDER - 7;
+        double pct = Math.max(0, Math.min(1, (val - sl.min()) / (sl.max() - sl.min())));
+        int filled = (int)(w * pct);
+
+        // bar background (dark, Raven: bordered rounded rect)
+        g.fill(x, barY, x + w, barY + barH, 0x30FFFFFF);
+        drawBorder(g, x, barY, x + w, barY + barH, 0x50FFFFFF);
+
+        // filled portion (accent-tinted, Raven uses purple — we use accent)
+        if (filled > 0) {
+            int fc = (0xC0 << 24) | (accent & 0x00FFFFFF);
+            g.fill(x, barY, x + filled, barY + barH, fc);
+        }
+    }
+
+    // ── Boolean toggle (Raven-style: sliding switch) ────────────────────────
+    private void drawBool(GuiGraphics g, BoolS bs, int x, int y, Font font, int accent) {
+        boolean on = bs.get().getAsBoolean();
+
+        int bw = 14, bh = 7;
+        int by = y + (S_BOOL - bh) / 2;
+
+        // track background
+        g.fill(x, by, x + bw, by + bh, 0xFF000000);
+        drawBorder(g, x, by, x + bw, by + bh, 0x50FFFFFF);
+
+        // sliding indicator (Raven: green/red)
+        int indW = bw / 2;
+        int indX = on ? x + bw - indW : x;
+        int indColor = on ? 0xFF55FF55 : 0xFFFF5555;
+        g.fill(indX, by, indX + indW, by + bh, indColor);
+
+        // half-scale label
+        g.pose().pushMatrix();
+        g.pose().scale(0.5f, 0.5f);
+        g.drawString(font, bs.label(), (x + bw + 3) * 2, (y + S_BOOL / 2) * 2, 0xFEFFFFFF, false);
+        g.pose().popMatrix();
+    }
+
+    // ── Key bind ────────────────────────────────────────────────────────────
+    private void drawBind(GuiGraphics g, KeyS ks, int x, int y, Font font, boolean binding) {
+        String txt = binding ? "§ePress a key..." : "Bind: §f" + ModConfig.keyName(ks.get().getAsInt());
+        g.pose().pushMatrix();
+        g.pose().scale(0.5f, 0.5f);
+        g.drawString(font, txt, x * 2, (y + S_BIND / 2) * 2, 0xFEFFFFFF, false);
+        g.pose().popMatrix();
+    }
+
+    // ── Drawing utilities ───────────────────────────────────────────────────
+    private void drawBorder(GuiGraphics g, int x1, int y1, int x2, int y2, int c) {
+        g.fill(x1, y1, x2, y1 + 1, c);      // top
+        g.fill(x1, y2 - 1, x2, y2, c);      // bottom
+        g.fill(x1, y1, x1 + 1, y2, c);      // left
+        g.fill(x2 - 1, y1, x2, y2, c);      // right
+    }
+
+    /** Approximate vertical gradient via two halves (cheap, no GL shading). */
+    private void drawGradientV(GuiGraphics g, int x1, int y1, int x2, int y2, int topC, int botC) {
+        int midY = (y1 + y2) / 2;
+        g.fill(x1, y1, x2, midY, topC);
+        g.fill(x1, midY, x2, y2, botC);
+    }
+
+    private int panelH(Panel p) {
+        if (!p.open) return HDR;
+        if (p.expanded != null) {
+            int totalS = totalSettingsH(p.expanded);
+            return HDR + MOD_H + Math.min(totalS, MAX_SET_H);
+        }
+        return HDR + p.mods.size() * MOD_H;
+    }
+
+    private int totalSettingsH(ModEntry m) {
+        int h = 0;
+        for (Setting s : m.settings) h += settH(s);
+        return h;
+    }
+
+    private int settH(Setting s) {
+        if (s instanceof SliderS) return S_SLIDER;
+        if (s instanceof BoolS)   return S_BOOL;
+        if (s instanceof KeyS)    return S_BIND;
+        return 0;
+    }
+
+    private String fmtVal(double v) {
+        if (v == Math.floor(v) && !Double.isInfinite(v)) return String.format("%.0f", v);
+        return String.format("%.1f", v);
+    }
+
+    // ── Waifu ───────────────────────────────────────────────────────────────
     private static final String[] WAIFU_EXTS = {"png", "jpg", "jpeg", "bmp", "gif"};
 
     private void loadWaifu() {
@@ -328,12 +551,8 @@ public class ClickGuiScreen extends Screen {
         try {
             if (!dir.exists() || !dir.isDirectory()) { waifuErr = "config dir missing"; return; }
             File f = null;
-            for (String ext : WAIFU_EXTS) {
-                File c = new File(dir, "waifu." + ext);
-                if (c.exists()) { f = c; break; }
-            }
+            for (String ext : WAIFU_EXTS) { File c = new File(dir, "waifu." + ext); if (c.exists()) { f = c; break; } }
             if (f == null) { waifuErr = "no waifu.{png,jpg,bmp,gif}"; return; }
-
             InputStream pngStream;
             if (f.getName().toLowerCase().endsWith(".png")) {
                 pngStream = new FileInputStream(f);
@@ -345,434 +564,228 @@ public class ClickGuiScreen extends Screen {
                 pngStream = new ByteArrayInputStream(baos.toByteArray());
             }
             NativeImage ni = NativeImage.read(pngStream);
-            waifuTexW = ni.getWidth();
-            waifuTexH = ni.getHeight();
-            DynamicTexture dt = new DynamicTexture(() -> "valencia-waifu", ni);
+            waifuTexW = ni.getWidth(); waifuTexH = ni.getHeight();
+            DynamicTexture dTex = new DynamicTexture(() -> "valencia-waifu", ni);
             Identifier loc = Identifier.fromNamespaceAndPath("valencia", "waifu");
-            Minecraft.getInstance().getTextureManager().register(loc, dt);
-            waifuLoc = loc;
-            waifuErr = null;
-        } catch (Throwable t) {
-            waifuErr = t.getClass().getSimpleName() + ": " + t.getMessage();
-        }
+            Minecraft.getInstance().getTextureManager().register(loc, dTex);
+            waifuLoc = loc; waifuErr = null;
+        } catch (Throwable t) { waifuErr = t.getClass().getSimpleName() + ": " + t.getMessage(); }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  RENDER — Discord-style 3-panel layout
-    // ══════════════════════════════════════════════════════════════════════════
-    @Override
-    public void render(GuiGraphics g, int mx, int my, float delta) {
-        ModConfig cfg = ModConfig.get();
-        int accent = accent(cfg, 255);
-
-        if (wx == 0 && wy == 0) { wx = (width - WIN_W) / 2; wy = (height - WIN_H) / 2; }
-
-        // dim overlay
-        g.fill(0, 0, width, height, 0x80000000);
-
-        int x0 = wx, y0 = wy, x1 = wx + WIN_W, y1 = wy + WIN_H;
-        int bodyY = y0 + HDR_H, bodyH = WIN_H - HDR_H;
-
-        // ── Header (accent-colored, draggable) ───────────────────────────────
-        g.fill(x0, y0, x1, y0 + HDR_H, accent);
-        g.drawCenteredString(font, "§lValencia", x0 + WIN_W / 2, y0 + (HDR_H - 8) / 2, 0xFFFFFFFF);
-
-        // ── Sidebar ──────────────────────────────────────────────────────────
-        g.fill(x0, bodyY, x0 + SIDE_W, y1, C_SIDEBAR);
-        g.fill(x0 + SIDE_W, bodyY, x0 + SIDE_W + 1, y1, C_DIV);
-
-        int cy = bodyY + CAT_GAP + 4;
-        for (Category cat : Category.values()) {
-            boolean sel = cat == selCat;
-            boolean hov = mx >= x0 + 4 && mx < x0 + SIDE_W - 2 && my >= cy && my < cy + CAT_SZ;
-
-            // pill indicator
-            if (sel)       g.fill(x0, cy + 4, x0 + 3, cy + CAT_SZ - 4, 0xFFFFFFFF);
-            else if (hov)  g.fill(x0, cy + 10, x0 + 3, cy + CAT_SZ - 10, 0xFFCCCCCC);
-
-            // button bg
-            int bx = x0 + 7;
-            g.fill(bx, cy, bx + CAT_SZ - 2, cy + CAT_SZ, sel ? accent : hov ? C_HOVER : 0xFF36393F);
-
-            // letter
-            g.drawCenteredString(font, cat.label.substring(0, 1), bx + (CAT_SZ - 2) / 2, cy + (CAT_SZ - 8) / 2, 0xFFFFFFFF);
-
-            // tooltip
-            if (hov && !sel) {
-                int tw = font.width(cat.label) + 8;
-                g.fill(x0 + SIDE_W + 4, cy + 8, x0 + SIDE_W + 4 + tw, cy + 20, 0xEE111111);
-                g.drawString(font, cat.label, x0 + SIDE_W + 8, cy + 10, 0xFFFFFFFF, false);
-            }
-
-            cy += CAT_SZ + CAT_GAP;
-        }
-
-        // ── Module list ──────────────────────────────────────────────────────
-        int lx = x0 + SIDE_W + 1, lx1b = lx + LIST_W;
-        g.fill(lx, bodyY, lx1b, y1, C_LIST);
-
-        // category title
-        g.drawString(font, selCat.label, lx + PAD, bodyY + 6, C_DIM, false);
-        g.fill(lx + PAD, bodyY + 18, lx1b - PAD, bodyY + 19, C_DIV);
-
-        int modTop = bodyY + 22;
-        int my0 = modTop + modScroll;
-        for (ModEntry m : mods) {
-            if (m.cat() != selCat) continue;
-            if (my0 + MOD_H > modTop && my0 < y1) {
-                boolean on   = m.toggleable() && m.enabled().getAsBoolean();
-                boolean hov  = mx >= lx && mx < lx1b && my >= my0 && my < my0 + MOD_H && my >= modTop;
-                boolean isSel = m.name().equals(selMod);
-
-                if (isSel)      g.fill(lx, my0, lx1b, my0 + MOD_H, C_SEL);
-                else if (hov)   g.fill(lx, my0, lx1b, my0 + MOD_H, C_HOVER);
-
-                // enabled bar
-                if (on) g.fill(lx, my0, lx + 2, my0 + MOD_H, C_GREEN);
-
-                g.drawString(font, "#", lx + PAD + 1, my0 + (MOD_H - 8) / 2, C_HASH, false);
-                int nc = on ? C_GREEN : isSel ? C_TEXT : C_DIM;
-                g.drawString(font, m.name(), lx + PAD + 12, my0 + (MOD_H - 8) / 2, nc, false);
-
-                if (!m.settings().isEmpty())
-                    g.drawString(font, "›", lx1b - 10, my0 + (MOD_H - 8) / 2, C_MUTE, false);
-            }
-            my0 += MOD_H;
-        }
-
-        g.fill(lx1b, bodyY, lx1b + 1, y1, C_DIV);
-
-        // ── Settings panel ───────────────────────────────────────────────────
-        int px = lx1b + 1, pw = x1 - px;
-        g.fill(px, bodyY, x1, y1, C_PANEL);
-
-        if (selMod != null) {
-            ModEntry mod = findMod(selMod);
-            if (mod != null) renderSettings(g, mod, px, bodyY, pw, bodyH, mx, my, cfg, accent);
-        } else {
-            g.drawCenteredString(font, "§8← Select a module", px + pw / 2, bodyY + bodyH / 2 - 4, C_MUTE);
-        }
-
-        // ── Waifu ────────────────────────────────────────────────────────────
-        renderWaifu(g);
-
-        // close hint
-        g.drawString(font, "§7" + shortKey(cfg.guiKey) + " to close",
-            x0 + 4, y1 + 3, 0xFF555555, false);
-    }
-
-    // ── Settings panel rendering ─────────────────────────────────────────────
-    private void renderSettings(GuiGraphics g, ModEntry mod, int px, int topY, int pw, int h, int mx, int my, ModConfig cfg, int accent) {
-        boolean on = mod.toggleable() && mod.enabled().getAsBoolean();
-
-        // header row: name + ON/OFF toggle button
-        g.drawString(font, "§f" + mod.name(), px + PAD, topY + 6, C_TEXT, true);
-        if (mod.toggleable()) {
-            int tbx = px + pw - 44, tby = topY + 4;
-            g.fill(tbx, tby, tbx + 36, tby + 16, on ? accent : 0xFF4F545C);
-            g.drawCenteredString(font, on ? "ON" : "OFF", tbx + 18, tby + 4, 0xFFFFFFFF);
-        }
-        g.fill(px + PAD, topY + 22, px + pw - PAD, topY + 23, C_DIV);
-
-        if (mod.settings().isEmpty()) {
-            g.drawCenteredString(font, "§8No settings", px + pw / 2, topY + h / 2, C_MUTE);
-            return;
-        }
-
-        int setTop = topY + 26;
-        int sy = setTop + setScroll;
-        for (int i = 0; i < mod.settings().size(); i++) {
-            if (sy + SET_H > setTop && sy < topY + h) {
-                Setting s = mod.settings().get(i);
-                if (s instanceof SliderS sl)    renderSlider(g, sl, px, sy, pw, accent);
-                else if (s instanceof BoolS bs) renderBool(g, bs, px, sy, pw, accent);
-                else if (s instanceof KeyS ks)  renderKey(g, ks, mod, i, px, sy, pw);
-            }
-            sy += SET_H;
-        }
-    }
-
-    private void renderSlider(GuiGraphics g, SliderS sl, int px, int y, int pw, int accent) {
-        double val = sl.get().getAsDouble();
-        double pct = Math.max(0, Math.min(1, (val - sl.min()) / (sl.max() - sl.min())));
-
-        int labW = 52;
-        int valW = 30;
-        int trackX = px + PAD + labW;
-        int trackW = pw - PAD * 2 - labW - valW;
-        int trackY = y + SET_H / 2;
-
-        g.drawString(font, sl.label(), px + PAD, y + 2, C_DIM, false);
-        g.fill(trackX, trackY, trackX + trackW, trackY + 2, 0xFF4F545C);
-        g.fill(trackX, trackY, trackX + (int)(trackW * pct), trackY + 2, accent);
-        int hx = trackX + (int)(trackW * pct);
-        g.fill(hx - 2, y + 2, hx + 2, y + SET_H - 2, 0xFFFFFFFF);
-
-        String valStr = isIntSlider(sl) ? String.valueOf((int)Math.round(val)) : String.format("%.1f", val);
-        g.drawString(font, valStr, px + pw - valW, y + 2, C_DIM, false);
-    }
-
-    private void renderBool(GuiGraphics g, BoolS bs, int px, int y, int pw, int accent) {
-        boolean on = bs.get().getAsBoolean();
-        g.drawString(font, bs.label(), px + PAD, y + 2, C_DIM, false);
-        // toggle pill
-        int tx = px + pw - 34, ty = y + 2;
-        g.fill(tx, ty, tx + 24, ty + 12, on ? accent : 0xFF4F545C);
-        int kx = on ? tx + 14 : tx + 2;
-        g.fill(kx, ty + 2, kx + 8, ty + 10, 0xFFFFFFFF);
-    }
-
-    private void renderKey(GuiGraphics g, KeyS ks, ModEntry m, int si, int px, int y, int pw) {
-        boolean waiting = m.name().equals(rebindMod) && rebindIdx == si;
-        g.drawString(font, ks.label(), px + PAD, y + 2, C_DIM, false);
-        String keyTxt = waiting ? "§e..." : "§7[" + shortKey(ks.get().getAsInt()) + "]";
-        g.drawString(font, keyTxt, px + pw - 48, y + 2, C_DIM, false);
-    }
-
-    // ── Waifu ────────────────────────────────────────────────────────────────
     private void renderWaifu(GuiGraphics g) {
+        Font font = Minecraft.getInstance().font;
         if (waifuLoc == null || waifuTexW <= 0 || waifuTexH <= 0) {
             String hint = waifuErr != null
                 ? "§c[waifu] " + waifuErr
                 : "§8[waifu: " + (waifuHint != null ? waifuHint : "config/valencia") + File.separator + "waifu.png]";
-            g.drawString(font, hint, 4, height - 12, 0xFF888888, false);
+            g.drawString(font, hint, 4, height - 22, 0xFF888888, false);
             return;
         }
         try {
             int dispH = Math.min(height / 3, 150);
             int dispW = waifuTexW * dispH / waifuTexH;
-            int x1 = 4, y1 = height - dispH - 14;
+            int x1 = 4, y1 = height - dispH - 24;
             g.blit(waifuLoc, x1, y1, x1 + dispW, y1 + dispH, 0f, 1f, 0f, 1f);
         } catch (Throwable t) {
-            g.drawString(font, "§c[waifu err]", 4, height - 12, 0xFF888888, false);
+            g.drawString(font, "§c[waifu err]", 4, height - 22, 0xFF888888, false);
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
     //  INPUT
-    // ══════════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean dbl) {
         int mx = (int)event.x(), my = (int)event.y(), btn = event.button();
-        int bodyY = wy + HDR_H;
 
-        // ── Header drag ──────────────────────────────────────────────────────
-        if (btn == 0 && mx >= wx && mx < wx + WIN_W && my >= wy && my < bodyY) {
-            wDrag = true; wdx = wx - mx; wdy = wy - my;
-            return true;
-        }
+        for (int i = panels.size() - 1; i >= 0; i--) {
+            Panel p = panels.get(i);
+            int ph = panelH(p);
+            if (mx < p.x || mx >= p.x + PANEL_W || my < p.y || my >= p.y + ph) continue;
 
-        // ── Sidebar category ─────────────────────────────────────────────────
-        if (btn == 0) {
-            int cy = bodyY + CAT_GAP + 4;
-            for (Category cat : Category.values()) {
-                if (mx >= wx + 4 && mx < wx + SIDE_W - 2 && my >= cy && my < cy + CAT_SZ) {
-                    selCat = cat; selMod = null; modScroll = 0; setScroll = 0;
+            // bring to front
+            panels.remove(i);
+            panels.add(p);
+
+            // ── header click ────────────────────────────────────────────────
+            if (my < p.y + HDR) {
+                int symX = p.x + PANEL_W - 12;
+                if (btn == 0 && mx >= symX) {
+                    // +/- toggle
+                    p.open = !p.open;
+                    p.expanded = null;
+                    p.scrollOff = 0;
+                } else if (btn == 0) {
+                    // drag start (Raven: drag by header name area)
+                    p.dragging = true;
+                    p.dragOX = p.x - mx;
+                    p.dragOY = p.y - my;
+                }
+                return true;
+            }
+
+            if (!p.open) return true;
+
+            // ── expanded settings view ──────────────────────────────────────
+            if (p.expanded != null) {
+                int yo = p.y + HDR;
+                // module name row — left=toggle, right=collapse
+                if (my >= yo && my < yo + MOD_H) {
+                    if (btn == 0 && p.expanded.toggleable) p.expanded.toggle.run();
+                    if (btn == 1) { p.expanded = null; p.scrollOff = 0; }
                     return true;
                 }
-                cy += CAT_SZ + CAT_GAP;
-            }
-        }
+                yo += MOD_H;
 
-        // ── Module list ──────────────────────────────────────────────────────
-        int lx = wx + SIDE_W + 1, lx1b = lx + LIST_W;
-        int modTop = bodyY + 22;
-        if (mx >= lx && mx < lx1b && my >= modTop) {
-            int my0 = modTop + modScroll;
-            for (ModEntry m : mods) {
-                if (m.cat() != selCat) continue;
-                if (my >= my0 && my < my0 + MOD_H && my0 + MOD_H > modTop) {
-                    if (btn == 0) {
-                        // left click: select (show settings)
-                        selMod = m.name().equals(selMod) ? null : m.name();
-                        setScroll = 0;
-                    } else if (btn == 1) {
-                        // right click: toggle on/off
-                        if (m.toggleable()) { m.toggle().run(); saveEnabled(ModConfig.get()); }
-                    }
-                    return true;
-                }
-                my0 += MOD_H;
-            }
-        }
+                // settings (with scroll offset)
+                int settStart = yo;
+                int drawY = settStart - p.scrollOff;
+                for (int si = 0; si < p.expanded.settings.size(); si++) {
+                    Setting s = p.expanded.settings.get(si);
+                    int sh = settH(s);
+                    int realY = drawY;
 
-        // ── Settings panel: toggle button ────────────────────────────────────
-        int px = lx1b + 1, pw = wx + WIN_W - px;
-        if (btn == 0 && selMod != null && mx >= px) {
-            ModEntry mod = findMod(selMod);
-            if (mod != null && mod.toggleable()) {
-                int tbx = px + pw - 44, tby = bodyY + 4;
-                if (mx >= tbx && mx < tbx + 36 && my >= tby && my < tby + 20) {
-                    mod.toggle().run(); saveEnabled(ModConfig.get());
-                    return true;
-                }
-            }
-        }
-
-        // ── Settings panel: individual settings ──────────────────────────────
-        if (btn == 0 && selMod != null && mx >= px && mx < wx + WIN_W) {
-            ModEntry mod = findMod(selMod);
-            if (mod != null && !mod.settings().isEmpty()) {
-                int setTop = bodyY + 26;
-                int sy = setTop + setScroll;
-                for (int i = 0; i < mod.settings().size(); i++) {
-                    if (my >= sy && my < sy + SET_H && sy + SET_H > setTop) {
-                        Setting s = mod.settings().get(i);
-                        if (s instanceof SliderS sl) {
-                            dragMod = selMod; dragIdx = i;
-                            int trackX = px + PAD + 52;
-                            int trackW = pw - PAD * 2 - 52 - 30;
-                            applySlider(sl, mx, trackX, trackW);
-                        } else if (s instanceof BoolS bs) {
-                            bs.toggle().run();
-                        } else if (s instanceof KeyS) {
-                            rebindMod = mod.name(); rebindIdx = i;
-                        }
+                    // hit test against visible area only
+                    if (my >= Math.max(realY, settStart) && my < Math.min(realY + sh, settStart + MAX_SET_H)) {
+                        if (btn == 0) handleSettClick(p, si, s, mx, realY);
                         return true;
                     }
-                    sy += SET_H;
+                    drawY += sh;
                 }
+                return true;
             }
-        }
 
+            // ── module list (Raven: left=toggle, right=expand settings) ─────
+            int yo = p.y + HDR;
+            for (ModEntry m : p.mods) {
+                if (my >= yo && my < yo + MOD_H) {
+                    if (btn == 0 && m.toggleable) m.toggle.run();
+                    if (btn == 1 && !m.settings.isEmpty()) {
+                        p.expanded = (p.expanded == m) ? null : m;
+                        p.scrollOff = 0;
+                    }
+                    return true;
+                }
+                yo += MOD_H;
+            }
+            return true;
+        }
         return super.mouseClicked(event, dbl);
+    }
+
+    private void handleSettClick(Panel p, int idx, Setting s, int mx, int settingY) {
+        if (s instanceof SliderS sl) {
+            sliderPanel = p; sliderIdx = idx;
+            applySlider(sl, mx, p.x + 4, PANEL_W - 8);
+        } else if (s instanceof BoolS bs) {
+            bs.toggle().run();
+        } else if (s instanceof KeyS) {
+            rebindPanel = p; rebindIdx = idx;
+        }
+    }
+
+    private void applySlider(SliderS sl, int mx, int barX, int barW) {
+        double pct = Math.max(0, Math.min(1, (double)(mx - barX) / barW));
+        double val = sl.min() + pct * (sl.max() - sl.min());
+        sl.set().accept(val);
     }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
         int mx = (int)event.x(), my = (int)event.y();
 
-        // window drag
-        if (wDrag) { wx = wdx + mx; wy = wdy + my; return true; }
+        // panel drag
+        for (Panel p : panels) {
+            if (p.dragging) {
+                p.x = p.dragOX + mx;
+                p.y = p.dragOY + my;
+                return true;
+            }
+        }
 
         // slider drag
-        if (dragMod != null) {
-            ModEntry mod = findMod(dragMod);
-            if (mod != null && dragIdx >= 0 && dragIdx < mod.settings().size()) {
-                Setting s = mod.settings().get(dragIdx);
-                if (s instanceof SliderS sl) {
-                    int lx1b = wx + SIDE_W + 1 + LIST_W + 1;
-                    int pw = wx + WIN_W - lx1b;
-                    int trackX = lx1b + PAD + 52;
-                    int trackW = pw - PAD * 2 - 52 - 30;
-                    applySlider(sl, mx, trackX, trackW);
-                }
-            }
+        if (sliderPanel != null && sliderPanel.expanded != null && sliderIdx >= 0) {
+            Setting s = sliderPanel.expanded.settings.get(sliderIdx);
+            if (s instanceof SliderS sl) applySlider(sl, mx, sliderPanel.x + 4, PANEL_W - 8);
             return true;
         }
+
         return super.mouseDragged(event, dx, dy);
     }
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        wDrag = false; dragMod = null; dragIdx = -1;
+        for (Panel p : panels) p.dragging = false;
+        sliderPanel = null; sliderIdx = -1;
         return super.mouseReleased(event);
     }
 
-    // ── Scroll ───────────────────────────────────────────────────────────────
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int mx = (int)mouseX, my = (int)mouseY;
-        int bodyY = wy + HDR_H;
-        int lx = wx + SIDE_W + 1, lx1b = lx + LIST_W;
-        int px = lx1b + 1;
 
-        int step = (int)(scrollY * 8);
-
-        // scroll module list
-        if (mx >= lx && mx < lx1b && my >= bodyY) {
-            modScroll += step;
-            if (modScroll > 0) modScroll = 0;
-            return true;
-        }
-        // scroll settings
-        if (mx >= px && mx < wx + WIN_W && my >= bodyY) {
-            setScroll += step;
-            if (setScroll > 0) setScroll = 0;
-            return true;
+        // find which panel the mouse is over and scroll its settings
+        for (int i = panels.size() - 1; i >= 0; i--) {
+            Panel p = panels.get(i);
+            int ph = panelH(p);
+            if (mx >= p.x && mx < p.x + PANEL_W && my >= p.y && my < p.y + ph) {
+                if (p.open && p.expanded != null) {
+                    int totalS = totalSettingsH(p.expanded);
+                    if (totalS > MAX_SET_H) {
+                        p.scrollOff -= (int)(scrollY * 6);
+                        int maxScroll = totalS - MAX_SET_H;
+                        if (p.scrollOff < 0) p.scrollOff = 0;
+                        if (p.scrollOff > maxScroll) p.scrollOff = maxScroll;
+                    }
+                }
+                return true;
+            }
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
-    // ── Keyboard ─────────────────────────────────────────────────────────────
     @Override
     public boolean keyPressed(KeyEvent event) {
         int key = event.key();
-        if (rebindMod != null) {
-            if (key != GLFW.GLFW_KEY_ESCAPE) {
-                ModEntry mod = findMod(rebindMod);
-                if (mod != null && rebindIdx >= 0 && rebindIdx < mod.settings().size()) {
-                    Setting s = mod.settings().get(rebindIdx);
-                    if (s instanceof KeyS ks) ks.set().accept(key);
-                }
+        if (rebindPanel != null && rebindIdx >= 0) {
+            if (key != GLFW.GLFW_KEY_ESCAPE && rebindPanel.expanded != null) {
+                Setting s = rebindPanel.expanded.settings.get(rebindIdx);
+                if (s instanceof KeyS ks) ks.set().accept(key);
             }
-            rebindMod = null; rebindIdx = -1;
+            rebindPanel = null; rebindIdx = -1;
             return true;
         }
         if (key == ModConfig.get().guiKey) { onClose(); return true; }
         return super.keyPressed(event);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    //  HELPERS
-    // ══════════════════════════════════════════════════════════════════════════
-
-    private ModEntry findMod(String name) {
-        for (ModEntry m : mods) if (m.name().equals(name)) return m;
-        return null;
+    @Override
+    public void onClose() {
+        saveEnabled();
+        super.onClose();
     }
 
-    private void applySlider(SliderS sl, int mx, int tx, int tw) {
-        double pct = Math.max(0, Math.min(1, (double)(mx - tx) / tw));
-        double raw = sl.min() + pct * (sl.max() - sl.min());
-        boolean intRange = isIntSlider(sl);
-        double val = intRange ? Math.round(raw) : Math.round(raw * 10.0) / 10.0;
-        sl.set().accept(val);
-    }
-
-    private static boolean isIntSlider(SliderS sl) {
-        return (int)sl.min() == sl.min()
-            && (int)sl.max() == sl.max()
-            && sl.max() - sl.min() >= 2
-            && sl.max() - sl.min() <= 30;
-    }
-
-    private static int accent(ModConfig cfg, int alpha) {
-        return argb(alpha, cfg.accentR, cfg.accentG, cfg.accentB);
-    }
-
-    private static int argb(int a, int r, int g, int b) {
-        return (Math.min(255, Math.max(0, a)) << 24)
-             | (Math.min(255, Math.max(0, r)) << 16)
-             | (Math.min(255, Math.max(0, g)) << 8)
-             |  Math.min(255, Math.max(0, b));
-    }
-
-    private static void saveEnabled(ModConfig cfg) {
-        cfg.nofallEnabled     = NoFallMod.isEnabled();
-        cfg.xrayEnabled       = XRayMod.isEnabled();
-        cfg.maceAuraEnabled   = MaceAuraMod.isEnabled();
-        cfg.noSlowEnabled     = NoSlowMod.isEnabled();
-        cfg.bhopEnabled       = BHopMod.isEnabled();
-        cfg.stepEnabled       = StepMod.isEnabled();
-        cfg.killAuraEnabled   = KillAuraMod.isEnabled();
-        cfg.velocityEnabled   = VelocityMod.isEnabled();
-        cfg.fastPlaceEnabled  = FastPlaceMod.isEnabled();
-        cfg.critEnabled       = CritMod.isEnabled();
-        cfg.scaffoldEnabled   = ScaffoldMod.isEnabled();
-        cfg.timerEnabled      = TimerMod.isEnabled();
+    private void saveEnabled() {
+        ModConfig cfg = ModConfig.get();
+        cfg.nofallEnabled    = NoFallMod.isEnabled();
+        cfg.xrayEnabled      = XRayMod.isEnabled();
+        cfg.maceAuraEnabled  = MaceAuraMod.isEnabled();
+        cfg.noSlowEnabled    = NoSlowMod.isEnabled();
+        cfg.bhopEnabled      = BHopMod.isEnabled();
+        cfg.stepEnabled      = StepMod.isEnabled();
+        cfg.killAuraEnabled  = KillAuraMod.isEnabled();
+        cfg.velocityEnabled  = VelocityMod.isEnabled();
+        cfg.fastPlaceEnabled = FastPlaceMod.isEnabled();
+        cfg.critEnabled      = CritMod.isEnabled();
+        cfg.scaffoldEnabled  = ScaffoldMod.isEnabled();
+        cfg.timerEnabled     = TimerMod.isEnabled();
+        cfg.spearAuraEnabled = SpearAuraMod.isEnabled();
+        cfg.noCrashEnabled   = NoCrashMod.isEnabled();
+        cfg.hitboxEnabled    = HitboxMod.isEnabled();
+        cfg.espEnabled       = ESPMod.isEnabled();
+        cfg.netherCoordEnabled = NetherCoordMod.isEnabled();
+        cfg.autoFishEnabled  = AutoFishMod.isEnabled();
         cfg.save();
-    }
-
-    private static String shortKey(int key) {
-        String s = ModConfig.keyName(key);
-        return switch (s) {
-            case "RIGHT_CONTROL" -> "RCTRL";
-            case "LEFT_CONTROL"  -> "LCTRL";
-            case "RIGHT_SHIFT"   -> "RSHIFT";
-            case "LEFT_SHIFT"    -> "LSHIFT";
-            default -> s.length() > 6 ? s.substring(0, 6) : s;
-        };
     }
 }
