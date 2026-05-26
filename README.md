@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.27** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.28** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -105,6 +105,15 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.28 — ESP 效能優化
+- **線繪製改用旋轉 quad**：一條對角線從 N 個 `g.fill`（每像素一個 quad）改成 1 個 fill — 用 `Matrix3x2fStack.translate + rotate` 把長度 × thick 的軸對齊長方形旋轉到目標角度。Hitbox 樣式重度受益（12 邊 × 多實體 × N 像素 → 12 個 fill / 實體）
+- **軸對齊 fast path**：dx=0 或 dy=0 的線直接用單一 `g.fill`，跳過 atan2 / 矩陣
+- **scratch buffer**：每實體 8 個 `new int[2]` + 1 個 bounding rect `new int[]` → 改成 `static int[8] XS/YS + boolean[8] VIS + int[4] BOUNDS_OUT`，render 是 single-thread 安全
+- **重用 Vector3f**：投影 8 個角從 8 個 Vector3f allocation → 1 個 static REL.set()
+- **去掉 `String.format`**：距離文字從 `String.format("%.0fm", dist)` → `(int) dist + "m"`，少一次 formatter 機制
+- **HpBar 邊界 clamp**：實體靠近螢幕左邊時 `barX1 < 0` 直接跳過，不畫到螢幕外
+- 視覺零變化，純效能
 
 ### v1.6.27 — ESP Hitbox 樣式（3D 線框）
 - Style slider 新增 `3 = Hitbox`：實體 AABB 完整 12 條邊線框，跟 vanilla F3+B 一樣的視覺
