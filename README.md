@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.25** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.26** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -27,7 +27,7 @@ Latest: **v1.6.25** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中，Players / Hostile / Animals 三開關 |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
-| **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物（牆後也看得到輪廓），用 vanilla glow shader |
+| **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物：Corners / Outline / Filled 三種框型 + Name / HP / Distance / Tracer 標籤，自動距離 cull |
 | **NameTag** | `Y` | 玩家 / 怪物頭上顯示名字 + 血條 + 護甲值 + 六格裝備（頭/胸/腿/腳/主手/副手）含耐久條，距離自動縮放 |
 | **AutoFish** | — | 自動釣魚：偵測 bobber 下沉收竿 + 自動重丟，純 right-click 動作 |
 | **ClickGUI** | `右 Ctrl` | 可拖曳面板，展開每個模組的詳細設定 |
@@ -105,6 +105,23 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.26 — ESP 重寫：三種框型 + Name/HP/Distance/Tracer + 距離 cull
+- **三種 box style**（Slider 切換）：
+  - `0 = Corners`（預設）：四角 L 型括號，依框大小自動縮短長度
+  - `1 = Outline`：完整外框
+  - `2 = Filled`：半透明填充 + 外框
+- **Line Thickness 滑桿**（1–3 px）：外框 / 角線粗細統一控制
+- **Name**：實體名稱黑底白字置中顯示在 box 上方
+- **HP**：LivingEntity 左側 3px 垂直血量條，紅 / 橘 / 綠依比例
+- **Distance**：box 下方顯示 `%.0fm`，灰字
+- **Tracer**：從畫面底部中央拉一條 Bresenham 線到 box 底部中央
+- **MaxDist** 滑桿（16–200 格）：用平方距離預先 cull，省掉超出範圍實體的 8 點投影
+- **新效能 guard**：
+  - 投影後框 < 4 px → 跳過（畫不出細節）
+  - 整個 box 完全在螢幕外 → 跳過
+  - 8 個角至少 2 個在相機前才畫（避免邊緣情況奇怪 box）
+- 沿用 ESPRenderer 原本的 `Camera.position()` + `rotation().conjugate()` 投影流程
 
 ### v1.6.25 — NameTag 模組（頭頂裝備 + 血量資訊）
 - 新增 **NameTag**（預設 `Y`，分類 RENDER）：在目標頭頂繪製資訊面板

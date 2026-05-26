@@ -146,6 +146,13 @@ public class ModConfig {
     public int     espBoxR     = 128;
     public int     espBoxG     = 255;
     public int     espBoxB     = 64;
+    public int     espStyle        = 0;     // 0=Corners 1=Outline 2=Filled
+    public boolean espShowName     = true;
+    public boolean espShowHp       = true;
+    public boolean espShowDistance = true;
+    public boolean espShowTracer   = false;
+    public float   espMaxDistance  = 80.0f;
+    public int     espLineThick    = 1;
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;

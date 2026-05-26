@@ -101,6 +101,13 @@ public class NoFallMod implements ClientModInitializer {
         ESPMod.hostile  = cfg.espHostile;
         ESPMod.animals  = cfg.espAnimals;
         ESPMod.items    = cfg.espItems;
+        ESPMod.style         = cfg.espStyle;
+        ESPMod.showName      = cfg.espShowName;
+        ESPMod.showHp        = cfg.espShowHp;
+        ESPMod.showDistance  = cfg.espShowDistance;
+        ESPMod.showTracer    = cfg.espShowTracer;
+        ESPMod.maxDistance   = cfg.espMaxDistance;
+        ESPMod.lineThickness = cfg.espLineThick;
 
         if (cfg.nameTagEnabled != NameTagMod.isEnabled()) NameTagMod.toggle();
         NameTagMod.players        = cfg.nameTagPlayers;

@@ -9,6 +9,10 @@ import net.minecraft.world.entity.player.Player;
 
 public class ESPMod {
 
+    public static final int STYLE_CORNERS = 0;
+    public static final int STYLE_OUTLINE = 1;
+    public static final int STYLE_FILLED  = 2;
+
     private static boolean enabled = false;
 
     public static boolean players = true;
@@ -17,6 +21,14 @@ public class ESPMod {
     public static boolean items   = false;
 
     public static int boxR = 128, boxG = 255, boxB = 64;
+
+    public static int     style         = STYLE_CORNERS;
+    public static boolean showName      = true;
+    public static boolean showHp        = true;
+    public static boolean showDistance  = true;
+    public static boolean showTracer    = false;
+    public static float   maxDistance   = 80.0f;
+    public static int     lineThickness = 1;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
