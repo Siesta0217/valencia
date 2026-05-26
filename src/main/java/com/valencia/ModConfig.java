@@ -146,6 +146,8 @@ public class ModConfig {
     public int     espBoxR     = 128;
     public int     espBoxG     = 255;
     public int     espBoxB     = 64;
+    public boolean espChroma      = false;
+    public float   espChromaSpeed = 0.5f;
     public int     espStyle        = 3;     // 0=Corners 1=Outline 2=Filled 3=Hitbox
     public boolean espShowName     = true;
     public boolean espShowHp       = true;

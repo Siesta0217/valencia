@@ -22,6 +22,8 @@ public class ESPMod {
     public static boolean items   = false;
 
     public static int boxR = 128, boxG = 255, boxB = 64;
+    public static boolean chroma      = false;
+    public static float   chromaSpeed = 0.5f;  // hue cycles per second
 
     public static int     style         = STYLE_HITBOX;
     public static boolean showName      = true;
@@ -35,6 +37,10 @@ public class ESPMod {
     public static void toggle()       { enabled = !enabled; }
 
     public static int boxColor() {
+        if (chroma) {
+            float hue = (float)((System.currentTimeMillis() / 1000.0 * chromaSpeed) % 1.0);
+            return 0xFF000000 | (java.awt.Color.HSBtoRGB(hue, 1f, 1f) & 0xFFFFFF);
+        }
         return 0xFF000000 | (boxR << 16) | (boxG << 8) | boxB;
     }
 

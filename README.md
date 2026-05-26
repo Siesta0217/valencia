@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.29** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.30** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -105,6 +105,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.30 — ESP Chroma 跑馬燈色
+- 新增 **Chroma** 開關（ClickGUI ESP）：開啟後 box / name / hp 顏色按 hue 自動循環，現有 Red/Green/Blue 滑桿被忽略
+- **ChrSpd** 滑桿：色相循環速度（0.1–3.0 圈/秒），預設 0.5
+- 實作：`ESPMod.boxColor()` 在 chroma 模式下用 `System.currentTimeMillis()` × speed 算 hue，丟給 `java.awt.Color.HSBtoRGB`
 
 ### v1.6.29 — ESP / NameTag 修 zoom mod 投影跑掉
 - 改從 `GameRenderer.getProjectionMatrix(partialTick)` 抽 `m00 / m11`，等於 `1/(tanHalfFov*aspect)` 跟 `1/tanHalfFov`

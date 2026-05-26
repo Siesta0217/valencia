@@ -41,6 +41,8 @@ public class NoFallMod implements ClientModInitializer {
         ESPMod.boxR = cfg.espBoxR;
         ESPMod.boxG = cfg.espBoxG;
         ESPMod.boxB = cfg.espBoxB;
+        ESPMod.chroma      = cfg.espChroma;
+        ESPMod.chromaSpeed = cfg.espChromaSpeed;
 
         SpearAuraMod.SCAN_RANGE         = cfg.spearScanRange;
         SpearAuraMod.MIN_REACH          = cfg.spearMinReach;

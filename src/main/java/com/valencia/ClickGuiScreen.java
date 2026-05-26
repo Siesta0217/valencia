@@ -238,6 +238,8 @@ public class ClickGuiScreen extends Screen {
             new BoolS("Tracer",   () -> cfg.espShowTracer,  () -> { cfg.espShowTracer = !cfg.espShowTracer; ESPMod.showTracer = cfg.espShowTracer; cfg.save(); }),
             new SliderS("MaxDist",() -> cfg.espMaxDistance, v -> { cfg.espMaxDistance = (float)v; ESPMod.maxDistance = (float)v; cfg.save(); }, 16, 200),
             new SliderS("Thick",  () -> cfg.espLineThick,   v -> { cfg.espLineThick = (int)v; ESPMod.lineThickness = (int)v; cfg.save(); }, 1, 3),
+            new BoolS("Chroma",   () -> cfg.espChroma,      () -> { cfg.espChroma = !cfg.espChroma; ESPMod.chroma = cfg.espChroma; cfg.save(); }),
+            new SliderS("ChrSpd", () -> cfg.espChromaSpeed * 100, v -> { cfg.espChromaSpeed = (float)v / 100f; ESPMod.chromaSpeed = cfg.espChromaSpeed; cfg.save(); }, 10, 300),
             new SliderS("Red",    () -> cfg.espBoxR,        v -> { cfg.espBoxR = (int)v; ESPMod.boxR = (int)v; cfg.save(); }, 0, 255),
             new SliderS("Green",  () -> cfg.espBoxG,        v -> { cfg.espBoxG = (int)v; ESPMod.boxG = (int)v; cfg.save(); }, 0, 255),
             new SliderS("Blue",   () -> cfg.espBoxB,        v -> { cfg.espBoxB = (int)v; ESPMod.boxB = (int)v; cfg.save(); }, 0, 255)
