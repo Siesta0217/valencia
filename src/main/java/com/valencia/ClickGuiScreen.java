@@ -236,6 +236,20 @@ public class ClickGuiScreen extends Screen {
             new SliderS("Blue",  () -> cfg.espBoxB,    v -> { cfg.espBoxB = (int)v; ESPMod.boxB = (int)v; cfg.save(); }, 0, 255)
         )));
 
+        add(Cat.RENDER, new ModEntry("NameTag",
+            NameTagMod::isEnabled, () -> { NameTagMod.toggle(); cfg.nameTagEnabled = NameTagMod.isEnabled(); cfg.save(); }, true, List.of(
+            new BoolS("Players",    () -> cfg.nameTagPlayers,        () -> { cfg.nameTagPlayers        = !cfg.nameTagPlayers;        NameTagMod.players        = cfg.nameTagPlayers;        cfg.save(); }),
+            new BoolS("Hostile",    () -> cfg.nameTagHostile,        () -> { cfg.nameTagHostile        = !cfg.nameTagHostile;        NameTagMod.hostile        = cfg.nameTagHostile;        cfg.save(); }),
+            new BoolS("Animals",    () -> cfg.nameTagAnimals,        () -> { cfg.nameTagAnimals        = !cfg.nameTagAnimals;        NameTagMod.animals        = cfg.nameTagAnimals;        cfg.save(); }),
+            new BoolS("Armor",      () -> cfg.nameTagShowArmor,      () -> { cfg.nameTagShowArmor      = !cfg.nameTagShowArmor;      NameTagMod.showArmor      = cfg.nameTagShowArmor;      cfg.save(); }),
+            new BoolS("Hands",      () -> cfg.nameTagShowHands,      () -> { cfg.nameTagShowHands      = !cfg.nameTagShowHands;      NameTagMod.showHands      = cfg.nameTagShowHands;      cfg.save(); }),
+            new BoolS("Durability", () -> cfg.nameTagShowDurability, () -> { cfg.nameTagShowDurability = !cfg.nameTagShowDurability; NameTagMod.showDurability = cfg.nameTagShowDurability; cfg.save(); }),
+            new BoolS("HP Bar",     () -> cfg.nameTagShowHpBar,      () -> { cfg.nameTagShowHpBar      = !cfg.nameTagShowHpBar;      NameTagMod.showHpBar      = cfg.nameTagShowHpBar;      cfg.save(); }),
+            new BoolS("HP Text",    () -> cfg.nameTagShowHpText,     () -> { cfg.nameTagShowHpText     = !cfg.nameTagShowHpText;     NameTagMod.showHpText     = cfg.nameTagShowHpText;     cfg.save(); }),
+            new SliderS("Scale",    () -> cfg.nameTagScale * 100,    v -> { cfg.nameTagScale = (float)v / 100f; NameTagMod.scale = cfg.nameTagScale; cfg.save(); }, 60, 160),
+            new KeyS("Key",         () -> cfg.nameTagKey,            v -> { cfg.nameTagKey = v; cfg.save(); })
+        )));
+
         add(Cat.RENDER, new ModEntry("DimCoord",
             NetherCoordMod::isEnabled, () -> { NetherCoordMod.toggle(); cfg.netherCoordEnabled = NetherCoordMod.isEnabled(); cfg.save(); },
             true, List.of()));
@@ -784,6 +798,7 @@ public class ClickGuiScreen extends Screen {
         cfg.noCrashEnabled   = NoCrashMod.isEnabled();
         cfg.hitboxEnabled    = HitboxMod.isEnabled();
         cfg.espEnabled       = ESPMod.isEnabled();
+        cfg.nameTagEnabled   = NameTagMod.isEnabled();
         cfg.netherCoordEnabled = NetherCoordMod.isEnabled();
         cfg.autoFishEnabled  = AutoFishMod.isEnabled();
         cfg.save();

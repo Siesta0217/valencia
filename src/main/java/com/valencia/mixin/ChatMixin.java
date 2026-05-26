@@ -51,8 +51,9 @@ public class ChatMixin {
             case "step"      -> cfg.stepKey       = keyCode;
             case "killaura"  -> cfg.killAuraKey   = keyCode;
             case "spearaura" -> cfg.spearAuraKey  = keyCode;
+            case "nametag"   -> cfg.nameTagKey    = keyCode;
             default -> {
-                msg(mc, "§cUnknown module. Options: nofall / xray / maceaura / spearaura / noslow / gui / bhop / step / killaura");
+                msg(mc, "§cUnknown module. Options: nofall / xray / maceaura / spearaura / nametag / noslow / gui / bhop / step / killaura");
                 return;
             }
         }

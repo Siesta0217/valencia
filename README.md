@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.6.24** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.6.25** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -28,6 +28,7 @@ Latest: **v1.6.24** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
 | **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物（牆後也看得到輪廓），用 vanilla glow shader |
+| **NameTag** | `Y` | 玩家 / 怪物頭上顯示名字 + 血條 + 護甲值 + 六格裝備（頭/胸/腿/腳/主手/副手）含耐久條，距離自動縮放 |
 | **AutoFish** | — | 自動釣魚：偵測 bobber 下沉收竿 + 自動重丟，純 right-click 動作 |
 | **ClickGUI** | `右 Ctrl` | 可拖曳面板，展開每個模組的詳細設定 |
 
@@ -104,6 +105,17 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.6.25 — NameTag 模組（頭頂裝備 + 血量資訊）
+- 新增 **NameTag**（預設 `Y`，分類 RENDER）：在目標頭頂繪製資訊面板
+  - 第一行：實體名稱 + HP 文字（`14/20`，含吸收 `+4` 顯示）+ 護甲值 `[8]`
+  - 第二行：HP 條，紅→橘→綠依比例上色
+  - 第三行：六格裝備圖示（頭/胸/腿/腳/主手/副手），含 vanilla 耐久條
+- 設定：Players / Hostile / Animals 目標、Armor / Hands / Durability / HP Bar / HP Text 五個顯示開關、Scale 滑桿（60–160%）、Key 綁定
+- 距離自動縮放：8 格以內最大，越遠 tag 越小（clamp 0.6–1.4）
+- 螢幕背後 / 過近實體自動隱藏（rel.z >= -0.05f reject）
+- 用 `Matrix3x2fStack` push/scale/translate 而不是手動算座標，避免在不同 GUI scale 下偏移
+- 沿用 ESPRenderer 的 camera 投影流程（`Camera.position()` + `Camera.rotation().conjugate()`）
 
 ### v1.6.23 — ClickGUI 重寫 Discord 風格 + ESP 2D overlay（Name / Health / Corner Box）
 - **ClickGUI 完全重寫**：從 Faiths client 移植 Discord 風格三面板佈局

@@ -28,6 +28,7 @@ public class ModConfig {
     public int scaffoldKey   = GLFW.GLFW_KEY_J;
     public int timerKey      = GLFW.GLFW_KEY_T;
     public int spearAuraKey  = GLFW.GLFW_KEY_U;
+    public int nameTagKey    = GLFW.GLFW_KEY_Y;
 
     // SpearAura tuning
     public float spearScanRange   = 7.0f;
@@ -123,6 +124,18 @@ public class ModConfig {
     public boolean autoFishEnabled = false;
     public float   autoFishBiteVy  = -0.04f;
     public int     autoFishRecast  = 12;
+
+    // NameTag
+    public boolean nameTagEnabled        = false;
+    public boolean nameTagPlayers        = true;
+    public boolean nameTagHostile        = false;
+    public boolean nameTagAnimals        = false;
+    public boolean nameTagShowArmor      = true;
+    public boolean nameTagShowHands      = true;
+    public boolean nameTagShowDurability = true;
+    public boolean nameTagShowHpBar      = true;
+    public boolean nameTagShowHpText     = true;
+    public float   nameTagScale          = 1.0f;
 
     // ESP
     public boolean espEnabled  = false;
