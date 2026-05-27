@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.3** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.4** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -96,7 +96,7 @@ Latest: **v1.7.3** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.3.jar
+# JAR → build/libs/valencia-1.7.4.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -105,6 +105,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.4 — Projection 改吃 vanilla `projectPointToScreen`
+- **Bug**：v1.7.3 的手算投影（camera-relative + invRot.conjugate + perspective matrix m00/m11）數學上看似對，實際在這 Lunar 1.21.11 build 完全顯示不出來。猜測是 camera rotation 或 projection matrix 的 conventions 跟 upstream Yarn 1.21 不完全一致
+- **修法**：放棄自己算矩陣，直接呼叫 `mc.gameRenderer.projectPointToScreen(Vec3)` — 這是 vanilla 自己給 `TrackedWaypoint.Projector` 用的 API，跟 world render 用的是同一條矩陣，conventions 一定對得上
+- 回傳 NDC `(x ∈ [-1,1], y ∈ [-1,1], z = depth)` → 自己 map 到 GUI-scaled 像素：`sx = (ndc.x+1) * 0.5 * viewW`，`sy = (1-ndc.y) * 0.5 * viewH`
+- **背面偵測**：NDC 自己看不出來「在相機後面」（perspective divide 會把符號翻過來給出貌似合理的 screen coord）→ 改用 `(target - camPos) · camera.forwardVector()` 算前進距離，<0.05 格就 reject
+- **AABB 近平面 clipping** 改在 world space 做：8 角各自存 forward-distance，跨面的邊用 lerp `t = (fFront - NEAR) / (fFront - fBack)` 算 world-space 切點，再投影
+- ESPRenderer / NameTagRenderer 完全沒改 — public API（`Frame / projectPoint / projectAabb / ScreenAabb`）一致
 
 ### v1.7.3 — ESP / NameTag 從頭重寫，共用投影管線
 - **新增 `Projection.java`**：world→screen 投影集中到一個工具類，Frame snapshot + projectPoint + projectAabb 三個入口；AABB 投影內建 12 邊 near-plane clipping，回傳 `ScreenAabb`（2D bounding rect + per-edge 線段 + valid mask），ESP / NameTag 共用
