@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.5** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.6** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.5** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.5.jar
+# JAR → build/libs/valencia-1.7.6.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,19 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.6 — ESP Hitbox 跑到 vanilla 的 Gizmos 管線（完美 smooth）
+- **Bug**：v1.7.5 的 Hitbox style 還是 2D HUD 投影畫的，跟 vanilla F3+B 看起來像但不會「黏」在實體上 — 因為：
+  - HUD pass 在 world pass 之後跑，camera snapshot 不一樣
+  - `projectPointToScreen` 內部用 `getFov(cam, 0f, true)` → partialTick=0
+  - 實體位置用 current partialTick
+  - 三個誤差疊起來變成可見的浮動 / swim
+- **修法**：新增 `ESPGizmoMixin`，`@Inject` `DebugRenderer.emitGizmos` 的 TAIL，把 ESP 目標的 render-interpolated AABB 用 `Gizmos.cuboid(aabb, GizmoStyle.stroke(color))` 丟進 vanilla 的 `collectedGizmos` collector
+  - LevelRenderer 包了 `Gizmos.withCollector(...)` scope，所以我們的 cuboid 跟 F3+B hitbox 落在**同一個 collector**，**同一個 world render pass**，**同一組矩陣**
+  - 結果：ESP box 跟 vanilla F3+B 完全同步，frame-perfect smooth
+- ESPRenderer 的 HITBOX case 改成 no-op（box 由 gizmo 畫），但 Name / HP / Distance / Tracer 標籤還是走 HUD pass
+- **撤掉 v1.7.5 的 eye-forward 藍線**（使用者要求）
+- Filled / Outline / Corners 三個 style 維持 HUD-based 不動（gizmo 適合 wireframe，不適合 filled overlay）
 
 ### v1.7.5 — Velocity packet fix + TargetHUD + ESP vanilla F3+B look
 - **Velocity bug**：開 0 / 0 還是會被擊退

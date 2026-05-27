@@ -30,16 +30,8 @@ public final class ESPRenderer {
     /** Minimum 2D footprint to bother rendering. Avoids 1×1 dots at huge distances. */
     private static final int MIN_BOX_PX = 4;
 
-    /** Vanilla F3+B eye-forward line colour (soft blue). */
-    private static final int EYE_LINE_COLOR = 0xFF55AAFF;
-
-    /** Distance in blocks the eye-forward indicator extends from the entity's eyes. */
-    private static final double EYE_LINE_BLOCKS = 2.0;
-
     /** Per-frame scratch — HUD render is single-threaded. */
     private static final Projection.ScreenAabb SCRATCH = new Projection.ScreenAabb();
-    private static final int[] EYE_FROM = new int[2];
-    private static final int[] EYE_TO   = new int[2];
 
     private ESPRenderer() {}
 
@@ -97,12 +89,10 @@ public final class ESPRenderer {
             if (drawMaxX - drawMinX < MIN_BOX_PX || drawMaxY - drawMinY < MIN_BOX_PX) continue;
 
             switch (style) {
-                case ESPMod.STYLE_HITBOX  -> {
-                    drawHitbox(g, sa, viewW, viewH, thickness, color, maxLine);
-                    if (e instanceof LivingEntity le) {
-                        drawEyeForwardLine(g, frame, le, partialTick, maxLine);
-                    }
-                }
+                // HITBOX style is rendered in world space by ESPGizmoMixin — same
+                // gizmo collector as vanilla F3+B, so it stays frame-perfect with
+                // entity motion. HUD-side only contributes the optional labels.
+                case ESPMod.STYLE_HITBOX  -> { /* world-space via ESPGizmoMixin */ }
                 case ESPMod.STYLE_FILLED  -> drawFilled (g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
                 case ESPMod.STYLE_OUTLINE -> drawOutline(g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
                 default                   -> drawCorners(g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
@@ -123,38 +113,6 @@ public final class ESPRenderer {
     }
 
     // ─── styles ─────────────────────────────────────────────────────────
-
-    /**
-     * Vanilla F3+B style eye-direction indicator: a short line from the entity's
-     * eyes pointing along its look vector. Two world points → projectPoint × 2 →
-     * one diagonal line. Skipped silently if either endpoint is behind the camera.
-     */
-    private static void drawEyeForwardLine(GuiGraphics g, Projection.Frame f,
-                                            LivingEntity le, float partialTick, int maxLine) {
-        Vec3 eye = le.getEyePosition(partialTick);
-        Vec3 look = le.getViewVector(partialTick);
-        double tx = eye.x + look.x * EYE_LINE_BLOCKS;
-        double ty = eye.y + look.y * EYE_LINE_BLOCKS;
-        double tz = eye.z + look.z * EYE_LINE_BLOCKS;
-        if (!Projection.projectPoint(f, eye.x, eye.y, eye.z, EYE_FROM)) return;
-        if (!Projection.projectPoint(f, tx,    ty,    tz,    EYE_TO))   return;
-        drawLine(g, EYE_FROM[0], EYE_FROM[1], EYE_TO[0], EYE_TO[1], 1, EYE_LINE_COLOR, maxLine);
-    }
-
-    private static void drawHitbox(GuiGraphics g, Projection.ScreenAabb sa,
-                                   int viewW, int viewH, int thickness, int color, int maxLine) {
-        int[] e = sa.edges;
-        int mask = sa.validMask;
-        for (int i = 0; i < 12; i++) {
-            if ((mask & (1 << i)) == 0) continue;
-            int o = i * 4;
-            int ax = e[o], ay = e[o + 1], bx = e[o + 2], by = e[o + 3];
-            // Trivial reject — edge entirely off one side of the screen.
-            if ((ax < 0 && bx < 0) || (ax > viewW && bx > viewW)) continue;
-            if ((ay < 0 && by < 0) || (ay > viewH && by > viewH)) continue;
-            drawLine(g, ax, ay, bx, by, thickness, color, maxLine);
-        }
-    }
 
     private static void drawOutline(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
         g.fill(x1,     y1,     x2,     y1 + t, color);

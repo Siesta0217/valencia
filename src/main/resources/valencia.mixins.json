@@ -21,7 +21,8 @@
     "StepMixin",
     "TimerMixin",
     "HudMixin",
-    "NameTagVisibilityMixin"
+    "NameTagVisibilityMixin",
+    "ESPGizmoMixin"
   ],
   "injectors": {
     "defaultRequire": 1
