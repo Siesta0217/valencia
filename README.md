@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.6** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.7** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.6** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.6.jar
+# JAR → build/libs/valencia-1.7.7.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,16 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.7 — NameTag 美化重做
+- **Panel**：四角各 shave 1 px 做假圓角；頂部一條 accent 漸層 stripe，從中央滿 alpha 線性 fade 到兩側 45% — 不用 alpha-blend 對角線就有「軟高光」感
+- **底部 1 px 深色帶**：增加深度錯覺
+- **Header**：name 加 drop shadow；右側顯示距離（`5.3m`）灰字
+- **Stat row**：HP text（依血量比例調色）+ 護甲值（`⛨ 8`，淡藍色），左右分佈
+- **HP bar**：4 px 高，紅 → 橘 → 綠**漸層**色（不是離散 3 段），頂部 1 px highlight stripe 加形狀感
+- **Equipment row**：armor 4 格 + hands 2 格中間加細隔線；每格本身也加 top highlight + bottom shadow inset
+- **最小寬度** 64 px，短名字面板不會擠
+- 排版用累積式 cursorY，每段獨立決定 row gap，整體間距更鬆但不浪費
 
 ### v1.7.6 — ESP Hitbox 跑到 vanilla 的 Gizmos 管線（完美 smooth）
 - **Bug**：v1.7.5 的 Hitbox style 還是 2D HUD 投影畫的，跟 vanilla F3+B 看起來像但不會「黏」在實體上 — 因為：

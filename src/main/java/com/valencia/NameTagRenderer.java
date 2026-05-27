@@ -12,19 +12,20 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3x2fStack;
 
 /**
- * 2D HUD overlay for entity nametags.
+ * Polished entity nametag overlay.
  *
- * Pipeline per frame:
- *   1. Projection.begin() — snapshot camera + projection matrix.
- *   2. For each targeted living entity:
- *        a. Compute anchor at top-of-head + small world offset.
- *        b. Projection.projectPoint() — reject if behind near plane.
- *        c. Reject if anchor is far outside the viewport (with margin).
- *        d. Compute distance-aware scale factor.
- *        e. Render the tag panel centred on the anchor.
+ * Visual goals (v1.7.7):
+ *   - Pseudo-rounded panel via corner-pixel shaving
+ *   - Thin accent gradient stripe along the top edge
+ *   - Drop-shadowed name, muted distance, HP-tinted HP text
+ *   - Gradient HP bar (red → orange → green) with a 1-px top highlight
+ *   - Compact armor / hands rows with a subtle divider between them
  *
- * The panel is drawn under a translate+scale transform so all per-tag
- * layout math is in unscaled pixels — anchored at (0, 0), bottom-aligned.
+ * Anchor: world point at (entity centre, bbox top + 0.45, entity centre)
+ * projected via {@link Projection#projectPoint}. The whole panel is drawn
+ * under a {@code translate + scale} transform so layout math stays in
+ * unscaled pixels with the anchor at (0, 0) and the panel extending
+ * upward from there.
  */
 public final class NameTagRenderer {
 
@@ -34,7 +35,6 @@ public final class NameTagRenderer {
     /** Reject tags whose anchor lands further than this many pixels off-screen. */
     private static final int OFFSCREEN_MARGIN_PX = 96;
 
-    /** 4 armor slots + 2 hand slots. */
     private static final EquipmentSlot[] ARMOR_SLOTS = {
         EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
     };
@@ -42,7 +42,6 @@ public final class NameTagRenderer {
         EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND
     };
 
-    /** Per-frame scratch — HUD render is single-threaded. */
     private static final int[] ANCHOR_TMP = new int[2];
 
     private NameTagRenderer() {}
@@ -76,17 +75,17 @@ public final class NameTagRenderer {
             if (isOffscreen(sx, sy, frame.viewW, frame.viewH)) continue;
 
             Vec3 eye = e.getEyePosition(partialTick);
-            double dxw = eye.x - frame.camX;
-            double dyw = eye.y - frame.camY;
-            double dzw = eye.z - frame.camZ;
-            double dist = Math.sqrt(dxw * dxw + dyw * dyw + dzw * dzw);
+            double dist = Math.sqrt(
+                (eye.x - frame.camX) * (eye.x - frame.camX) +
+                (eye.y - frame.camY) * (eye.y - frame.camY) +
+                (eye.z - frame.camZ) * (eye.z - frame.camZ)
+            );
 
             float scale = NameTagMod.scale * distanceScale(dist);
-            drawTag(g, font, le, sx, sy, scale);
+            drawTag(g, font, le, sx, sy, scale, dist);
         }
     }
 
-    /** Smooth distance attenuation, clamped so close ≠ huge and far ≠ unreadable. */
     private static float distanceScale(double dist) {
         double f = 10.0 / Math.max(5.0, dist);
         if (f < 0.5) f = 0.5;
@@ -104,7 +103,7 @@ public final class NameTagRenderer {
     // ─── tag rendering ──────────────────────────────────────────────────
 
     private static void drawTag(GuiGraphics g, Font font, LivingEntity e,
-                                int anchorX, int anchorY, float scale) {
+                                int anchorX, int anchorY, float scale, double dist) {
         Matrix3x2fStack pose = g.pose();
         pose.pushMatrix();
         pose.translate(anchorX, anchorY);
@@ -113,8 +112,9 @@ public final class NameTagRenderer {
         ModConfig cfg = ModConfig.get();
         String name = e.getName().getString();
         float hp = e.getHealth();
-        float max = e.getMaxHealth();
+        float max = Math.max(1f, e.getMaxHealth());
         float absorb = e.getAbsorptionAmount();
+        float frac = clamp01(hp / max);
         int armorVal = e.getArmorValue();
 
         boolean showArmor = NameTagMod.showArmor;
@@ -123,81 +123,117 @@ public final class NameTagRenderer {
         boolean showHpText = NameTagMod.showHpText;
         boolean showDurability = NameTagMod.showDurability;
 
-        // Header text widths
-        int nameW = font.width(name);
-        String hpText = showHpText ? formatHp(hp, max, absorb) : "";
-        int hpTextW = showHpText ? font.width(hpText) + 4 : 0;
-        String armorText = armorVal > 0 ? " §7[§b" + armorVal + "§7]" : "";
+        // ── Strings & widths ───────────────────────────────────────────
+        String distText = String.format("%.1fm", dist);
+        String hpText = showHpText
+            ? String.format("%.0f/%.0f", hp, max) + (absorb > 0 ? "+" + (int) absorb : "")
+            : "";
+        String armorText = armorVal > 0 ? "⛨ " + armorVal : "";
+
+        int nameW   = font.width(name);
+        int distW   = font.width(distText);
+        int hpTextW = font.width(hpText);
         int armorTextW = font.width(armorText);
-        int headerW = nameW + hpTextW + armorTextW;
 
-        // Icon row width
+        // ── Layout constants ───────────────────────────────────────────
+        final int padX     = 6;
+        final int padY     = 4;
+        final int gap      = 6;     // gap between header columns
+        final int rowGap   = 3;     // vertical gap between rows
+        final int barH     = 4;
         final int iconSize = 16;
-        final int iconGap = 1;
-        int iconCount = (showArmor ? ARMOR_SLOTS.length : 0) + (showHands ? HAND_SLOTS.length : 0);
-        int iconsW = iconCount > 0 ? iconCount * iconSize + (iconCount - 1) * iconGap : 0;
+        final int iconGap  = 1;
+        final int groupGap = 4;     // gap between armor group and hand group
 
-        // Panel size
-        final int padX = 3;
-        final int padY = 2;
-        final int rowGap = 2;
-        int contentW = Math.max(headerW, iconsW);
-        int contentH = 9
-            + (showHpBar ? 3 + rowGap : rowGap)
-            + (iconCount > 0 ? iconSize : 0);
+        int iconCount = (showArmor ? ARMOR_SLOTS.length : 0) + (showHands ? HAND_SLOTS.length : 0);
+        int armorW = showArmor ? ARMOR_SLOTS.length * iconSize + (ARMOR_SLOTS.length - 1) * iconGap : 0;
+        int handsW = showHands ? HAND_SLOTS.length  * iconSize + (HAND_SLOTS.length  - 1) * iconGap : 0;
+        int iconsW = armorW + handsW + (showArmor && showHands ? groupGap : 0);
+
+        int headerW = nameW + gap + distW;
+        int statW   = (hpText.isEmpty() ? 0 : hpTextW)
+                    + ((!hpText.isEmpty() && !armorText.isEmpty()) ? gap : 0)
+                    + (armorText.isEmpty() ? 0 : armorTextW);
+
+        int contentW = Math.max(Math.max(headerW, statW), iconsW);
+        if (contentW < 64) contentW = 64; // minimum width so short names don't shrink the panel
+
+        // Compute total height accumulating rows we actually draw.
+        int contentH = 9; // header line (name / distance)
+        if (showHpBar || !hpText.isEmpty() || !armorText.isEmpty()) {
+            contentH += rowGap;
+            if (!hpText.isEmpty() || !armorText.isEmpty()) contentH += 9;
+            if (showHpBar) contentH += (hpText.isEmpty() && armorText.isEmpty() ? 0 : 2) + barH;
+        }
+        if (iconCount > 0) {
+            contentH += rowGap + iconSize;
+        }
+
         int boxW = contentW + padX * 2;
         int boxH = contentH + padY * 2;
         int boxX = -boxW / 2;
         int boxY = -boxH;
 
-        // Background + accent border
-        int bgAlpha = clampInt(cfg.bgAlpha, 60, 220);
-        int bg = bgAlpha << 24;
-        int accent = 0x80000000
+        int accent = 0xFF000000
             | ((cfg.accentR & 0xFF) << 16)
             | ((cfg.accentG & 0xFF) << 8)
             |  (cfg.accentB & 0xFF);
-        g.fill(boxX, boxY, boxX + boxW, boxY + boxH, bg);
-        drawBorder(g, boxX, boxY, boxX + boxW, boxY + boxH, accent);
+        int bgAlpha = clamp(cfg.bgAlpha, 60, 220);
 
-        // Header line
+        drawPanel(g, boxX, boxY, boxW, boxH, bgAlpha, accent);
+
         int cursorY = boxY + padY;
-        int headerX = -headerW / 2;
-        g.drawString(font, name, headerX, cursorY, 0xFFFFFFFF, false);
-        if (showHpText) {
-            int hpCol = hpColor(hp / Math.max(1f, max));
-            g.drawString(font, hpText, headerX + nameW + 4, cursorY, hpCol, false);
-        }
-        if (!armorText.isEmpty()) {
-            g.drawString(font, armorText, headerX + nameW + hpTextW, cursorY, 0xFFFFFFFF, false);
-        }
+
+        // ── Header: name (left, shadowed) + distance (right, muted) ────
+        g.drawString(font, name,     boxX + padX,                       cursorY, 0xFFFFFFFF, true);
+        g.drawString(font, distText, boxX + boxW - padX - distW,        cursorY, 0xFFB0B0B0, false);
         cursorY += 9;
 
-        // HP bar
-        if (showHpBar) {
-            int barW = Math.max(40, contentW);
-            int barX = -barW / 2;
-            float frac = Math.max(0f, Math.min(1f, hp / Math.max(1f, max)));
-            g.fill(barX,     cursorY,     barX + barW,                            cursorY + 3, 0xFF202020);
-            g.fill(barX + 1, cursorY + 1, barX + 1 + (int)((barW - 2) * frac),    cursorY + 2, hpColor(frac));
-            cursorY += 3 + rowGap;
-        } else {
+        // ── HP text + armor row ────────────────────────────────────────
+        if (!hpText.isEmpty() || !armorText.isEmpty()) {
             cursorY += rowGap;
+            int hpColor = hpColor(frac);
+            if (!hpText.isEmpty()) {
+                g.drawString(font, hpText, boxX + padX, cursorY, hpColor, false);
+            }
+            if (!armorText.isEmpty()) {
+                g.drawString(font, armorText, boxX + boxW - padX - armorTextW, cursorY, 0xFF8FD3FF, false);
+            }
+            cursorY += 9;
         }
 
-        // Icon row
+        // ── HP bar (gradient + highlight) ──────────────────────────────
+        if (showHpBar) {
+            // Small spacing only if a stat row preceded; otherwise tight after header.
+            if (!hpText.isEmpty() || !armorText.isEmpty()) cursorY += 2;
+            else cursorY += rowGap;
+            int barX = boxX + padX;
+            int barW = boxW - padX * 2;
+            drawHpBar(g, barX, cursorY, barW, barH, frac);
+            cursorY += barH;
+        }
+
+        // ── Equipment row ──────────────────────────────────────────────
         if (iconCount > 0) {
-            int iconX = -iconsW / 2;
+            cursorY += rowGap;
+            int iconsX = -iconsW / 2;
+            int x = iconsX;
             if (showArmor) {
                 for (EquipmentSlot slot : ARMOR_SLOTS) {
-                    drawSlot(g, font, e, slot, iconX, cursorY, showDurability);
-                    iconX += iconSize + iconGap;
+                    drawSlot(g, font, e, slot, x, cursorY, showDurability);
+                    x += iconSize + iconGap;
                 }
+            }
+            if (showArmor && showHands) {
+                // Subtle divider: a 1-px vertical line in the middle of the gap.
+                int divX = x + groupGap / 2 - 1;
+                g.fill(divX, cursorY + 3, divX + 1, cursorY + iconSize - 3, 0x60FFFFFF);
+                x += groupGap;
             }
             if (showHands) {
                 for (EquipmentSlot slot : HAND_SLOTS) {
-                    drawSlot(g, font, e, slot, iconX, cursorY, showDurability);
-                    iconX += iconSize + iconGap;
+                    drawSlot(g, font, e, slot, x, cursorY, showDurability);
+                    x += iconSize + iconGap;
                 }
             }
         }
@@ -205,34 +241,109 @@ public final class NameTagRenderer {
         pose.popMatrix();
     }
 
-    private static void drawBorder(GuiGraphics g, int x1, int y1, int x2, int y2, int color) {
-        g.fill(x1,     y1,     x2,     y1 + 1, color);
-        g.fill(x1,     y2 - 1, x2,     y2,     color);
-        g.fill(x1,     y1,     x1 + 1, y2,     color);
-        g.fill(x2 - 1, y1,     x2,     y2,     color);
+    /**
+     * Pseudo-rounded panel: bg fill with 4 corner pixels shaved off, then
+     * an accent gradient stripe along the top edge. The stripe fades from
+     * full accent at the centre to half alpha at the edges, which reads as
+     * a soft highlight without needing alpha-blended diagonals.
+     */
+    private static void drawPanel(GuiGraphics g, int x, int y, int w, int h, int bgAlpha, int accent) {
+        int bg = bgAlpha << 24;
+
+        // Body bg minus the 4 corners (1-px corner shave for fake rounding).
+        // Inset top/bottom edges by 1, full-width middle.
+        g.fill(x + 1, y,         x + w - 1, y + 1,         bg);
+        g.fill(x,     y + 1,     x + w,     y + h - 1,     bg);
+        g.fill(x + 1, y + h - 1, x + w - 1, y + h,         bg);
+
+        // Subtle bottom darkening to add depth.
+        int bottomShade = (Math.min(220, bgAlpha + 40)) << 24;
+        g.fill(x + 1, y + h - 2, x + w - 1, y + h - 1, bottomShade);
+
+        // Accent stripe along the top — full alpha centre, fading to half at edges.
+        int accentR = (accent >> 16) & 0xFF;
+        int accentG = (accent >>  8) & 0xFF;
+        int accentB =  accent        & 0xFF;
+        int stripeW = w - 2;
+        int stripeX = x + 1;
+        int stripeY = y + 1;
+        for (int i = 0; i < stripeW; i++) {
+            // Triangular alpha falloff from centre. 0..1.
+            float t = 1f - Math.abs((i - stripeW / 2f) / (stripeW / 2f));
+            int a = (int)(255 * (0.45f + 0.55f * t));
+            int col = (a << 24) | (accentR << 16) | (accentG << 8) | accentB;
+            g.fill(stripeX + i, stripeY, stripeX + i + 1, stripeY + 1, col);
+        }
+    }
+
+    /**
+     * Gradient HP bar. Dark backplate, then a filled portion whose colour
+     * smoothly interpolates red → orange → green based on the fraction.
+     * A 1-px highlight stripe along the top adds shape.
+     */
+    private static void drawHpBar(GuiGraphics g, int x, int y, int w, int h, float frac) {
+        g.fill(x, y, x + w, y + h, 0xC0202020);
+        if (w <= 2 || h <= 1) return;
+
+        int fillW = (int) ((w - 2) * frac);
+        if (fillW <= 0) return;
+
+        // Fill — gradient by progress: low frac stays red, mid orange, high green.
+        int color = hpGradientColor(frac);
+        g.fill(x + 1, y + 1, x + 1 + fillW, y + h - 1, color);
+
+        // Top highlight stripe — same hue, brightened.
+        int hi = brighten(color, 0.35f);
+        g.fill(x + 1, y + 1, x + 1 + fillW, y + 2, hi);
     }
 
     private static void drawSlot(GuiGraphics g, Font font, LivingEntity e,
                                   EquipmentSlot slot, int x, int y, boolean showDurability) {
-        g.fill(x, y, x + 16, y + 16, 0x60000000);
+        // Subtle inset frame: outer 1-px lighter, inner darker.
+        g.fill(x,     y,     x + 16, y + 16, 0x60000000);
+        g.fill(x,     y,     x + 16, y + 1,  0x30FFFFFF);  // top highlight
+        g.fill(x,     y + 15, x + 16, y + 16, 0x40000000); // bottom shadow
         ItemStack stack = e.getItemBySlot(slot);
         if (stack.isEmpty()) return;
         g.renderItem(stack, x, y);
         if (showDurability) g.renderItemDecorations(font, stack, x, y);
     }
 
-    private static String formatHp(float hp, float max, float absorb) {
-        String base = String.format("%.0f/%.0f", hp, max);
-        return absorb > 0f ? base + "+" + (int) absorb : base;
-    }
+    // ─── colour helpers ─────────────────────────────────────────────────
 
     private static int hpColor(float frac) {
-        if (frac > 0.66f) return 0xFF55FF55;
-        if (frac > 0.33f) return 0xFFFFAA00;
+        if (frac > 0.66f) return 0xFF66FF66;
+        if (frac > 0.33f) return 0xFFFFB347;
         return 0xFFFF5555;
     }
 
-    private static int clampInt(int v, int lo, int hi) {
-        return v < lo ? lo : (v > hi ? hi : v);
+    /** Smooth gradient: red(0) → orange(0.5) → green(1.0). */
+    private static int hpGradientColor(float frac) {
+        frac = clamp01(frac);
+        int r, gr, b;
+        if (frac < 0.5f) {
+            float t = frac * 2f; // 0..1
+            r  = (int) lerp(255, 255, t);  // 255 → 255
+            gr = (int) lerp(85,  179, t);  // dark red → orange-green
+            b  = (int) lerp(85,  67,  t);
+        } else {
+            float t = (frac - 0.5f) * 2f;
+            r  = (int) lerp(255, 102, t);
+            gr = (int) lerp(179, 255, t);
+            b  = (int) lerp(67,  102, t);
+        }
+        return 0xFF000000 | (r << 16) | (gr << 8) | b;
     }
+
+    private static int brighten(int argb, float amount) {
+        int a = (argb >> 24) & 0xFF;
+        int r = Math.min(255, (int) (((argb >> 16) & 0xFF) + 255 * amount));
+        int g = Math.min(255, (int) (((argb >>  8) & 0xFF) + 255 * amount));
+        int b = Math.min(255, (int) (( argb        & 0xFF) + 255 * amount));
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static float lerp(float a, float b, float t) { return a + (b - a) * t; }
+    private static float clamp01(float v)                 { return v < 0f ? 0f : (v > 1f ? 1f : v); }
+    private static int clamp(int v, int lo, int hi)       { return v < lo ? lo : (v > hi ? hi : v); }
 }
