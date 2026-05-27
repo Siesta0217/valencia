@@ -264,6 +264,10 @@ public class ClickGuiScreen extends Screen {
             NetherCoordMod::isEnabled, () -> { NetherCoordMod.toggle(); cfg.netherCoordEnabled = NetherCoordMod.isEnabled(); cfg.save(); },
             true, List.of()));
 
+        add(Cat.RENDER, new ModEntry("TargetHUD",
+            TargetHudMod::isEnabled, () -> { TargetHudMod.toggle(); cfg.targetHudEnabled = TargetHudMod.isEnabled(); cfg.save(); },
+            true, List.of()));
+
         // ── Client ──────────────────────────────────────────────────────────
         add(Cat.CLIENT, new ModEntry("Theme", () -> false, () -> {}, false, List.of(
             new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
@@ -810,6 +814,7 @@ public class ClickGuiScreen extends Screen {
         cfg.espEnabled       = ESPMod.isEnabled();
         cfg.nameTagEnabled   = NameTagMod.isEnabled();
         cfg.netherCoordEnabled = NetherCoordMod.isEnabled();
+        cfg.targetHudEnabled = TargetHudMod.isEnabled();
         cfg.autoFishEnabled  = AutoFishMod.isEnabled();
         cfg.save();
     }

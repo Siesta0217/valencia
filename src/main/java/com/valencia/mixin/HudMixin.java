@@ -3,6 +3,7 @@ package com.valencia.mixin;
 import com.valencia.ESPRenderer;
 import com.valencia.NameTagRenderer;
 import com.valencia.NetherCoordMod;
+import com.valencia.TargetHudMod;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,5 +20,6 @@ public abstract class HudMixin {
         NetherCoordMod.render(g);
         ESPRenderer.render(g);
         NameTagRenderer.render(g);
+        TargetHudMod.render(g);
     }
 }

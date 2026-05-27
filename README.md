@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.4** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.5** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -27,7 +27,8 @@ Latest: **v1.7.4** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 | **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中，Players / Hostile / Animals 三開關 |
 | **ElytraGoto** | — | 設定 XYZ 目標座標，自動轉向 + 自動發射煙火，遠距離飛行自動駕駛 |
 | **DimCoord** | — | 左上角 HUD 永遠顯示當前 XYZ + 另一維度對應座標（主世界↔地獄 1:8 換算） |
-| **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物：Corners / Outline / Filled 三種框型 + Name / HP / Distance / Tracer 標籤，自動距離 cull |
+| **ESP** | — | 透視玩家 / 怪物 / 動物 / 掉落物：Hitbox（vanilla F3+B 樣式，含 eye-forward 藍線）/ Corners / Outline / Filled 四種框型 + Name / HP / Distance / Tracer 標籤，自動距離 cull |
+| **TargetHUD** | — | 上方中央 HUD 面板，顯示當前 KillAura / MaceAura / SpearAura 鎖定目標的名字 / 血條 / 距離 |
 | **NameTag** | `Y` | 玩家 / 怪物頭上顯示名字 + 血條 + 護甲值 + 六格裝備（頭/胸/腿/腳/主手/副手）含耐久條，距離自動縮放 |
 | **AutoFish** | — | 自動釣魚：偵測 bobber 下沉收竿 + 自動重丟，純 right-click 動作 |
 | **ClickGUI** | `右 Ctrl` | 可拖曳面板，展開每個模組的詳細設定 |
@@ -96,7 +97,7 @@ Latest: **v1.7.4** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.4.jar
+# JAR → build/libs/valencia-1.7.5.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -105,6 +106,21 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.5 — Velocity packet fix + TargetHUD + ESP vanilla F3+B look
+- **Velocity bug**：開 0 / 0 還是會被擊退
+  - **根因**：mp 上 KB 是 server 跑 `LivingEntity.knockback()`，然後送 `ClientboundSetEntityMotionPacket` 給 client，client 直接 `entity.lerpMotion(packet.getMovement())` 套用。**完全繞過 `LivingEntity.knockback()`** → 舊 VelocityMixin 永遠不會被觸發
+  - **修法**：新增 `VelocityPacketMixin`，`@Redirect` `handleSetEntityMotion` 裡的 `lerpMotion(Vec3)` 呼叫，目標是 local player 時把 motion 用 horizontal / vertical 比例縮放後再套
+  - 舊 VelocityMixin 保留（攻擊本機 mob 的 server-side 路徑還是會用到）
+- **ESP 改成 vanilla F3+B 風格**
+  - 預設色改成白色（255/255/255），跟 vanilla F3+B 一致
+  - Hitbox style 加上 **eye-forward 藍線**：從目標 eye position 沿 viewVector 拉 2 格的 0xFF55AAFF 線，跟 vanilla F3+B 那條藍線一模一樣
+  - Style 預設仍是 HITBOX（NoFallMod 強制鎖定）
+- **新模組 TargetHUD**（分類 RENDER）
+  - 上方中央面板，顯示當前 KillAura / MaceAura / SpearAura 鎖定目標的：名稱 + 距離（同行左右）/ HP 條 / HP 文字
+  - 三個模組任一啟用且有 `glowTarget` 就會顯示，沒有就隱藏
+  - 配色吃 Theme accent + bgAlpha
+- ClickGUI 加上 TargetHUD toggle、`targetHudEnabled` 持久化到 config
 
 ### v1.7.4 — Projection 改吃 vanilla `projectPointToScreen`
 - **Bug**：v1.7.3 的手算投影（camera-relative + invRot.conjugate + perspective matrix m00/m11）數學上看似對，實際在這 Lunar 1.21.11 build 完全顯示不出來。猜測是 camera rotation 或 projection matrix 的 conventions 跟 upstream Yarn 1.21 不完全一致

@@ -150,9 +150,12 @@ public class ModConfig {
     public boolean espShowHp       = true;
     public boolean espShowDistance = true;
     public boolean espShowTracer   = false;
-    public int     espRed          = 85;
+    public int     espRed          = 255;
     public int     espGreen        = 255;
-    public int     espBlue         = 85;
+    public int     espBlue         = 255;
+
+    // TargetHUD
+    public boolean targetHudEnabled = false;
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;

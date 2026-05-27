@@ -34,9 +34,9 @@ public class ESPMod {
     public static boolean showTracer   = false;
 
     // Color
-    public static int red   = 85;
+    public static int red   = 255;
     public static int green = 255;
-    public static int blue  = 85;
+    public static int blue  = 255;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }

@@ -15,6 +15,7 @@
     "KillAuraMixin",
     "GlowMixin",
     "VelocityMixin",
+    "VelocityPacketMixin",
     "CritMixin",
     "ScaffoldMixin",
     "StepMixin",

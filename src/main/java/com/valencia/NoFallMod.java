@@ -113,6 +113,8 @@ public class NoFallMod implements ClientModInitializer {
         ESPMod.green         = cfg.espGreen;
         ESPMod.blue          = cfg.espBlue;
 
+        if (cfg.targetHudEnabled != TargetHudMod.isEnabled()) TargetHudMod.toggle();
+
         if (cfg.nameTagEnabled != NameTagMod.isEnabled()) NameTagMod.toggle();
         NameTagMod.players        = cfg.nameTagPlayers;
         NameTagMod.hostile        = cfg.nameTagHostile;
