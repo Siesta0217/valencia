@@ -38,9 +38,9 @@ public class NoFallMod implements ClientModInitializer {
         HitboxMod.hostile = cfg.hitboxHostile;
         HitboxMod.animals = cfg.hitboxAnimals;
 
-        ESPMod.colorMode   = cfg.espColorMode;
-        ESPMod.hue         = cfg.espHue;
-        ESPMod.chromaSpeed = cfg.espChromaSpeed;
+        ESPMod.red   = cfg.espRed;
+        ESPMod.green = cfg.espGreen;
+        ESPMod.blue  = cfg.espBlue;
 
         SpearAuraMod.SCAN_RANGE         = cfg.spearScanRange;
         SpearAuraMod.MIN_REACH          = cfg.spearMinReach;
@@ -101,13 +101,17 @@ public class NoFallMod implements ClientModInitializer {
         ESPMod.hostile  = cfg.espHostile;
         ESPMod.animals  = cfg.espAnimals;
         ESPMod.items    = cfg.espItems;
-        ESPMod.style         = cfg.espStyle;
+        cfg.espStyle         = ESPMod.STYLE_HITBOX;
+        ESPMod.style         = ESPMod.STYLE_HITBOX;
         ESPMod.showName      = cfg.espShowName;
         ESPMod.showHp        = cfg.espShowHp;
         ESPMod.showDistance  = cfg.espShowDistance;
         ESPMod.showTracer    = cfg.espShowTracer;
         ESPMod.maxDistance   = cfg.espMaxDistance;
         ESPMod.lineThickness = cfg.espLineThick;
+        ESPMod.red           = cfg.espRed;
+        ESPMod.green         = cfg.espGreen;
+        ESPMod.blue          = cfg.espBlue;
 
         if (cfg.nameTagEnabled != NameTagMod.isEnabled()) NameTagMod.toggle();
         NameTagMod.players        = cfg.nameTagPlayers;

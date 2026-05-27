@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.2** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.3** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -96,7 +96,7 @@ Latest: **v1.7.2** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.6.23.jar
+# JAR → build/libs/valencia-1.7.3.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -105,6 +105,20 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.3 — ESP / NameTag 從頭重寫，共用投影管線
+- **新增 `Projection.java`**：world→screen 投影集中到一個工具類，Frame snapshot + projectPoint + projectAabb 三個入口；AABB 投影內建 12 邊 near-plane clipping，回傳 `ScreenAabb`（2D bounding rect + per-edge 線段 + valid mask），ESP / NameTag 共用
+- **ESPRenderer 重寫**：
+  - 投影 / clipping 完全外包給 `Projection`，render loop 只做「filter → projectAabb → reject → 畫框 → 畫附件」
+  - 四個 style 各自獨立 method（`drawHitbox / drawFilled / drawOutline / drawCorners`），不再共用一條 fall-through 邏輯
+  - **Tracer 起點改成準星**（畫面中央）而不是畫面底部中央，原本拉線到頭都歪掉
+  - 拆掉舊的 `OUT_AX/OUT_AY/OUT_BX/OUT_BY` static globals
+- **NameTagRenderer 重寫**：
+  - 同樣外包投影給 `Projection.projectPoint`，不再自己手算 `1/-z`
+  - **距離縮放新公式** `clamp(10/max(5,dist), 0.5, 1.2)`：近距離（≤8 格）不再爆大，遠距離（20+ 格）保留 0.5× 可讀性
+  - Layout 拆成 `drawTag / drawBorder / drawSlot` 三個 method，header / hp bar / icon row 各自獨立 cursor
+  - 移除 NameTagRenderer 自己的 `NEAR_Z` 重複定義，統一吃 `Projection.NEAR_Z`
+- 視覺等價（除了 Tracer 起點改變），純架構整理
 
 ### v1.7.2 — NameTag 補上 near-plane 防護
 - NameTag 跟 ESP 同個病：`projectPoint()` 用 `rel.z >= -0.05` 當門檻 → 近距離 `1/-z` 爆炸，tag 飛到天邊或不顯示

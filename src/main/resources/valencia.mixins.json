@@ -19,7 +19,8 @@
     "ScaffoldMixin",
     "StepMixin",
     "TimerMixin",
-    "HudMixin"
+    "HudMixin",
+    "NameTagVisibilityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

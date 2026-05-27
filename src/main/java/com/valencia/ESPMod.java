@@ -14,10 +14,6 @@ public class ESPMod {
     public static final int STYLE_FILLED  = 2;
     public static final int STYLE_HITBOX  = 3;
 
-    public static final int MODE_SINGLE   = 0;
-    public static final int MODE_CATEGORY = 1;
-    public static final int MODE_CHROMA   = 2;
-
     private static boolean enabled = false;
 
     // Targets
@@ -38,33 +34,22 @@ public class ESPMod {
     public static boolean showTracer   = false;
 
     // Color
-    public static int   colorMode   = MODE_SINGLE;
-    public static float hue         = 100f;   // 0..360, green-ish default
-    public static float chromaSpeed = 0.5f;   // hue cycles per second
+    public static int red   = 85;
+    public static int green = 255;
+    public static int blue  = 85;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
-    /**
-     * ARGB color for an entity's ESP overlay.
-     * - SINGLE: one hue for everything.
-     * - CATEGORY: hue per target type (red/orange/green/yellow).
-     * - CHROMA: hue cycles with wall-clock time.
-     */
     public static int colorFor(Entity e) {
-        float h;
-        switch (colorMode) {
-            case MODE_CHROMA -> h = (float)((System.currentTimeMillis() / 1000.0 * chromaSpeed) % 1.0);
-            case MODE_CATEGORY -> {
-                if      (e instanceof Player)     h = 0f / 360f;    // red
-                else if (e instanceof Enemy)      h = 30f / 360f;   // orange
-                else if (e instanceof Animal)     h = 120f / 360f;  // green
-                else if (e instanceof ItemEntity) h = 60f / 360f;   // yellow
-                else                              h = hue / 360f;
-            }
-            default -> h = hue / 360f;
-        }
-        return 0xFF000000 | (java.awt.Color.HSBtoRGB(h, 1f, 1f) & 0xFFFFFF);
+        return 0xFF000000
+            | (clamp(red) << 16)
+            | (clamp(green) << 8)
+            | clamp(blue);
+    }
+
+    private static int clamp(int value) {
+        return Math.max(0, Math.min(255, value));
     }
 
     public static boolean targets(Entity e) {

@@ -150,9 +150,9 @@ public class ModConfig {
     public boolean espShowHp       = true;
     public boolean espShowDistance = true;
     public boolean espShowTracer   = false;
-    public int     espColorMode    = 0;     // 0=Single 1=Category 2=Chroma
-    public float   espHue          = 100f;  // 0..360
-    public float   espChromaSpeed  = 0.5f;
+    public int     espRed          = 85;
+    public int     espGreen        = 255;
+    public int     espBlue         = 85;
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;

@@ -233,7 +233,6 @@ public class ClickGuiScreen extends Screen {
             new BoolS("Animals",  () -> cfg.espAnimals, () -> { cfg.espAnimals = !cfg.espAnimals; ESPMod.animals = cfg.espAnimals; cfg.save(); }),
             new BoolS("Items",    () -> cfg.espItems,   () -> { cfg.espItems   = !cfg.espItems;   ESPMod.items   = cfg.espItems;   cfg.save(); }),
             // Box
-            new SliderS("Style",   () -> cfg.espStyle,       v -> { cfg.espStyle       = (int)v;   ESPMod.style         = (int)v;   cfg.save(); }, 0, 3),
             new SliderS("Thick",   () -> cfg.espLineThick,   v -> { cfg.espLineThick   = (int)v;   ESPMod.lineThickness = (int)v;   cfg.save(); }, 1, 3),
             new SliderS("MaxDist", () -> cfg.espMaxDistance, v -> { cfg.espMaxDistance = (float)v; ESPMod.maxDistance   = (float)v; cfg.save(); }, 16, 200),
             // Labels
@@ -241,10 +240,10 @@ public class ClickGuiScreen extends Screen {
             new BoolS("HP",       () -> cfg.espShowHp,       () -> { cfg.espShowHp       = !cfg.espShowHp;       ESPMod.showHp       = cfg.espShowHp;       cfg.save(); }),
             new BoolS("Distance", () -> cfg.espShowDistance, () -> { cfg.espShowDistance = !cfg.espShowDistance; ESPMod.showDistance = cfg.espShowDistance; cfg.save(); }),
             new BoolS("Tracer",   () -> cfg.espShowTracer,   () -> { cfg.espShowTracer   = !cfg.espShowTracer;   ESPMod.showTracer   = cfg.espShowTracer;   cfg.save(); }),
-            // Color (Mode 0=Single 1=Category 2=Chroma)
-            new SliderS("ColorMd", () -> cfg.espColorMode,        v -> { cfg.espColorMode = (int)v; ESPMod.colorMode = (int)v; cfg.save(); }, 0, 2),
-            new SliderS("Hue",     () -> cfg.espHue,              v -> { cfg.espHue = (float)v; ESPMod.hue = (float)v; cfg.save(); }, 0, 360),
-            new SliderS("ChrSpd",  () -> cfg.espChromaSpeed * 100, v -> { cfg.espChromaSpeed = (float)v / 100f; ESPMod.chromaSpeed = cfg.espChromaSpeed; cfg.save(); }, 10, 300)
+            // Border color
+            new SliderS("Red",     () -> cfg.espRed,   v -> { cfg.espRed   = (int)v; ESPMod.red   = cfg.espRed;   cfg.save(); }, 0, 255),
+            new SliderS("Green",   () -> cfg.espGreen, v -> { cfg.espGreen = (int)v; ESPMod.green = cfg.espGreen; cfg.save(); }, 0, 255),
+            new SliderS("Blue",    () -> cfg.espBlue,  v -> { cfg.espBlue  = (int)v; ESPMod.blue  = cfg.espBlue;  cfg.save(); }, 0, 255)
         )));
 
         add(Cat.RENDER, new ModEntry("NameTag",

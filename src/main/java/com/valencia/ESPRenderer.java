@@ -1,7 +1,5 @@
 package com.valencia;
 
-import com.mojang.blaze3d.platform.Window;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -10,199 +8,157 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3x2fStack;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 /**
- * ESP renderer with proper near-plane clipping.
+ * 2D HUD overlay for entity ESP.
  *
- * Each AABB has 8 corners and 12 edges. When the camera is close to or
- * inside the AABB some corners end up behind the camera (view-space
- * z >= 0). Naively projecting them produces wild screen coords and
- * full-screen lines. We instead clip every edge at the near plane in
- * view space, then project the (possibly clipped) endpoints. The 2D
- * bounding rect used by the non-Hitbox styles is derived from the same
- * clipped endpoints so all four styles agree on what's on screen.
+ * Pipeline per frame:
+ *   1. Projection.begin() — snapshot camera + projection matrix.
+ *   2. For each targeted entity:
+ *        a. Build a render-interpolated AABB.
+ *        b. Projection.projectAabb() — produces 2D rect + per-edge segments.
+ *        c. Reject if invisible / too small / fully off-screen.
+ *        d. Draw box according to selected style.
+ *        e. Optional HP bar / name / distance / tracer.
+ *
+ * Drawing is intentionally trivial — every shape is g.fill() of an
+ * axis-aligned rect, except diagonal Hitbox edges which use a single
+ * rotated quad via Matrix3x2fStack.
  */
-public class ESPRenderer {
+public final class ESPRenderer {
 
-    private static final int   MIN_BOX_PX = 4;
-    private static final float NEAR_Z     = -0.1f;
+    /** Minimum 2D footprint to bother rendering. Avoids 1×1 dots at huge distances. */
+    private static final int MIN_BOX_PX = 4;
 
-    // 8-corner index: bit 2 = X, bit 1 = Y, bit 0 = Z
-    private static final int[][] EDGES = {
-        {0,1},{0,2},{0,4},{1,3},{1,5},{2,3},{2,6},{3,7},{4,5},{4,6},{5,7},{6,7}
-    };
+    /** Per-frame scratch — HUD render is single-threaded. */
+    private static final Projection.ScreenAabb SCRATCH = new Projection.ScreenAabb();
 
-    // Per-frame scratch — GUI render is single-threaded.
-    private static final Vector3f[] CORNERS = new Vector3f[8];
-    static { for (int i = 0; i < 8; i++) CORNERS[i] = new Vector3f(); }
-
-    // Output of clipEdge: two projected endpoints for the current edge.
-    private static int OUT_AX, OUT_AY, OUT_BX, OUT_BY;
+    private ESPRenderer() {}
 
     public static void render(GuiGraphics g) {
         if (!ESPMod.isEnabled()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
 
-        Camera camera = mc.gameRenderer.getMainCamera();
-        Vec3 camPos = camera.position();
-        Quaternionf invRot = new Quaternionf(camera.rotation()).conjugate();
-
         float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-        Matrix4f proj = mc.gameRenderer.getProjectionMatrix(partialTick);
-        double m00 = proj.m00();
-        double m11 = proj.m11();
-        Window win = mc.getWindow();
-        int viewW = win.getGuiScaledWidth();
-        int viewH = win.getGuiScaledHeight();
+        Projection.Frame frame = Projection.begin(partialTick);
 
-        // Diagonal cap — any line longer than this is geometry pathology, skip.
-        int maxLine = 2 * (viewW + viewH);
         Font font = mc.font;
-        double maxDistSq = (double) ESPMod.maxDistance * ESPMod.maxDistance;
-        int style = ESPMod.style;
+        final int viewW = frame.viewW;
+        final int viewH = frame.viewH;
+        final int crosshairX = viewW / 2;
+        final int crosshairY = viewH / 2;
+        // Any line longer than the screen diagonal × 2 is pathological geometry.
+        final int maxLine = 2 * (viewW + viewH);
+        final double maxDistSq = (double) ESPMod.maxDistance * ESPMod.maxDistance;
+        final int style = ESPMod.style;
 
         for (Entity e : mc.level.entitiesForRendering()) {
             if (!ESPMod.targets(e)) continue;
             if (!e.isAlive()) continue;
 
-            double dxw = e.getX() - camPos.x;
-            double dyw = e.getY() - camPos.y;
-            double dzw = e.getZ() - camPos.z;
+            Vec3 renderPos = e.getPosition(partialTick);
+            double dxw = renderPos.x - frame.camX;
+            double dyw = renderPos.y - frame.camY;
+            double dzw = renderPos.z - frame.camZ;
             double distSq = dxw * dxw + dyw * dyw + dzw * dzw;
             if (distSq > maxDistSq) continue;
 
-            computeCorners(e.getBoundingBox(), camPos, invRot);
+            AABB renderBox = e.getBoundingBox().move(
+                renderPos.x - e.getX(),
+                renderPos.y - e.getY(),
+                renderPos.z - e.getZ()
+            );
 
-            // Single edge loop: clip → project → update bounds → optionally draw hitbox edge.
-            int color   = ESPMod.colorFor(e);
-            int alphaBg = (color & 0x00FFFFFF) | 0x40000000;
-            int t       = Math.max(1, Math.min(3, ESPMod.lineThickness));
+            Projection.ScreenAabb sa = SCRATCH;
+            Projection.projectAabb(frame, renderBox, sa);
+            if (!sa.visible) continue;
 
-            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
-            int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-            boolean anyEdge = false;
+            int w = sa.maxX - sa.minX;
+            int h = sa.maxY - sa.minY;
+            if (w < MIN_BOX_PX || h < MIN_BOX_PX) continue;
+            if (sa.maxX < 0 || sa.maxY < 0 || sa.minX > viewW || sa.minY > viewH) continue;
 
-            for (int[] edge : EDGES) {
-                if (!clipEdge(CORNERS[edge[0]], CORNERS[edge[1]], m00, m11, viewW, viewH)) continue;
-                anyEdge = true;
-                if (OUT_AX < minX) minX = OUT_AX;
-                if (OUT_AY < minY) minY = OUT_AY;
-                if (OUT_AX > maxX) maxX = OUT_AX;
-                if (OUT_AY > maxY) maxY = OUT_AY;
-                if (OUT_BX < minX) minX = OUT_BX;
-                if (OUT_BY < minY) minY = OUT_BY;
-                if (OUT_BX > maxX) maxX = OUT_BX;
-                if (OUT_BY > maxY) maxY = OUT_BY;
+            int color = ESPMod.colorFor(e);
+            int thickness = clampInt(ESPMod.lineThickness, 1, 3);
 
-                if (style == ESPMod.STYLE_HITBOX) {
-                    // Cheap reject: edge entirely off the same screen side.
-                    if ((OUT_AX < 0 && OUT_BX < 0) || (OUT_AX > viewW && OUT_BX > viewW)) continue;
-                    if ((OUT_AY < 0 && OUT_BY < 0) || (OUT_AY > viewH && OUT_BY > viewH)) continue;
-                    drawLine(g, OUT_AX, OUT_AY, OUT_BX, OUT_BY, t, color, maxLine);
-                }
-            }
-
-            if (!anyEdge) continue;
-            if (maxX - minX < MIN_BOX_PX || maxY - minY < MIN_BOX_PX) continue;
-            if (maxX < 0 || maxY < 0 || minX > viewW || minY > viewH) continue;
+            int drawMinX = clampInt(sa.minX, 0, viewW);
+            int drawMinY = clampInt(sa.minY, 0, viewH);
+            int drawMaxX = clampInt(sa.maxX, 0, viewW);
+            int drawMaxY = clampInt(sa.maxY, 0, viewH);
+            if (drawMaxX - drawMinX < MIN_BOX_PX || drawMaxY - drawMinY < MIN_BOX_PX) continue;
 
             switch (style) {
-                case ESPMod.STYLE_HITBOX -> { /* already drawn above */ }
-                case ESPMod.STYLE_FILLED -> { g.fill(minX, minY, maxX, maxY, alphaBg); outlineRect(g, minX, minY, maxX, maxY, t, color); }
-                case ESPMod.STYLE_OUTLINE -> outlineRect(g, minX, minY, maxX, maxY, t, color);
-                default -> drawCorners(g, minX, minY, maxX, maxY, t, color);
+                case ESPMod.STYLE_HITBOX  -> drawHitbox(g, sa, viewW, viewH, thickness, color, maxLine);
+                case ESPMod.STYLE_FILLED  -> drawFilled (g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
+                case ESPMod.STYLE_OUTLINE -> drawOutline(g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
+                default                   -> drawCorners(g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
             }
 
-            if (ESPMod.showHp && e instanceof LivingEntity le) drawHpBar(g, le, minX, minY, maxY);
-            if (ESPMod.showName || ESPMod.showDistance) drawLabel(g, font, e, minX, maxX, minY, maxY, (int) Math.sqrt(distSq));
-            if (ESPMod.showTracer) drawLine(g, viewW / 2, viewH, (minX + maxX) / 2, maxY, t, color, maxLine);
+            if (ESPMod.showHp && e instanceof LivingEntity le) {
+                drawHpBar(g, le, drawMinX, drawMinY, drawMaxY);
+            }
+            if (ESPMod.showName || ESPMod.showDistance) {
+                drawLabels(g, font, e, drawMinX, drawMaxX, drawMinY, drawMaxY, (int) Math.sqrt(distSq));
+            }
+            if (ESPMod.showTracer) {
+                int targetX = (drawMinX + drawMaxX) / 2;
+                int targetY = (drawMinY + drawMaxY) / 2;
+                drawLine(g, crosshairX, crosshairY, targetX, targetY, thickness, color, maxLine);
+            }
         }
     }
 
-    private static void computeCorners(AABB box, Vec3 camPos, Quaternionf invRot) {
-        double cx = camPos.x, cy = camPos.y, cz = camPos.z;
-        for (int i = 0; i < 8; i++) {
-            double x = (i & 4) != 0 ? box.maxX : box.minX;
-            double y = (i & 2) != 0 ? box.maxY : box.minY;
-            double z = (i & 1) != 0 ? box.maxZ : box.minZ;
-            CORNERS[i].set((float)(x - cx), (float)(y - cy), (float)(z - cz));
-            CORNERS[i].rotate(invRot);
+    // ─── styles ─────────────────────────────────────────────────────────
+
+    private static void drawHitbox(GuiGraphics g, Projection.ScreenAabb sa,
+                                   int viewW, int viewH, int thickness, int color, int maxLine) {
+        int[] e = sa.edges;
+        int mask = sa.validMask;
+        for (int i = 0; i < 12; i++) {
+            if ((mask & (1 << i)) == 0) continue;
+            int o = i * 4;
+            int ax = e[o], ay = e[o + 1], bx = e[o + 2], by = e[o + 3];
+            // Trivial reject — edge entirely off one side of the screen.
+            if ((ax < 0 && bx < 0) || (ax > viewW && bx > viewW)) continue;
+            if ((ay < 0 && by < 0) || (ay > viewH && by > viewH)) continue;
+            drawLine(g, ax, ay, bx, by, thickness, color, maxLine);
         }
     }
 
-    /**
-     * Clip an edge against the near plane (view-space z = NEAR_Z) and
-     * project both endpoints. Returns false if the entire edge is
-     * behind the near plane. On success writes OUT_AX/AY/BX/BY.
-     */
-    private static boolean clipEdge(Vector3f a, Vector3f b, double m00, double m11, int viewW, int viewH) {
-        boolean aFront = a.z < NEAR_Z;
-        boolean bFront = b.z < NEAR_Z;
-        if (!aFront && !bFront) return false;
-
-        float ax = a.x, ay = a.y, az = a.z;
-        float bx = b.x, by = b.y, bz = b.z;
-        if (!aFront) {
-            float u = (NEAR_Z - b.z) / (a.z - b.z);
-            ax = b.x + u * (a.x - b.x);
-            ay = b.y + u * (a.y - b.y);
-            az = NEAR_Z;
-        } else if (!bFront) {
-            float u = (NEAR_Z - a.z) / (b.z - a.z);
-            bx = a.x + u * (b.x - a.x);
-            by = a.y + u * (b.y - a.y);
-            bz = NEAR_Z;
-        }
-
-        OUT_AX = projectX(ax, az, m00, viewW);
-        OUT_AY = projectY(ay, az, m11, viewH);
-        OUT_BX = projectX(bx, bz, m00, viewW);
-        OUT_BY = projectY(by, bz, m11, viewH);
-        return true;
+    private static void drawOutline(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
+        g.fill(x1,     y1,     x2,     y1 + t, color);
+        g.fill(x1,     y2 - t, x2,     y2,     color);
+        g.fill(x1,     y1,     x1 + t, y2,     color);
+        g.fill(x2 - t, y1,     x2,     y2,     color);
     }
 
-    private static int projectX(float rx, float rz, double m00, int viewW) {
-        double v = viewW / 2.0 + ((double) rx * m00 / -rz) * viewW / 2.0;
-        if (v < -100000) return -100000;
-        if (v >  100000) return  100000;
-        return (int) v;
-    }
-
-    private static int projectY(float ry, float rz, double m11, int viewH) {
-        double v = viewH / 2.0 - ((double) ry * m11 / -rz) * viewH / 2.0;
-        if (v < -100000) return -100000;
-        if (v >  100000) return  100000;
-        return (int) v;
-    }
-
-    private static void outlineRect(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
-        g.fill(x1, y1,     x2, y1 + t, color);
-        g.fill(x1, y2 - t, x2, y2,     color);
-        g.fill(x1,     y1, x1 + t, y2, color);
-        g.fill(x2 - t, y1, x2,     y2, color);
+    private static void drawFilled(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
+        int fillColor = (color & 0x00FFFFFF) | 0x40000000;
+        g.fill(x1, y1, x2, y2, fillColor);
+        drawOutline(g, x1, y1, x2, y2, t, color);
     }
 
     private static void drawCorners(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
-        int len  = Math.max(3, Math.min(10, (x2 - x1) / 4));
-        int lenV = Math.max(3, Math.min(10, (y2 - y1) / 4));
-        g.fill(x1, y1,         x1 + len, y1 + t,    color);
-        g.fill(x1, y1,         x1 + t,   y1 + lenV, color);
-        g.fill(x2 - len, y1,   x2,       y1 + t,    color);
-        g.fill(x2 - t,   y1,   x2,       y1 + lenV, color);
-        g.fill(x1, y2 - t,     x1 + len, y2,        color);
-        g.fill(x1, y2 - lenV,  x1 + t,   y2,        color);
-        g.fill(x2 - len, y2 - t,    x2, y2,         color);
-        g.fill(x2 - t,   y2 - lenV, x2, y2,         color);
+        int lenH = clampInt((x2 - x1) / 4, 3, 10);
+        int lenV = clampInt((y2 - y1) / 4, 3, 10);
+        // top-left
+        g.fill(x1,         y1,         x1 + lenH, y1 + t,    color);
+        g.fill(x1,         y1,         x1 + t,    y1 + lenV, color);
+        // top-right
+        g.fill(x2 - lenH,  y1,         x2,        y1 + t,    color);
+        g.fill(x2 - t,     y1,         x2,        y1 + lenV, color);
+        // bottom-left
+        g.fill(x1,         y2 - t,     x1 + lenH, y2,        color);
+        g.fill(x1,         y2 - lenV,  x1 + t,    y2,        color);
+        // bottom-right
+        g.fill(x2 - lenH,  y2 - t,     x2,        y2,        color);
+        g.fill(x2 - t,     y2 - lenV,  x2,        y2,        color);
     }
 
-    /**
-     * Draw a line as a single rotated quad.
-     * Axis-aligned fast paths bypass atan2 + matrix push.
-     */
+    // ─── primitives ─────────────────────────────────────────────────────
+
+    /** Single line as one rectangle (axis-aligned) or one rotated quad (diagonal). */
     private static void drawLine(GuiGraphics g, int x0, int y0, int x1, int y1, int t, int color, int maxLine) {
         int dx = x1 - x0;
         int dy = y1 - y0;
@@ -234,23 +190,24 @@ public class ESPRenderer {
     }
 
     private static void drawHpBar(GuiGraphics g, LivingEntity le, int x1, int y1, int y2) {
-        float hp  = le.getHealth();
+        float hp = le.getHealth();
         float max = le.getMaxHealth();
-        if (max <= 0) return;
+        if (max <= 0f) return;
         float frac = Math.max(0f, Math.min(1f, hp / max));
 
         int barX2 = x1 - 2;
         int barX1 = barX2 - 3;
         if (barX1 < 0) return;
-        int barH  = y2 - y1;
-        int filled = (int)(barH * frac);
+        int barH = y2 - y1;
+        int filled = (int) (barH * frac);
 
         g.fill(barX1 - 1, y1 - 1, barX2 + 1, y2 + 1, 0xFF000000);
-        g.fill(barX1, y1, barX2, y2, 0xFF202020);
+        g.fill(barX1,     y1,     barX2,     y2,     0xFF202020);
         g.fill(barX1, y2 - filled, barX2, y2, hpColor(frac));
     }
 
-    private static void drawLabel(GuiGraphics g, Font font, Entity e, int x1, int x2, int y1, int y2, int distM) {
+    private static void drawLabels(GuiGraphics g, Font font, Entity e,
+                                    int x1, int x2, int y1, int y2, int distM) {
         if (ESPMod.showName) {
             String name = e.getName().getString();
             int w = font.width(name);
@@ -273,5 +230,9 @@ public class ESPRenderer {
         if (frac > 0.66f) return 0xFF55FF55;
         if (frac > 0.33f) return 0xFFFFAA00;
         return 0xFFFF5555;
+    }
+
+    private static int clampInt(int v, int lo, int hi) {
+        return v < lo ? lo : (v > hi ? hi : v);
     }
 }
