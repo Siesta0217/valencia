@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.9** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.10** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.9** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.9.jar
+# JAR → build/libs/valencia-1.7.10.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,9 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.10 — ESP 盒子穿牆修正
+- **ESP Hitbox 盒子改為 always-on-top（穿牆）**：v1.7.6 把盒子搬到 vanilla gizmo 管線後，盒子變成有深度測試 → 被地形擋住看不到（標籤是 2D HUD 仍穿牆，所以出現「有名牌沒盒子」）。`Gizmos.cuboid(...)` 接上 `setAlwaysOnTop()` 關閉深度測試，恢復標準 ESP 穿牆行為
 
 ### v1.7.9 — ESP / NameTag 檢查整理
 - **ESP 改為 Hitbox-only，清死碼**：先前 `Corners/Outline/Filled` 三種樣式選不到（啟動時 `espStyle` 被硬寫成 Hitbox、ClickGUI 也沒選擇器），等同死碼。承認 v1.7.6 gizmo 方向，砍掉 `drawFilled/drawOutline/drawCorners`、死欄位 `espStyle`、`ESPMod.style` 概念與啟動的強制覆寫

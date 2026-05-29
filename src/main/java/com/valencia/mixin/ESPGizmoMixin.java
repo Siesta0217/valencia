@@ -73,7 +73,10 @@ public abstract class ESPGizmoMixin {
             Vec3 renderPos = e.getPosition(partialTick);
             AABB renderBox = bb.move(renderPos.subtract(entityPos));
 
-            Gizmos.cuboid(renderBox, style);
+            // setAlwaysOnTop = render with no depth test, so the box shows
+            // through walls (standard ESP). Without it the gizmo is depth-
+            // tested and gets occluded by terrain.
+            Gizmos.cuboid(renderBox, style).setAlwaysOnTop();
         }
     }
 }
