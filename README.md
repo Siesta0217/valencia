@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.7** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.8** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.7** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.7.jar
+# JAR → build/libs/valencia-1.7.8.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.8 — Audit batch 1：反射清除 + Mace/Spear reach 修正 + GLFW 快取
+- **MaceAura / SpearAura reach 修正**：原本用 `player.distanceTo()`（中心對中心），高個 / 在空中的怪會 ghost swing。改用 KillAura 既有的 `reachDistSq`（眼睛 → hitbox 最近點），跟 server 的攻擊距離判定一致。Mace 走平方比較，Spear 因有 sweet-spot 內插改取 `sqrt(reachDistSq)`
+- **Scaffold 移除反射**：`Inventory.selected` 反射欄位改用本 build 確認存在的 public `getSelectedSlot()` / `setSelectedSlot(int)`；`onDisable` 改 `Minecraft.rightClickDelay` 的反射也拿掉，改設旗標讓已 `@Shadow` 該欄位的 `TickMixin` 重置
+- **GLFW 反射快取**：`ModConfig.keyName` 原本每次（ClickGUI 每幀每個 KeyS widget）都掃一遍 `GLFW.class.getFields()`。改成一次性建好 code↔name 雙向表查表；`ChatMixin.resolveKey` 也改走 `ModConfig.keyCode`
+- **NoFallMixin**：修掉一行解碼錯的亂碼注釋
 
 ### v1.7.7 — NameTag 美化重做
 - **Panel**：四角各 shave 1 px 做假圓角；頂部一條 accent 漸層 stripe，從中央滿 alpha 線性 fade 到兩側 45% — 不用 alpha-blend 對角線就有「軟高光」感

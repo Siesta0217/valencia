@@ -111,7 +111,9 @@ public class SpearAuraMod {
             if (isAnimal  && !targetAnimals) continue;
             if (!isPlayer && !isHostile && !isAnimal) continue;
 
-            double dist = mc.player.distanceTo(e);
+            // Eye → hitbox nearest point (not center-to-center) so MIN/MAX
+            // reach and the sweet-spot score match the server's reach check.
+            double dist = Math.sqrt(KillAuraMod.reachDistSq(mc.player, e));
             if (dist > SCAN_RANGE) continue;
 
             // Score = distance from the sweet spot. Penalty if inside MIN_REACH

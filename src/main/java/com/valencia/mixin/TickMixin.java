@@ -93,6 +93,7 @@ public abstract class TickMixin {
         }
 
         if (FastPlaceMod.isActive()) rightClickDelay = 0;
+        if (ScaffoldMod.consumeRightClickReset()) rightClickDelay = 0;
 
         ElytraGotoMod.tick();
         com.valencia.AutoFishMod.tick();

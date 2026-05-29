@@ -25,7 +25,8 @@ public abstract class NoFallMixin {
 
         LivingEntity self = (LivingEntity) (Object) this;
 
-        // ??憌?銝凋?隞嚗??瑕拿
+        // Skip while elytra-flying — spoofing onGround mid-flight desyncs the
+        // server's fall-flying state and breaks deploy/landing.
         if (self.isFallFlying()) return;
 
         nofall$active = true;

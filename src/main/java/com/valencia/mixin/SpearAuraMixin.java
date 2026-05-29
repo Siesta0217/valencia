@@ -1,5 +1,6 @@
 package com.valencia.mixin;
 
+import com.valencia.KillAuraMod;
 import com.valencia.SpearAuraMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -78,7 +79,7 @@ public abstract class SpearAuraMixin {
         Minecraft mc = Minecraft.getInstance();
         if (mc.gameMode == null) return;
 
-        double dist = self.distanceTo(target);
+        double dist = Math.sqrt(KillAuraMod.reachDistSq(self, target));
 
         // Auto step-back: if target is too close, hold S until we drift out.
         if (SpearAuraMod.autoStepBack && dist < SpearAuraMod.MIN_REACH) {

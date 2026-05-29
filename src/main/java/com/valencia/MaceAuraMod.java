@@ -43,7 +43,8 @@ public class MaceAuraMod {
 
         AABB box = mc.player.getBoundingBox().inflate(RANGE);
         Entity best = null;
-        double bestDist = Double.MAX_VALUE;
+        double bestDistSq = Double.MAX_VALUE;
+        double rangeSq = (double) RANGE * RANGE;
 
         for (LivingEntity e : mc.level.getEntitiesOfClass(LivingEntity.class, box)) {
             if (e == mc.player) continue;
@@ -57,9 +58,11 @@ public class MaceAuraMod {
             if (isAnimal  && !targetAnimals) continue;
             if (!isPlayer && !isHostile && !isAnimal) continue;
 
-            double dist = mc.player.distanceTo(e);
-            if (dist <= RANGE && dist < bestDist) {
-                bestDist = dist;
+            // Eye → hitbox nearest point (squared), matching KillAura — fixes
+            // ghost swings on tall / airborne mobs that center-distance misjudges.
+            double distSq = KillAuraMod.reachDistSq(mc.player, e);
+            if (distSq <= rangeSq && distSq < bestDistSq) {
+                bestDistSq = distSq;
                 best = e;
             }
         }

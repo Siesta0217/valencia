@@ -197,15 +197,39 @@ public class ModConfig {
         } catch (Exception ignored) {}
     }
 
-    public static String keyName(int glfwKey) {
+    // GLFW_KEY_* reflection is expensive and was previously run per-frame for
+    // every KeyS widget in the ClickGUI. Reflect the constants once into two
+    // lookup maps and serve every call from cache.
+    private static java.util.Map<Integer, String> keyCodeToName;
+    private static java.util.Map<String, Integer> keyNameToCode;
+
+    private static void buildKeyMaps() {
+        java.util.Map<Integer, String> c2n = new java.util.HashMap<>();
+        java.util.Map<String, Integer> n2c = new java.util.HashMap<>();
         for (Field f : GLFW.class.getFields()) {
-            if (f.getName().startsWith("GLFW_KEY_")) {
-                try {
-                    if (f.getInt(null) == glfwKey)
-                        return f.getName().replace("GLFW_KEY_", "");
-                } catch (Exception ignored) {}
-            }
+            String n = f.getName();
+            if (!n.startsWith("GLFW_KEY_")) continue;
+            try {
+                int code = f.getInt(null);
+                String name = n.substring("GLFW_KEY_".length());
+                c2n.putIfAbsent(code, name);   // first name wins (matches old behavior)
+                n2c.put(name, code);
+            } catch (Exception ignored) {}
         }
-        return "KEY_" + glfwKey;
+        keyCodeToName = c2n;
+        keyNameToCode = n2c;
+    }
+
+    public static String keyName(int glfwKey) {
+        if (keyCodeToName == null) buildKeyMaps();
+        String name = keyCodeToName.get(glfwKey);
+        return name != null ? name : "KEY_" + glfwKey;
+    }
+
+    /** Resolve a GLFW key name (without the GLFW_KEY_ prefix) to its code, or -1. */
+    public static int keyCode(String name) {
+        if (keyNameToCode == null) buildKeyMaps();
+        Integer code = keyNameToCode.get(name);
+        return code != null ? code : -1;
     }
 }

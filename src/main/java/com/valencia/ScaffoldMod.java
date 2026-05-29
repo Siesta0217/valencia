@@ -22,14 +22,16 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
-import java.lang.reflect.Field;
-
 public class ScaffoldMod {
 
     private static boolean enabled = false;
     // Track whether last tick stamped tower velocity, so disable can detect
     // leftover upward momentum and kill it.
     private static boolean towerStamped = false;
+
+    // Set on disable; TickMixin (which @Shadow-s Minecraft.rightClickDelay)
+    // consumes this and zeroes the delay. Avoids reflecting a private field.
+    private static boolean resetRightClick = false;
 
     // ── User-facing settings ──────────────────────────────────────────────────
     public static boolean tower       = false;  // jump-up + auto place under foot
@@ -51,17 +53,12 @@ public class ScaffoldMod {
     private static int placeTimer = 0;
     private static int prevSlot   = -1;
 
-    // Inventory.selected is private in Lunar 1.21.11 — reflect once, cache.
-    private static final Field SELECTED_FIELD;
-    static {
-        Field f = null;
-        try { f = Inventory.class.getDeclaredField("selected"); f.setAccessible(true); }
-        catch (Exception ignored) {}
-        SELECTED_FIELD = f;
+    /** TickMixin polls this each tick; returns true once after disable. */
+    public static boolean consumeRightClickReset() {
+        if (!resetRightClick) return false;
+        resetRightClick = false;
+        return true;
     }
-
-    private static int  getSelected(Inventory inv)            { try { return SELECTED_FIELD == null ? 0 : SELECTED_FIELD.getInt(inv); } catch (Exception e) { return 0; } }
-    private static void setSelected(Inventory inv, int slot)  { if (SELECTED_FIELD == null) return; try { SELECTED_FIELD.setInt(inv, slot); } catch (Exception ignored) {} }
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle() {
@@ -88,11 +85,7 @@ public class ScaffoldMod {
         towerStamped = false;
         placeTimer = 0;
         restoreSlot(mc);
-        try {
-            Field rcd = Minecraft.class.getDeclaredField("rightClickDelay");
-            rcd.setAccessible(true);
-            rcd.setInt(mc, 0);
-        } catch (Exception ignored) {}
+        resetRightClick = true;
     }
 
     public static boolean isActive() {
@@ -192,14 +185,14 @@ public class ScaffoldMod {
         if (slot == -1) return false;
 
         Inventory inv = p.getInventory();
-        int curSlot = getSelected(inv);
+        int curSlot = inv.getSelectedSlot();
         boolean swapped = false;
         if (autoSwitch && curSlot != slot) {
             if (fakeHand) {
                 sendCarried(mc, slot);
             } else {
                 if (prevSlot == -1) prevSlot = curSlot;
-                setSelected(inv, slot);
+                inv.setSelectedSlot(slot);
             }
             swapped = true;
         }
@@ -225,7 +218,7 @@ public class ScaffoldMod {
 
     private static void restoreSlot(Minecraft mc) {
         if (prevSlot == -1) return;
-        if (mc.player != null) setSelected(mc.player.getInventory(), prevSlot);
+        if (mc.player != null) mc.player.getInventory().setSelectedSlot(prevSlot);
         prevSlot = -1;
     }
 

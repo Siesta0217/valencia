@@ -5,7 +5,6 @@ import com.valencia.ModConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -127,7 +126,6 @@ public class ChatMixin {
     }
 
     private static int resolveKey(String name) {
-        try { return GLFW.class.getField("GLFW_KEY_" + name).getInt(null); }
-        catch (Exception ignored) { return -1; }
+        return ModConfig.keyCode(name);
     }
 }

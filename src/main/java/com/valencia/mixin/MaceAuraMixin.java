@@ -1,5 +1,6 @@
 package com.valencia.mixin;
 
+import com.valencia.KillAuraMod;
 import com.valencia.MaceAuraMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -51,9 +52,10 @@ public abstract class MaceAuraMixin {
 
         if (MaceAuraMod.pendingAttack && MaceAuraMod.currentTarget != null) {
             Minecraft mc = Minecraft.getInstance();
-            double dist = self.distanceTo(MaceAuraMod.currentTarget);
+            double distSq  = KillAuraMod.reachDistSq(self, MaceAuraMod.currentTarget);
+            double rangeSq = (double) MaceAuraMod.ATTACK_RANGE * MaceAuraMod.ATTACK_RANGE;
             if (mc.gameMode != null
-                    && dist <= MaceAuraMod.ATTACK_RANGE
+                    && distSq <= rangeSq
                     && self.getAttackStrengthScale(0f) >= 0.5f) {
                 mc.gameMode.attack(self, MaceAuraMod.currentTarget);
                 self.swing(InteractionHand.MAIN_HAND);
