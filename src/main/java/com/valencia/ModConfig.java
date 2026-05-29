@@ -136,6 +136,7 @@ public class ModConfig {
     public boolean nameTagShowHpBar      = true;
     public boolean nameTagShowHpText     = true;
     public float   nameTagScale          = 1.0f;
+    public float   nameTagMaxDistance    = 64.0f;
 
     // ESP
     public boolean espEnabled  = false;
@@ -143,13 +144,13 @@ public class ModConfig {
     public boolean espHostile  = false;
     public boolean espAnimals  = false;
     public boolean espItems    = false;
-    public int     espStyle        = 3;     // 0=Corners 1=Outline 2=Filled 3=Hitbox
     public int     espLineThick    = 1;
     public float   espMaxDistance  = 80.0f;
     public boolean espShowName     = true;
     public boolean espShowHp       = true;
     public boolean espShowDistance = true;
     public boolean espShowTracer   = false;
+    public boolean espGlow         = false;
     public int     espRed          = 255;
     public int     espGreen        = 255;
     public int     espBlue         = 255;

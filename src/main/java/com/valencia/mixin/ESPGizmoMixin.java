@@ -46,7 +46,6 @@ public abstract class ESPGizmoMixin {
                                      float partialTick,
                                      CallbackInfo ci) {
         if (!ESPMod.isEnabled()) return;
-        if (ESPMod.style != ESPMod.STYLE_HITBOX) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
 
@@ -60,7 +59,6 @@ public abstract class ESPGizmoMixin {
         for (Entity e : mc.level.entitiesForRendering()) {
             if (!ESPMod.targets(e)) continue;
             if (!e.isAlive()) continue;
-            if (e.isInvisible()) continue;
 
             AABB bb = e.getBoundingBox();
             if (!frustum.isVisible(bb)) continue;

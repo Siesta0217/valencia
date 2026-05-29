@@ -9,11 +9,6 @@ import net.minecraft.world.entity.player.Player;
 
 public class ESPMod {
 
-    public static final int STYLE_CORNERS = 0;
-    public static final int STYLE_OUTLINE = 1;
-    public static final int STYLE_FILLED  = 2;
-    public static final int STYLE_HITBOX  = 3;
-
     private static boolean enabled = false;
 
     // Targets
@@ -22,8 +17,8 @@ public class ESPMod {
     public static boolean animals = false;
     public static boolean items   = false;
 
-    // Box
-    public static int   style         = STYLE_HITBOX;
+    // Box is rendered in world space via ESPGizmoMixin (vanilla F3+B gizmo
+    // path) — fixed line width. lineThickness only affects the HUD tracer.
     public static int   lineThickness = 1;
     public static float maxDistance   = 80.0f;
 
@@ -33,6 +28,9 @@ public class ESPMod {
     public static boolean showDistance = true;
     public static boolean showTracer   = false;
 
+    // Vanilla glowing outline on targets — opt-in (off by default).
+    public static boolean glow = false;
+
     // Color
     public static int red   = 255;
     public static int green = 255;
@@ -41,7 +39,7 @@ public class ESPMod {
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
-    public static int colorFor(Entity e) {
+    public static int color() {
         return 0xFF000000
             | (clamp(red) << 16)
             | (clamp(green) << 8)
@@ -63,6 +61,6 @@ public class ESPMod {
     }
 
     public static boolean shouldGlow(Entity e) {
-        return targets(e);
+        return glow && targets(e);
     }
 }

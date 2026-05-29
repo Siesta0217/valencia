@@ -23,6 +23,9 @@ public class NameTagMod {
 
     public static float scale = 1.0f;
 
+    /** Tags farther than this (blocks, camera→eye) are not drawn. */
+    public static float maxDistance = 64.0f;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 

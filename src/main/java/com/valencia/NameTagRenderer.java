@@ -80,6 +80,7 @@ public final class NameTagRenderer {
                 (eye.y - frame.camY) * (eye.y - frame.camY) +
                 (eye.z - frame.camZ) * (eye.z - frame.camZ)
             );
+            if (dist > NameTagMod.maxDistance) continue;
 
             float scale = NameTagMod.scale * distanceScale(dist);
             drawTag(g, font, le, sx, sy, scale, dist);

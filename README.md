@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.8** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.9** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.8** — [Download JAR](https://github.com/Siesta0217/valencia/rel
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.8.jar
+# JAR → build/libs/valencia-1.7.9.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,13 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.9 — ESP / NameTag 檢查整理
+- **ESP 改為 Hitbox-only，清死碼**：先前 `Corners/Outline/Filled` 三種樣式選不到（啟動時 `espStyle` 被硬寫成 Hitbox、ClickGUI 也沒選擇器），等同死碼。承認 v1.7.6 gizmo 方向，砍掉 `drawFilled/drawOutline/drawCorners`、死欄位 `espStyle`、`ESPMod.style` 概念與啟動的強制覆寫
+- **ESP 揭露隱形實體**：移除 ESPGizmoMixin 的 `isInvisible` 過濾。先前隱形怪「沒盒子卻有浮空名牌」的不一致已消除，現在盒子+標籤都會顯示隱形/潛行目標
+- **ESP Glow 獨立開關（預設關）**：先前只要 ESP 開著，所有目標都吃 vanilla 發光描邊且無法關。改成 ClickGUI 的 `Glow` 開關，預設關，盒子與發光解耦
+- **NameTag 距離上限**：新增 `MaxDist` 滑桿（預設 64m，16–128 可調），比照 ESP 剔除遠處名牌，人多場景不再無上限渲染
+- **小整理**：`ESPMod.colorFor(Entity)` 沒用到的參數移除 → `color()`
 
 ### v1.7.8 — Audit batch 1：反射清除 + Mace/Spear reach 修正 + GLFW 快取
 - **MaceAura / SpearAura reach 修正**：原本用 `player.distanceTo()`（中心對中心），高個 / 在空中的怪會 ghost swing。改用 KillAura 既有的 `reachDistSq`（眼睛 → hitbox 最近點），跟 server 的攻擊距離判定一致。Mace 走平方比較，Spear 因有 sweet-spot 內插改取 `sqrt(reachDistSq)`

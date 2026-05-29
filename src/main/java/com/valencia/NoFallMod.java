@@ -101,12 +101,11 @@ public class NoFallMod implements ClientModInitializer {
         ESPMod.hostile  = cfg.espHostile;
         ESPMod.animals  = cfg.espAnimals;
         ESPMod.items    = cfg.espItems;
-        cfg.espStyle         = ESPMod.STYLE_HITBOX;
-        ESPMod.style         = ESPMod.STYLE_HITBOX;
         ESPMod.showName      = cfg.espShowName;
         ESPMod.showHp        = cfg.espShowHp;
         ESPMod.showDistance  = cfg.espShowDistance;
         ESPMod.showTracer    = cfg.espShowTracer;
+        ESPMod.glow          = cfg.espGlow;
         ESPMod.maxDistance   = cfg.espMaxDistance;
         ESPMod.lineThickness = cfg.espLineThick;
         ESPMod.red           = cfg.espRed;
@@ -125,5 +124,6 @@ public class NoFallMod implements ClientModInitializer {
         NameTagMod.showHpBar      = cfg.nameTagShowHpBar;
         NameTagMod.showHpText     = cfg.nameTagShowHpText;
         NameTagMod.scale          = cfg.nameTagScale;
+        NameTagMod.maxDistance    = cfg.nameTagMaxDistance;
     }
 }

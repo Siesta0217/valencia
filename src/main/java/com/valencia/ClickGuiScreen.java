@@ -240,6 +240,7 @@ public class ClickGuiScreen extends Screen {
             new BoolS("HP",       () -> cfg.espShowHp,       () -> { cfg.espShowHp       = !cfg.espShowHp;       ESPMod.showHp       = cfg.espShowHp;       cfg.save(); }),
             new BoolS("Distance", () -> cfg.espShowDistance, () -> { cfg.espShowDistance = !cfg.espShowDistance; ESPMod.showDistance = cfg.espShowDistance; cfg.save(); }),
             new BoolS("Tracer",   () -> cfg.espShowTracer,   () -> { cfg.espShowTracer   = !cfg.espShowTracer;   ESPMod.showTracer   = cfg.espShowTracer;   cfg.save(); }),
+            new BoolS("Glow",     () -> cfg.espGlow,         () -> { cfg.espGlow         = !cfg.espGlow;         ESPMod.glow         = cfg.espGlow;         cfg.save(); }),
             // Border color
             new SliderS("Red",     () -> cfg.espRed,   v -> { cfg.espRed   = (int)v; ESPMod.red   = cfg.espRed;   cfg.save(); }, 0, 255),
             new SliderS("Green",   () -> cfg.espGreen, v -> { cfg.espGreen = (int)v; ESPMod.green = cfg.espGreen; cfg.save(); }, 0, 255),
@@ -257,6 +258,7 @@ public class ClickGuiScreen extends Screen {
             new BoolS("HP Bar",     () -> cfg.nameTagShowHpBar,      () -> { cfg.nameTagShowHpBar      = !cfg.nameTagShowHpBar;      NameTagMod.showHpBar      = cfg.nameTagShowHpBar;      cfg.save(); }),
             new BoolS("HP Text",    () -> cfg.nameTagShowHpText,     () -> { cfg.nameTagShowHpText     = !cfg.nameTagShowHpText;     NameTagMod.showHpText     = cfg.nameTagShowHpText;     cfg.save(); }),
             new SliderS("Scale",    () -> cfg.nameTagScale * 100,    v -> { cfg.nameTagScale = (float)v / 100f; NameTagMod.scale = cfg.nameTagScale; cfg.save(); }, 60, 160),
+            new SliderS("MaxDist",  () -> cfg.nameTagMaxDistance,    v -> { cfg.nameTagMaxDistance = (float)v; NameTagMod.maxDistance = (float)v; cfg.save(); }, 16, 128),
             new KeyS("Key",         () -> cfg.nameTagKey,            v -> { cfg.nameTagKey = v; cfg.save(); })
         )));
 

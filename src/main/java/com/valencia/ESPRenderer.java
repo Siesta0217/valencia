@@ -51,7 +51,6 @@ public final class ESPRenderer {
         // Any line longer than the screen diagonal × 2 is pathological geometry.
         final int maxLine = 2 * (viewW + viewH);
         final double maxDistSq = (double) ESPMod.maxDistance * ESPMod.maxDistance;
-        final int style = ESPMod.style;
 
         for (Entity e : mc.level.entitiesForRendering()) {
             if (!ESPMod.targets(e)) continue;
@@ -79,7 +78,7 @@ public final class ESPRenderer {
             if (w < MIN_BOX_PX || h < MIN_BOX_PX) continue;
             if (sa.maxX < 0 || sa.maxY < 0 || sa.minX > viewW || sa.minY > viewH) continue;
 
-            int color = ESPMod.colorFor(e);
+            int color = ESPMod.color();
             int thickness = clampInt(ESPMod.lineThickness, 1, 3);
 
             int drawMinX = clampInt(sa.minX, 0, viewW);
@@ -88,15 +87,10 @@ public final class ESPRenderer {
             int drawMaxY = clampInt(sa.maxY, 0, viewH);
             if (drawMaxX - drawMinX < MIN_BOX_PX || drawMaxY - drawMinY < MIN_BOX_PX) continue;
 
-            switch (style) {
-                // HITBOX style is rendered in world space by ESPGizmoMixin — same
-                // gizmo collector as vanilla F3+B, so it stays frame-perfect with
-                // entity motion. HUD-side only contributes the optional labels.
-                case ESPMod.STYLE_HITBOX  -> { /* world-space via ESPGizmoMixin */ }
-                case ESPMod.STYLE_FILLED  -> drawFilled (g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
-                case ESPMod.STYLE_OUTLINE -> drawOutline(g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
-                default                   -> drawCorners(g, drawMinX, drawMinY, drawMaxX, drawMaxY, thickness, color);
-            }
+            // The box itself is drawn in world space by ESPGizmoMixin (vanilla
+            // F3+B gizmo collector) so it stays frame-perfect with entity motion.
+            // The HUD pass here only contributes labels / HP bar / tracer, using
+            // the projected screen rect for placement.
 
             if (ESPMod.showHp && e instanceof LivingEntity le) {
                 drawHpBar(g, le, drawMinX, drawMinY, drawMaxY);
@@ -110,38 +104,6 @@ public final class ESPRenderer {
                 drawLine(g, crosshairX, crosshairY, targetX, targetY, thickness, color, maxLine);
             }
         }
-    }
-
-    // ─── styles ─────────────────────────────────────────────────────────
-
-    private static void drawOutline(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
-        g.fill(x1,     y1,     x2,     y1 + t, color);
-        g.fill(x1,     y2 - t, x2,     y2,     color);
-        g.fill(x1,     y1,     x1 + t, y2,     color);
-        g.fill(x2 - t, y1,     x2,     y2,     color);
-    }
-
-    private static void drawFilled(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
-        int fillColor = (color & 0x00FFFFFF) | 0x40000000;
-        g.fill(x1, y1, x2, y2, fillColor);
-        drawOutline(g, x1, y1, x2, y2, t, color);
-    }
-
-    private static void drawCorners(GuiGraphics g, int x1, int y1, int x2, int y2, int t, int color) {
-        int lenH = clampInt((x2 - x1) / 4, 3, 10);
-        int lenV = clampInt((y2 - y1) / 4, 3, 10);
-        // top-left
-        g.fill(x1,         y1,         x1 + lenH, y1 + t,    color);
-        g.fill(x1,         y1,         x1 + t,    y1 + lenV, color);
-        // top-right
-        g.fill(x2 - lenH,  y1,         x2,        y1 + t,    color);
-        g.fill(x2 - t,     y1,         x2,        y1 + lenV, color);
-        // bottom-left
-        g.fill(x1,         y2 - t,     x1 + lenH, y2,        color);
-        g.fill(x1,         y2 - lenV,  x1 + t,    y2,        color);
-        // bottom-right
-        g.fill(x2 - lenH,  y2 - t,     x2,        y2,        color);
-        g.fill(x2 - t,     y2 - lenV,  x2,        y2,        color);
     }
 
     // ─── primitives ─────────────────────────────────────────────────────
