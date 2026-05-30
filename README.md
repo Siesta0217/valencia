@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.11** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.12** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.11** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.11.jar
+# JAR → build/libs/valencia-1.7.12.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.12 — Aura 一致化 + NameTag 獨立色 + TickMixin 資料驅動
+- **MaceAura / SpearAura 補齊 Raycast / Skip Inv / Smooth / Max Turn**：先前只有 KillAura 有穿牆檢查、隱形過濾、平滑轉頭，現在三個 aura 行為一致（複用 `KillAuraMod.canSee` / `smoothRotation`，可在 ClickGUI 個別開關）。Spear 想吃滿傷可關 Smooth
+- **TargetHUD 最後攻擊者 fallback**：沒 aura、準星也沒指人時，改顯示最後打你的怪，整場戰鬥面板不消失
+- **NameTag 獨立顏色**：新增 `Theme Col` 開關（預設開＝跟隨 ClickGUI 主題色）＋ 關掉後可用獨立 R/G/B，NameTag 與 ClickGUI 可不同色
+- **重構（無行為變化）**：TickMixin 15 個手寫 `prevX` toggle 樣板抽成資料驅動的 `Keybinds` 表（加模組只要一行）；三 aura 重複的陣營過濾抽成 `AuraTargeting.factionAllowed`
 
 ### v1.7.11 — AutoTotem + Panic key + TargetHUD 準星 fallback
 - **AutoTotem（Combat，預設鍵 `O`）**：自動把不死圖騰補進副手，圖騰爆掉後下一 tick 立即補回。只在沒開任何容器介面時動作，走 vanilla 同一條 `handleInventoryMouseClick` PICKUP 鏈（用 `InventoryMenu.SHIELD_SLOT`），伺服器端看到的是正常的拿取動作。狀態跨 session 保存

@@ -26,6 +26,13 @@ public class NameTagMod {
     /** Tags farther than this (blocks, camera→eye) are not drawn. */
     public static float maxDistance = 64.0f;
 
+    /** When true, the tag accent follows the ClickGUI theme. When false, use
+     *  the NameTag-specific {@link #colorR}/{@link #colorG}/{@link #colorB}. */
+    public static boolean useTheme = true;
+    public static int colorR = 0;
+    public static int colorG = 170;
+    public static int colorB = 255;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 

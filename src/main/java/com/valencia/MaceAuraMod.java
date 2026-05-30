@@ -4,9 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 
@@ -25,6 +22,12 @@ public class MaceAuraMod {
     public static boolean targetHostile = true;
     public static boolean targetAnimals = false;
     public static boolean targetPlayers = true;
+
+    // Behavior options (mirror KillAura for a consistent feel across auras).
+    public static boolean raycast       = true;   // require line-of-sight
+    public static boolean skipInvisible = true;   // ignore invisible targets
+    public static boolean smoothRot     = true;   // clamp silent-aim turn rate
+    public static float   maxTurnDeg    = 60.0f;  // max degrees/tick when smoothing
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle() { enabled = !enabled; }
@@ -49,22 +52,16 @@ public class MaceAuraMod {
         for (LivingEntity e : mc.level.getEntitiesOfClass(LivingEntity.class, box)) {
             if (e == mc.player) continue;
             if (e.isDeadOrDying()) continue;
-
-            boolean isPlayer  = e instanceof Player;
-            boolean isHostile = e instanceof Enemy;
-            boolean isAnimal  = e instanceof Animal;
-            if (isPlayer  && !targetPlayers) continue;
-            if (isHostile && !targetHostile) continue;
-            if (isAnimal  && !targetAnimals) continue;
-            if (!isPlayer && !isHostile && !isAnimal) continue;
+            if (skipInvisible && e.isInvisible()) continue;
+            if (!AuraTargeting.factionAllowed(e, targetPlayers, targetHostile, targetAnimals)) continue;
 
             // Eye → hitbox nearest point (squared), matching KillAura — fixes
             // ghost swings on tall / airborne mobs that center-distance misjudges.
             double distSq = KillAuraMod.reachDistSq(mc.player, e);
-            if (distSq <= rangeSq && distSq < bestDistSq) {
-                bestDistSq = distSq;
-                best = e;
-            }
+            if (distSq > rangeSq || distSq >= bestDistSq) continue;
+            if (raycast && !KillAuraMod.canSee(mc.player, e)) continue;
+            bestDistSq = distSq;
+            best = e;
         }
         glowTarget = best;
         return best;

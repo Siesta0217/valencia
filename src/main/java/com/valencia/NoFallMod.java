@@ -51,6 +51,10 @@ public class NoFallMod implements ClientModInitializer {
         SpearAuraMod.targetAnimals      = cfg.spearAnimals;
         SpearAuraMod.autoStepBack       = cfg.spearStepBack;
         SpearAuraMod.chargeReleaseTicks = cfg.spearChargeTicks;
+        SpearAuraMod.raycast            = cfg.spearRaycast;
+        SpearAuraMod.skipInvisible      = cfg.spearSkipInvis;
+        SpearAuraMod.smoothRot          = cfg.spearSmoothRot;
+        SpearAuraMod.maxTurnDeg         = cfg.spearMaxTurn;
 
         ScaffoldMod.tower      = cfg.scaffoldTower;
         ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;
@@ -70,6 +74,10 @@ public class NoFallMod implements ClientModInitializer {
         MaceAuraMod.targetHostile  = cfg.maceHostile;
         MaceAuraMod.targetAnimals  = cfg.maceAnimals;
         MaceAuraMod.targetPlayers  = cfg.macePlayers;
+        MaceAuraMod.raycast        = cfg.maceRaycast;
+        MaceAuraMod.skipInvisible  = cfg.maceSkipInvis;
+        MaceAuraMod.smoothRot      = cfg.maceSmoothRot;
+        MaceAuraMod.maxTurnDeg     = cfg.maceMaxTurn;
         StepMod.stepHeight         = cfg.stepHeight;
         KillAuraMod.RANGE        = cfg.killRange;
         KillAuraMod.ATTACK_RANGE = cfg.killAttackRange;
@@ -127,5 +135,9 @@ public class NoFallMod implements ClientModInitializer {
         NameTagMod.showHpText     = cfg.nameTagShowHpText;
         NameTagMod.scale          = cfg.nameTagScale;
         NameTagMod.maxDistance    = cfg.nameTagMaxDistance;
+        NameTagMod.useTheme       = cfg.nameTagUseTheme;
+        NameTagMod.colorR         = cfg.nameTagR;
+        NameTagMod.colorG         = cfg.nameTagG;
+        NameTagMod.colorB         = cfg.nameTagB;
     }
 }

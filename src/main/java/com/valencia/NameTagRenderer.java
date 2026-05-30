@@ -175,10 +175,13 @@ public final class NameTagRenderer {
         int boxX = -boxW / 2;
         int boxY = -boxH;
 
+        int accR = NameTagMod.useTheme ? cfg.accentR : NameTagMod.colorR;
+        int accG = NameTagMod.useTheme ? cfg.accentG : NameTagMod.colorG;
+        int accB = NameTagMod.useTheme ? cfg.accentB : NameTagMod.colorB;
         int accent = 0xFF000000
-            | ((cfg.accentR & 0xFF) << 16)
-            | ((cfg.accentG & 0xFF) << 8)
-            |  (cfg.accentB & 0xFF);
+            | ((accR & 0xFF) << 16)
+            | ((accG & 0xFF) << 8)
+            |  (accB & 0xFF);
         int bgAlpha = clamp(cfg.bgAlpha, 60, 220);
 
         drawPanel(g, boxX, boxY, boxW, boxH, bgAlpha, accent);

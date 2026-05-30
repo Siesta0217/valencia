@@ -131,6 +131,10 @@ public class ClickGuiScreen extends Screen {
             new BoolS("Hostile", () -> cfg.maceHostile, () -> { cfg.maceHostile = !cfg.maceHostile; MaceAuraMod.targetHostile = cfg.maceHostile; cfg.save(); }),
             new BoolS("Animals", () -> cfg.maceAnimals, () -> { cfg.maceAnimals = !cfg.maceAnimals; MaceAuraMod.targetAnimals = cfg.maceAnimals; cfg.save(); }),
             new BoolS("Players", () -> cfg.macePlayers, () -> { cfg.macePlayers = !cfg.macePlayers; MaceAuraMod.targetPlayers = cfg.macePlayers; cfg.save(); }),
+            new BoolS("Raycast", () -> cfg.maceRaycast,   () -> { cfg.maceRaycast = !cfg.maceRaycast;     MaceAuraMod.raycast = cfg.maceRaycast;         cfg.save(); }),
+            new BoolS("Skip Inv",() -> cfg.maceSkipInvis, () -> { cfg.maceSkipInvis = !cfg.maceSkipInvis; MaceAuraMod.skipInvisible = cfg.maceSkipInvis; cfg.save(); }),
+            new BoolS("Smooth",  () -> cfg.maceSmoothRot, () -> { cfg.maceSmoothRot = !cfg.maceSmoothRot; MaceAuraMod.smoothRot = cfg.maceSmoothRot;     cfg.save(); }),
+            new SliderS("Max Turn", () -> cfg.maceMaxTurn, v -> { cfg.maceMaxTurn = (int)v; MaceAuraMod.maxTurnDeg = (int)v; cfg.save(); }, 10, 180),
             new KeyS("Key", () -> cfg.maceAuraKey, v -> { cfg.maceAuraKey = v; cfg.save(); })
         )));
 
@@ -144,6 +148,10 @@ public class ClickGuiScreen extends Screen {
             new BoolS("Animals",  () -> cfg.spearAnimals,  () -> { cfg.spearAnimals = !cfg.spearAnimals;   SpearAuraMod.targetAnimals = cfg.spearAnimals; cfg.save(); }),
             new BoolS("Players",  () -> cfg.spearPlayers,  () -> { cfg.spearPlayers = !cfg.spearPlayers;   SpearAuraMod.targetPlayers = cfg.spearPlayers; cfg.save(); }),
             new BoolS("Step Back",() -> cfg.spearStepBack, () -> { cfg.spearStepBack = !cfg.spearStepBack; SpearAuraMod.autoStepBack = cfg.spearStepBack; cfg.save(); }),
+            new BoolS("Raycast",  () -> cfg.spearRaycast,   () -> { cfg.spearRaycast = !cfg.spearRaycast;     SpearAuraMod.raycast = cfg.spearRaycast;         cfg.save(); }),
+            new BoolS("Skip Inv", () -> cfg.spearSkipInvis, () -> { cfg.spearSkipInvis = !cfg.spearSkipInvis; SpearAuraMod.skipInvisible = cfg.spearSkipInvis; cfg.save(); }),
+            new BoolS("Smooth",   () -> cfg.spearSmoothRot, () -> { cfg.spearSmoothRot = !cfg.spearSmoothRot; SpearAuraMod.smoothRot = cfg.spearSmoothRot;     cfg.save(); }),
+            new SliderS("Max Turn", () -> cfg.spearMaxTurn, v -> { cfg.spearMaxTurn = (int)v; SpearAuraMod.maxTurnDeg = (int)v; cfg.save(); }, 10, 180),
             new KeyS("Key", () -> cfg.spearAuraKey, v -> { cfg.spearAuraKey = v; cfg.save(); })
         )));
 
@@ -263,6 +271,10 @@ public class ClickGuiScreen extends Screen {
             new BoolS("HP Text",    () -> cfg.nameTagShowHpText,     () -> { cfg.nameTagShowHpText     = !cfg.nameTagShowHpText;     NameTagMod.showHpText     = cfg.nameTagShowHpText;     cfg.save(); }),
             new SliderS("Scale",    () -> cfg.nameTagScale * 100,    v -> { cfg.nameTagScale = (float)v / 100f; NameTagMod.scale = cfg.nameTagScale; cfg.save(); }, 60, 160),
             new SliderS("MaxDist",  () -> cfg.nameTagMaxDistance,    v -> { cfg.nameTagMaxDistance = (float)v; NameTagMod.maxDistance = (float)v; cfg.save(); }, 16, 128),
+            new BoolS("Theme Col",  () -> cfg.nameTagUseTheme,       () -> { cfg.nameTagUseTheme = !cfg.nameTagUseTheme; NameTagMod.useTheme = cfg.nameTagUseTheme; cfg.save(); }),
+            new SliderS("Red",      () -> cfg.nameTagR,              v -> { cfg.nameTagR = (int)v; NameTagMod.colorR = (int)v; cfg.save(); }, 0, 255),
+            new SliderS("Green",    () -> cfg.nameTagG,              v -> { cfg.nameTagG = (int)v; NameTagMod.colorG = (int)v; cfg.save(); }, 0, 255),
+            new SliderS("Blue",     () -> cfg.nameTagB,              v -> { cfg.nameTagB = (int)v; NameTagMod.colorB = (int)v; cfg.save(); }, 0, 255),
             new KeyS("Key",         () -> cfg.nameTagKey,            v -> { cfg.nameTagKey = v; cfg.save(); })
         )));
 

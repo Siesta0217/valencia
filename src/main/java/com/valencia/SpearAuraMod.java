@@ -5,9 +5,6 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -61,6 +58,12 @@ public class SpearAuraMod {
     /** How long to hold attack in CHARGE mode before releasing (ticks). */
     public static int chargeReleaseTicks = 12;
 
+    // Behavior options (mirror KillAura for a consistent feel across auras).
+    public static boolean raycast       = true;   // require line-of-sight
+    public static boolean skipInvisible = true;   // ignore invisible targets
+    public static boolean smoothRot     = true;   // clamp silent-aim turn rate
+    public static float   maxTurnDeg    = 60.0f;  // max degrees/tick when smoothing
+
     // ── Public API ───────────────────────────────────────────────────────────
     public static boolean isEnabled() { return enabled; }
 
@@ -102,19 +105,14 @@ public class SpearAuraMod {
         for (LivingEntity e : mc.level.getEntitiesOfClass(LivingEntity.class, box)) {
             if (e == mc.player) continue;
             if (e.isDeadOrDying()) continue;
-
-            boolean isPlayer  = e instanceof Player;
-            boolean isHostile = e instanceof Enemy;
-            boolean isAnimal  = e instanceof Animal;
-            if (isPlayer  && !targetPlayers) continue;
-            if (isHostile && !targetHostile) continue;
-            if (isAnimal  && !targetAnimals) continue;
-            if (!isPlayer && !isHostile && !isAnimal) continue;
+            if (skipInvisible && e.isInvisible()) continue;
+            if (!AuraTargeting.factionAllowed(e, targetPlayers, targetHostile, targetAnimals)) continue;
 
             // Eye → hitbox nearest point (not center-to-center) so MIN/MAX
             // reach and the sweet-spot score match the server's reach check.
             double dist = Math.sqrt(KillAuraMod.reachDistSq(mc.player, e));
             if (dist > SCAN_RANGE) continue;
+            if (raycast && !KillAuraMod.canSee(mc.player, e)) continue;
 
             // Score = distance from the sweet spot. Penalty if inside MIN_REACH
             // so a far-but-attackable target wins over a too-close one.

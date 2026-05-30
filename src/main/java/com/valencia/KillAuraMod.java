@@ -4,9 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
@@ -83,14 +80,7 @@ public class KillAuraMod {
             if (e == mc.player)   continue;
             if (e.isDeadOrDying()) continue;
             if (skipInvisible && e.isInvisible()) continue;
-
-            boolean isPlayer   = e instanceof Player;
-            boolean isHostile  = e instanceof Enemy;
-            boolean isFriendly = e instanceof Animal;
-            if (isPlayer   && !targetPlayers) continue;
-            if (isHostile  && !targetHostile) continue;
-            if (isFriendly && !targetAnimals) continue;
-            if (!isPlayer && !isHostile && !isFriendly) continue;
+            if (!AuraTargeting.factionAllowed(e, targetPlayers, targetHostile, targetAnimals)) continue;
 
             // Distance from player eye to entity hitbox closest point (squared)
             double distSq = reachDistSq(mc.player, e);

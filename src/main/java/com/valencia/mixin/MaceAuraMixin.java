@@ -32,6 +32,11 @@ public abstract class MaceAuraMixin {
         MaceAuraMod.savedXRot = self.getXRot();
 
         float[] rot = MaceAuraMod.calcRotations(self, target);
+        if (MaceAuraMod.smoothRot) {
+            rot = KillAuraMod.smoothRotation(
+                MaceAuraMod.savedYRot, MaceAuraMod.savedXRot,
+                rot[0], rot[1], Math.max(1f, MaceAuraMod.maxTurnDeg));
+        }
         self.setYRot(rot[0]);
         self.setXRot(rot[1]);
 
@@ -54,8 +59,10 @@ public abstract class MaceAuraMixin {
             Minecraft mc = Minecraft.getInstance();
             double distSq  = KillAuraMod.reachDistSq(self, MaceAuraMod.currentTarget);
             double rangeSq = (double) MaceAuraMod.ATTACK_RANGE * MaceAuraMod.ATTACK_RANGE;
+            boolean los = !MaceAuraMod.raycast || KillAuraMod.canSee(self, MaceAuraMod.currentTarget);
             if (mc.gameMode != null
                     && distSq <= rangeSq
+                    && los
                     && self.getAttackStrengthScale(0f) >= 0.5f) {
                 mc.gameMode.attack(self, MaceAuraMod.currentTarget);
                 self.swing(InteractionHand.MAIN_HAND);

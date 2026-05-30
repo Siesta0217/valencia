@@ -43,6 +43,10 @@ public class ModConfig {
     public boolean spearStepBack  = true;
     public int   spearChargeTicks = 12;
     public boolean spearAuraEnabled = false;
+    public boolean spearRaycast   = true;
+    public boolean spearSkipInvis = true;
+    public boolean spearSmoothRot = true;
+    public int     spearMaxTurn   = 60;
 
     // NoCrash (elytra wall damage mitigation)
     public boolean noCrashEnabled  = false;
@@ -62,6 +66,10 @@ public class ModConfig {
     public boolean maceHostile   = true;
     public boolean maceAnimals   = false;
     public boolean macePlayers   = true;
+    public boolean maceRaycast   = true;
+    public boolean maceSkipInvis = true;
+    public boolean maceSmoothRot = true;
+    public int     maceMaxTurn   = 60;
 
     // Step tuning
     public float stepHeight = 1.0f;
@@ -139,6 +147,10 @@ public class ModConfig {
     public boolean nameTagShowHpText     = true;
     public float   nameTagScale          = 1.0f;
     public float   nameTagMaxDistance    = 64.0f;
+    public boolean nameTagUseTheme       = true;
+    public int     nameTagR              = 0;
+    public int     nameTagG              = 170;
+    public int     nameTagB              = 255;
 
     // ESP
     public boolean espEnabled  = false;

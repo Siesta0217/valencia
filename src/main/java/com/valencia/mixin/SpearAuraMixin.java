@@ -55,6 +55,11 @@ public abstract class SpearAuraMixin {
         SpearAuraMod.savedYRot = self.getYRot();
         SpearAuraMod.savedXRot = self.getXRot();
         float[] rot = SpearAuraMod.calcRotations(self, target);
+        if (SpearAuraMod.smoothRot) {
+            rot = KillAuraMod.smoothRotation(
+                SpearAuraMod.savedYRot, SpearAuraMod.savedXRot,
+                rot[0], rot[1], Math.max(1f, SpearAuraMod.maxTurnDeg));
+        }
         self.setYRot(rot[0]);
         self.setXRot(rot[1]);
         spear$rotModified = true;
@@ -94,6 +99,12 @@ public abstract class SpearAuraMixin {
             return;
         }
         if (dist > SpearAuraMod.MAX_REACH) {
+            SpearAuraMod.stopCharge();
+            return;
+        }
+
+        // Line-of-sight gate — don't swing through walls when raycast is on.
+        if (SpearAuraMod.raycast && !KillAuraMod.canSee(self, target)) {
             SpearAuraMod.stopCharge();
             return;
         }
