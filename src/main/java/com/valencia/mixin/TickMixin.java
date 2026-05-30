@@ -1,5 +1,6 @@
 package com.valencia.mixin;
 
+import com.valencia.AutoTotemMod;
 import com.valencia.BHopMod;
 import com.valencia.ClickGuiScreen;
 import com.valencia.CritMod;
@@ -47,6 +48,8 @@ public abstract class TickMixin {
     @Unique private boolean nofall$prevTm  = false;
     @Unique private boolean nofall$prevSp  = false;
     @Unique private boolean nofall$prevNt  = false;
+    @Unique private boolean nofall$prevAt  = false;
+    @Unique private boolean nofall$prevPan = false;
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void nofall$onTick(CallbackInfo ci) {
@@ -71,6 +74,8 @@ public abstract class TickMixin {
         boolean tmDown  = GLFW.glfwGetKey(handle, cfg.timerKey)      == GLFW.GLFW_PRESS;
         boolean spDown  = GLFW.glfwGetKey(handle, cfg.spearAuraKey)  == GLFW.GLFW_PRESS;
         boolean ntDown  = GLFW.glfwGetKey(handle, cfg.nameTagKey)    == GLFW.GLFW_PRESS;
+        boolean atDown  = GLFW.glfwGetKey(handle, cfg.autoTotemKey)  == GLFW.GLFW_PRESS;
+        boolean panDown = GLFW.glfwGetKey(handle, cfg.panicKey)      == GLFW.GLFW_PRESS;
 
         if (mc.screen == null) {
             if (nDown   && !nofall$prevN)   { NoFallMod.toggleManual();  saveEnabled(); msg(mc, "§7[NoFall] "     + state(NoFallMod.isEnabled()));     }
@@ -87,6 +92,8 @@ public abstract class TickMixin {
             if (tmDown  && !nofall$prevTm)  { TimerMod.toggle();         saveEnabled(); msg(mc, "§7[Timer] "      + state(TimerMod.isEnabled()));      }
             if (spDown  && !nofall$prevSp)  { SpearAuraMod.toggle();     saveEnabled(); msg(mc, "§7[SpearAura] "  + state(SpearAuraMod.isEnabled())); }
             if (ntDown  && !nofall$prevNt)  { NameTagMod.toggle();       saveEnabled(); msg(mc, "§7[NameTag] "    + state(NameTagMod.isEnabled())); }
+            if (atDown  && !nofall$prevAt)  { AutoTotemMod.toggle();     saveEnabled(); msg(mc, "§7[AutoTotem] "  + state(AutoTotemMod.isEnabled())); }
+            if (panDown && !nofall$prevPan) { nofall$panic(mc); }
             if (guiDown && !nofall$prevGui) mc.setScreen(new ClickGuiScreen());
         } else if (mc.screen instanceof ClickGuiScreen && guiDown && !nofall$prevGui) {
             mc.setScreen(null);
@@ -98,6 +105,7 @@ public abstract class TickMixin {
         ElytraGotoMod.tick();
         com.valencia.AutoFishMod.tick();
         com.valencia.NoCrashMod.tick();
+        AutoTotemMod.tick();
 
         nofall$prevN   = nDown;
         nofall$prevX   = xDown;
@@ -114,6 +122,31 @@ public abstract class TickMixin {
         nofall$prevTm  = tmDown;
         nofall$prevSp  = spDown;
         nofall$prevNt  = ntDown;
+        nofall$prevAt  = atDown;
+        nofall$prevPan = panDown;
+    }
+
+    /** Panic: kill every gameplay-affecting module in one keypress (go legit). */
+    @Unique
+    private static void nofall$panic(Minecraft mc) {
+        if (NoFallMod.isEnabled())      NoFallMod.toggleManual();
+        if (KillAuraMod.isEnabled())    KillAuraMod.toggle();
+        if (MaceAuraMod.isEnabled())    MaceAuraMod.toggle();
+        if (SpearAuraMod.isEnabled())   SpearAuraMod.toggle();
+        if (CritMod.isEnabled())        CritMod.toggle();
+        if (ScaffoldMod.isEnabled())    ScaffoldMod.toggle();
+        if (TimerMod.isEnabled())       TimerMod.toggle();
+        if (BHopMod.isEnabled())        BHopMod.toggle();
+        if (StepMod.isEnabled())        StepMod.toggle();
+        if (VelocityMod.isEnabled())    VelocityMod.toggle();
+        if (FastPlaceMod.isEnabled())   FastPlaceMod.toggle();
+        if (NoSlowMod.isEnabled())      NoSlowMod.toggle();
+        if (AutoTotemMod.isEnabled())   AutoTotemMod.toggle();
+        if (ElytraGotoMod.isEnabled())  ElytraGotoMod.toggle();
+        if (com.valencia.AutoFishMod.isEnabled()) com.valencia.AutoFishMod.toggle();
+        if (com.valencia.NoCrashMod.isEnabled())  com.valencia.NoCrashMod.toggle();
+        saveEnabled();
+        msg(mc, "§c[Panic] all modules OFF");
     }
 
     private static void saveEnabled() {
@@ -132,6 +165,7 @@ public abstract class TickMixin {
         cfg.timerEnabled      = TimerMod.isEnabled();
         cfg.spearAuraEnabled  = SpearAuraMod.isEnabled();
         cfg.nameTagEnabled    = NameTagMod.isEnabled();
+        cfg.autoTotemEnabled  = AutoTotemMod.isEnabled();
         cfg.save();
     }
 

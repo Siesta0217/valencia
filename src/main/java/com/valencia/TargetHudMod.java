@@ -102,6 +102,11 @@ public final class TargetHudMod {
         if (MaceAuraMod.isEnabled() && MaceAuraMod.glowTarget instanceof LivingEntity le && le.isAlive()) return le;
         Entity sp = SpearAuraMod.glowTarget;
         if (SpearAuraMod.isEnabled() && sp instanceof LivingEntity le && le.isAlive()) return le;
+        // Fallback: the living entity under the crosshair (so the HUD is useful
+        // with no aura active), excluding ourselves.
+        Minecraft mc = Minecraft.getInstance();
+        Entity ch = mc.crosshairPickEntity;
+        if (ch instanceof LivingEntity le && le.isAlive() && le != mc.player) return le;
         return null;
     }
 

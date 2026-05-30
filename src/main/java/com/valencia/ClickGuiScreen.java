@@ -158,6 +158,10 @@ public class ClickGuiScreen extends Screen {
             new BoolS("Animals", () -> cfg.hitboxAnimals, () -> { cfg.hitboxAnimals = !cfg.hitboxAnimals; HitboxMod.animals = cfg.hitboxAnimals; cfg.save(); })
         )));
 
+        add(Cat.COMBAT, new ModEntry("AutoTotem",
+            AutoTotemMod::isEnabled, () -> { AutoTotemMod.toggle(); cfg.autoTotemEnabled = AutoTotemMod.isEnabled(); cfg.save(); }, true,
+            List.of(new KeyS("Key", () -> cfg.autoTotemKey, v -> { cfg.autoTotemKey = v; cfg.save(); }))));
+
         // ── Movement ────────────────────────────────────────────────────────
         add(Cat.MOVEMENT, new ModEntry("BHop", BHopMod::isEnabled, BHopMod::toggle, true, List.of(
             new SliderS("Speed",    () -> (double)cfg.bhopSpeed,      v -> { cfg.bhopSpeed = (float)v;      BHopMod.speedMultiplier = (float)v; cfg.save(); }, 0.5, 2.5),
@@ -279,6 +283,8 @@ public class ClickGuiScreen extends Screen {
         )));
         add(Cat.CLIENT, new ModEntry("GUI Key", () -> false, () -> {}, false,
             List.of(new KeyS("Key", () -> cfg.guiKey, v -> { cfg.guiKey = v; cfg.save(); }))));
+        add(Cat.CLIENT, new ModEntry("Panic", () -> false, () -> {}, false,
+            List.of(new KeyS("Key", () -> cfg.panicKey, v -> { cfg.panicKey = v; cfg.save(); }))));
     }
 
     private void add(Cat cat, ModEntry m) {
@@ -818,6 +824,7 @@ public class ClickGuiScreen extends Screen {
         cfg.netherCoordEnabled = NetherCoordMod.isEnabled();
         cfg.targetHudEnabled = TargetHudMod.isEnabled();
         cfg.autoFishEnabled  = AutoFishMod.isEnabled();
+        cfg.autoTotemEnabled = AutoTotemMod.isEnabled();
         cfg.save();
     }
 }

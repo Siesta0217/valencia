@@ -29,6 +29,8 @@ public class ModConfig {
     public int timerKey      = GLFW.GLFW_KEY_T;
     public int spearAuraKey  = GLFW.GLFW_KEY_U;
     public int nameTagKey    = GLFW.GLFW_KEY_Y;
+    public int autoTotemKey  = GLFW.GLFW_KEY_O;
+    public int panicKey      = GLFW.GLFW_KEY_DELETE;
 
     // SpearAura tuning
     public float spearScanRange   = 7.0f;
@@ -157,6 +159,9 @@ public class ModConfig {
 
     // TargetHUD
     public boolean targetHudEnabled = false;
+
+    // AutoTotem
+    public boolean autoTotemEnabled = false;
 
     // Scaffold tuning
     public boolean scaffoldTower      = false;

@@ -114,6 +114,8 @@ public class NoFallMod implements ClientModInitializer {
 
         if (cfg.targetHudEnabled != TargetHudMod.isEnabled()) TargetHudMod.toggle();
 
+        if (cfg.autoTotemEnabled != AutoTotemMod.isEnabled()) AutoTotemMod.toggle();
+
         if (cfg.nameTagEnabled != NameTagMod.isEnabled()) NameTagMod.toggle();
         NameTagMod.players        = cfg.nameTagPlayers;
         NameTagMod.hostile        = cfg.nameTagHostile;
