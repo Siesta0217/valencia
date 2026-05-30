@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.10** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.11** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.10** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.10.jar
+# JAR → build/libs/valencia-1.7.11.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.11 — AutoTotem + Panic key + TargetHUD 準星 fallback
+- **AutoTotem（Combat，預設鍵 `O`）**：自動把不死圖騰補進副手，圖騰爆掉後下一 tick 立即補回。只在沒開任何容器介面時動作，走 vanilla 同一條 `handleInventoryMouseClick` PICKUP 鏈（用 `InventoryMenu.SHIELD_SLOT`），伺服器端看到的是正常的拿取動作。狀態跨 session 保存
+- **Panic key（Client，預設鍵 `DELETE`）**：一鍵關閉所有會影響玩法的模組（KillAura/Mace/Spear/Crit/Scaffold/Timer/BHop/Step/Velocity/FastPlace/NoSlow/AutoTotem/ElytraGoto/AutoFish/NoCrash/NoFall），瞬間切回 legit
+- **TargetHUD 準星 fallback**：沒有任何 aura 在運作時，改顯示準星指向的生物，HUD 單獨使用也有意義
+- 兩個新鍵都可在 ClickGUI 重綁（Combat → AutoTotem、Client → Panic）
 
 ### v1.7.10 — ESP 盒子穿牆修正
 - **ESP Hitbox 盒子改為 always-on-top（穿牆）**：v1.7.6 把盒子搬到 vanilla gizmo 管線後，盒子變成有深度測試 → 被地形擋住看不到（標籤是 2D HUD 仍穿牆，所以出現「有名牌沒盒子」）。`Gizmos.cuboid(...)` 接上 `setAlwaysOnTop()` 關閉深度測試，恢復標準 ESP 穿牆行為
