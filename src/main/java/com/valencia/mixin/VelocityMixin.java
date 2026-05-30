@@ -10,6 +10,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * NOTE: this hooks {@code LivingEntity.knockback}, which only runs locally
+ * when the client itself computes knockback — i.e. single-player / client-side
+ * mob hits. On a real multiplayer server, knockback arrives as an explicit
+ * velocity packet and {@code knockback} is never called client-side, so this
+ * mixin is effectively a no-op there. {@code VelocityPacketMixin} (added in
+ * v1.7.5) is the path that actually handles multiplayer velocity. This one is
+ * kept for the SP / client-side case; don't delete it expecting MP to break.
+ */
 @Mixin(LivingEntity.class)
 public abstract class VelocityMixin {
 

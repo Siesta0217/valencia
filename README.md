@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.12** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.13** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.12** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.12.jar
+# JAR → build/libs/valencia-1.7.13.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.13 — 程式碼整理（無行為變化）
+- **VelocityMixin 加說明註解**：`LivingEntity.knockback` 這條只在 SP / client-side 怪攻擊時觸發；多人伺服器走 velocity packet（`VelocityPacketMixin`，v1.7.5 加的）才是實際路徑。保留此 mixin 供 SP 用，註明別誤刪
+- **NoSlowMod 補 `isActive()`**：與其他模組形狀一致，三個 redirect 改用 `isActive()`（觸發時 player/level 必非 null，等價於 `isEnabled()`，無行為變化）
+- **AutoFish 吞錯改 log 一次**：`useItem` 真的壞掉時印一次 stderr 警告（之前 `catch(Throwable ignored)` 完全靜默）
 
 ### v1.7.12 — Aura 一致化 + NameTag 獨立色 + TickMixin 資料驅動
 - **MaceAura / SpearAura 補齊 Raycast / Skip Inv / Smooth / Max Turn**：先前只有 KillAura 有穿牆檢查、隱形過濾、平滑轉頭，現在三個 aura 行為一致（複用 `KillAuraMod.canSee` / `smoothRotation`，可在 ClickGUI 個別開關）。Spear 想吃滿傷可關 Smooth

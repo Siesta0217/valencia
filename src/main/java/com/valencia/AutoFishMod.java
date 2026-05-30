@@ -29,6 +29,9 @@ public class AutoFishMod {
     private static int actionCooldown = 0;
     private static int recastTimer    = 0;
 
+    /** Log a failed useItem at most once so a broken rod/use doesn't spam. */
+    private static boolean loggedError = false;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
@@ -83,6 +86,11 @@ public class AutoFishMod {
     private static void rightClick(Minecraft mc, LocalPlayer p, InteractionHand hand) {
         try {
             mc.gameMode.useItem(p, hand);
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            if (!loggedError) {
+                loggedError = true;
+                System.err.println("[Valencia] AutoFish useItem failed, disabling further log: " + t);
+            }
+        }
     }
 }

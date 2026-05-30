@@ -20,7 +20,7 @@ public abstract class NoSlowMixin {
                     target = "Lnet/minecraft/client/player/LocalPlayer;isUsingItem()Z"),
             require = 0)
     private boolean nofall$keepFullInputSpeed(LocalPlayer self) {
-        return !NoSlowMod.isEnabled() && self.isUsingItem();
+        return !NoSlowMod.isActive() && self.isUsingItem();
     }
 
     @Redirect(method = "aiStep",
@@ -28,7 +28,7 @@ public abstract class NoSlowMixin {
                     target = "Lnet/minecraft/client/player/LocalPlayer;isSlowDueToUsingItem()Z"),
             require = 0)
     private boolean nofall$keepSprintInAiStep(LocalPlayer self) {
-        return !NoSlowMod.isEnabled() && ((NoSlowMixin) (Object) self).isSlowDueToUsingItem();
+        return !NoSlowMod.isActive() && ((NoSlowMixin) (Object) self).isSlowDueToUsingItem();
     }
 
     @Redirect(method = "canStartSprinting",
@@ -36,6 +36,6 @@ public abstract class NoSlowMixin {
                     target = "Lnet/minecraft/client/player/LocalPlayer;isSlowDueToUsingItem()Z"),
             require = 0)
     private boolean nofall$keepSprintStart(LocalPlayer self) {
-        return !NoSlowMod.isEnabled() && ((NoSlowMixin) (Object) self).isSlowDueToUsingItem();
+        return !NoSlowMod.isActive() && ((NoSlowMixin) (Object) self).isSlowDueToUsingItem();
     }
 }
