@@ -286,6 +286,12 @@ public class ClickGuiScreen extends Screen {
             TargetHudMod::isEnabled, () -> { TargetHudMod.toggle(); cfg.targetHudEnabled = TargetHudMod.isEnabled(); cfg.save(); },
             true, List.of()));
 
+        add(Cat.RENDER, new ModEntry("ArrayList",
+            ArrayListMod::isEnabled, () -> { ArrayListMod.toggle(); cfg.arrayListEnabled = ArrayListMod.isEnabled(); cfg.save(); }, true, List.of(
+            new BoolS("Rainbow", () -> cfg.arrayListRainbow,    () -> { cfg.arrayListRainbow = !cfg.arrayListRainbow;       ArrayListMod.rainbow = cfg.arrayListRainbow;       cfg.save(); }),
+            new BoolS("BG",      () -> cfg.arrayListBackground, () -> { cfg.arrayListBackground = !cfg.arrayListBackground; ArrayListMod.background = cfg.arrayListBackground; cfg.save(); })
+        )));
+
         // ── Client ──────────────────────────────────────────────────────────
         add(Cat.CLIENT, new ModEntry("Theme", () -> false, () -> {}, false, List.of(
             new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
@@ -837,6 +843,7 @@ public class ClickGuiScreen extends Screen {
         cfg.targetHudEnabled = TargetHudMod.isEnabled();
         cfg.autoFishEnabled  = AutoFishMod.isEnabled();
         cfg.autoTotemEnabled = AutoTotemMod.isEnabled();
+        cfg.arrayListEnabled = ArrayListMod.isEnabled();
         cfg.save();
     }
 }

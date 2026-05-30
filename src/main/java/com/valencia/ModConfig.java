@@ -175,6 +175,11 @@ public class ModConfig {
     // AutoTotem
     public boolean autoTotemEnabled = false;
 
+    // ArrayList HUD
+    public boolean arrayListEnabled    = false;
+    public boolean arrayListRainbow    = true;
+    public boolean arrayListBackground = true;
+
     // Scaffold tuning
     public boolean scaffoldTower      = false;
     public boolean scaffoldTowerMove  = true;

@@ -1,5 +1,6 @@
 package com.valencia.mixin;
 
+import com.valencia.ArrayListMod;
 import com.valencia.ESPRenderer;
 import com.valencia.NameTagRenderer;
 import com.valencia.NetherCoordMod;
@@ -21,5 +22,6 @@ public abstract class HudMixin {
         ESPRenderer.render(g);
         NameTagRenderer.render(g);
         TargetHudMod.render(g);
+        ArrayListMod.render(g);
     }
 }

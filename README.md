@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.13** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.14** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.13** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.13.jar
+# JAR → build/libs/valencia-1.7.14.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,9 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.14 — ArrayList HUD
+- **ArrayList（Render）**：右上角顯示目前開啟的模組清單，依字寬遞減排成階梯狀。可選 **Rainbow**（垂直彩虹，預設開）或主題 accent 色、可選 **BG** 背景底（預設開）。掛在 `Gui.render` TAIL，狀態跨 session 保存。純 HUD 讀數（TargetHUD / DimCoord）與 ArrayList 自己不列入清單
 
 ### v1.7.13 — 程式碼整理（無行為變化）
 - **VelocityMixin 加說明註解**：`LivingEntity.knockback` 這條只在 SP / client-side 怪攻擊時觸發；多人伺服器走 velocity packet（`VelocityPacketMixin`，v1.7.5 加的）才是實際路徑。保留此 mixin 供 SP 用，註明別誤刪

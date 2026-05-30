@@ -1,0 +1,96 @@
+{
+  "nodes": [
+    {
+      "id": "project",
+      "type": "file",
+      "file": "01_Projects/nofall-mod.md",
+      "x": 0,
+      "y": 0,
+      "width": 360,
+      "height": 220
+    },
+    {
+      "id": "build",
+      "type": "text",
+      "text": "# Build\n\nGradle + Fabric Loom\n\n- assemble\n- remapJar\n- build -> deploy",
+      "x": 460,
+      "y": -220,
+      "width": 300,
+      "height": 220
+    },
+    {
+      "id": "source",
+      "type": "text",
+      "text": "# Source\n\n`src/main/java/com/valencia`\n\nModules, renderers, config, keybinds, ClickGUI.",
+      "x": 460,
+      "y": 40,
+      "width": 330,
+      "height": 220
+    },
+    {
+      "id": "mixins",
+      "type": "text",
+      "text": "# Mixins\n\n`src/main/java/com/valencia/mixin`\n\nCheck alongside module classes before behavior edits.",
+      "x": 460,
+      "y": 300,
+      "width": 330,
+      "height": 220
+    },
+    {
+      "id": "prompts",
+      "type": "file",
+      "file": "02_Prompts/Codex Repo Fix.md",
+      "x": -420,
+      "y": -180,
+      "width": 320,
+      "height": 200
+    },
+    {
+      "id": "debug",
+      "type": "file",
+      "file": "02_Prompts/Debug Root Cause.md",
+      "x": -420,
+      "y": 80,
+      "width": 320,
+      "height": 200
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "fromNode": "project",
+      "fromSide": "right",
+      "toNode": "build",
+      "toSide": "left"
+    },
+    {
+      "id": "e2",
+      "fromNode": "project",
+      "fromSide": "right",
+      "toNode": "source",
+      "toSide": "left"
+    },
+    {
+      "id": "e3",
+      "fromNode": "project",
+      "fromSide": "right",
+      "toNode": "mixins",
+      "toSide": "left"
+    },
+    {
+      "id": "e4",
+      "fromNode": "prompts",
+      "fromSide": "right",
+      "toNode": "project",
+      "toSide": "left"
+    },
+    {
+      "id": "e5",
+      "fromNode": "debug",
+      "fromSide": "right",
+      "toNode": "project",
+      "toSide": "left"
+    }
+  ]
+}
+
