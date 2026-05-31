@@ -132,6 +132,8 @@ public class ClickGuiScreen extends Screen {
             new SliderS("Max Turn", () -> cfg.killMaxTurn, v -> { cfg.killMaxTurn = (int)v; KillAuraMod.maxTurnDeg = (int)v; cfg.save(); }, 10, 180),
             new BoolS("Body Lock",() -> cfg.killBodyLock, () -> { cfg.killBodyLock = !cfg.killBodyLock;   KillAuraMod.bodyLock = cfg.killBodyLock;       cfg.save(); }),
             new BoolS("Vis Body",() -> cfg.killVisBody,   () -> { cfg.killVisBody = !cfg.killVisBody;     KillAuraMod.visibleBody = cfg.killVisBody;     cfg.save(); }),
+            new BoolS("GCD",     () -> cfg.killGcd,       () -> { cfg.killGcd = !cfg.killGcd;             KillAuraMod.gcdSnap = cfg.killGcd;             cfg.save(); }),
+            new SliderS("CPS Jit", () -> cfg.killCpsJitter, v -> { cfg.killCpsJitter = (int)v; KillAuraMod.cpsJitter = (int)v; cfg.save(); }, 0, 5),
             new KeyS("Key", () -> cfg.killAuraKey, v -> { cfg.killAuraKey = v; cfg.save(); })
         )));
 

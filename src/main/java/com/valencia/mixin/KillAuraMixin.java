@@ -3,6 +3,7 @@ package com.valencia.mixin;
 import com.valencia.KillAuraMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -44,6 +45,14 @@ public abstract class KillAuraMixin {
         } else {
             newYaw   = tgtRot[0];
             newPitch = tgtRot[1];
+        }
+
+        // Quantize to the player's real mouse grid so the rotation deltas the
+        // server sees are valid multiples of their sensitivity GCD (silent aim
+        // that sends arbitrary floats fails the anti-cheat GCD check).
+        if (KillAuraMod.gcdSnap) {
+            newYaw   = KillAuraMod.snapGcd(KillAuraMod.savedYRot, newYaw, true);
+            newPitch = Mth.clamp(KillAuraMod.snapGcd(KillAuraMod.savedXRot, newPitch, false), -90f, 90f);
         }
         nofall$lastTargetYaw = newYaw;
 
@@ -102,7 +111,9 @@ public abstract class KillAuraMixin {
             if (mc.gameMode != null && inRange && tickReady && cooldownReady && lineOfSight) {
                 mc.gameMode.attack(self, KillAuraMod.currentTarget);
                 self.swing(InteractionHand.MAIN_HAND);
-                nofall$nextAttackTick = self.tickCount + Math.max(1, KillAuraMod.attackDelay);
+                int jitter = KillAuraMod.cpsJitter > 0
+                    ? java.util.concurrent.ThreadLocalRandom.current().nextInt(KillAuraMod.cpsJitter + 1) : 0;
+                nofall$nextAttackTick = self.tickCount + Math.max(1, KillAuraMod.attackDelay + jitter);
             }
             KillAuraMod.pendingAttack = false;
             KillAuraMod.currentTarget = null;

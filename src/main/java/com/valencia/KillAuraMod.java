@@ -37,6 +37,8 @@ public class KillAuraMod {
     public static float   maxTurnDeg    = 60.0f;  // max degrees per tick when smoothing
     public static boolean bodyLock      = false;  // DON'T restore rotation — view physically snaps to target
     public static boolean visibleBody   = false;  // set body+head yaw to target — visible in 3rd person, camera unaffected
+    public static boolean gcdSnap       = true;   // quantize silent-aim rotation to the player's real mouse GCD
+    public static int     cpsJitter     = 0;      // extra random ticks (0..n) added to attack delay, breaks constant CPS
 
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
@@ -145,5 +147,32 @@ public class KillAuraMod {
         if (Math.abs(dy) > maxStep) dy = Math.signum(dy) * maxStep;
         if (Math.abs(dp) > maxStep) dp = Math.signum(dp) * maxStep;
         return new float[]{Mth.wrapDegrees(curYaw + dy), Mth.clamp(curPitch + dp, -90f, 90f)};
+    }
+
+    /**
+     * Minecraft's per-mouse-count rotation step for the player's CURRENT
+     * sensitivity. Vanilla turns the view by {@code rawDelta * f^3 * 8.0 * 0.15}
+     * where {@code f = sensitivity*0.6 + 0.2}, so every legit rotation delta is
+     * an integer multiple of {@code f^3 * 1.2}. Anti-cheats recover this GCD from
+     * the packet stream; aim that ignores it stands out immediately.
+     */
+    public static double mouseGcd() {
+        Minecraft mc = Minecraft.getInstance();
+        double sens = mc.options != null ? mc.options.sensitivity().get() : 0.5;
+        double f = sens * 0.6 + 0.2;
+        return f * f * f * 1.2;
+    }
+
+    /**
+     * Snap {@code to} so the delta from {@code from} is a whole multiple of the
+     * mouse GCD — keeps silent-aim rotation on the exact grid real input uses.
+     * {@code wrap} = treat as yaw (wrap the delta to [-180,180]).
+     */
+    public static float snapGcd(float from, float to, boolean wrap) {
+        double g = mouseGcd();
+        if (g <= 0.0) return to;
+        double d = wrap ? Mth.wrapDegrees(to - from) : (to - from);
+        d = Math.round(d / g) * g;
+        return (float) (from + d);
     }
 }

@@ -103,6 +103,8 @@ public class ModConfig {
     public int     killMaxTurn    = 60;
     public boolean killBodyLock   = false;
     public boolean killVisBody    = false;
+    public boolean killGcd        = true;   // GCD-snap silent-aim rotation
+    public int     killCpsJitter  = 0;      // random ticks added to attack delay
 
     // Theme colors
     public int accentR  = 0;

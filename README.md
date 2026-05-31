@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.19** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.20** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.19** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.19.jar
+# JAR → build/libs/valencia-1.7.20.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.20 — KillAura 低偵測：旋轉 GCD 吸附 + CPS 抖動
+- **GCD**（KillAura，預設開）：把 silent-aim 旋轉吸附到玩家**真實滑鼠網格**。vanilla 轉視角是 `rawDelta × f³ × 8.0 × 0.15`（`f = 靈敏度×0.6+0.2`），所以真人每次旋轉 delta 都是 `f³ × 1.2` 的整數倍。`mouseGcd()` 讀玩家當前靈敏度（javap 確認 `Options.sensitivity()`），`snapGcd()` 把瞄準 delta 對齊到該網格，伺服器收到的旋轉量跟真人滑鼠無法區分——破解現代 AC 的 GCD / improbable-rotation 檢查
+- **CPS Jit**（0–5，預設 0）：攻擊延遲加 0..n 隨機 tick，避免攻速完美週期（constant-CPS flag）
 
 ### v1.7.19 — NoFall 智慧 spoof 模式
 - **NoFall 新增 `Mode`**（ClickGUI → Movement → NoFall → `Mode` 0–1）：
