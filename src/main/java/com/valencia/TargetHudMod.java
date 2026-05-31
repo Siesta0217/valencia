@@ -3,6 +3,7 @@ package com.valencia;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -55,7 +56,7 @@ public final class TargetHudMod {
         switch (cfg.targetHudStyle) {
             case 1 -> renderCompact(g, font, cfg, in, viewW);
             case 2 -> renderGradient(g, font, cfg, in, viewW);
-            case 3 -> renderRing(g, font, cfg, in, viewW);
+            case 3 -> renderRing(g, font, cfg, in, target, viewW);
             default -> renderClassic(g, font, cfg, in, viewW);
         }
     }
@@ -163,12 +164,12 @@ public final class TargetHudMod {
         g.drawString(font, hpText, boxX + (boxW - hpW) / 2, cy, 0xFFFFFFFF, true);
     }
 
-    // ── Style 3: Ring ────────────────────────────────────────────────────────
-    private static void renderRing(GuiGraphics g, Font font, ModConfig cfg, Info in, int viewW) {
+    // ── Style 3: Ring (live entity portrait inside an HP ring) ───────────────
+    private static void renderRing(GuiGraphics g, Font font, ModConfig cfg, Info in, LivingEntity target, int viewW) {
         String hpText = fmtHp(in);
         String distText = String.format("%.1fm", in.dist());
 
-        int pad = 6, ringR = 16, ringBox = ringR * 2;
+        int pad = 6, ringR = 20, ringBox = ringR * 2;
         int textW = Math.max(font.width(in.name()), Math.max(font.width(hpText), font.width(distText)));
         int contentH = Math.max(ringBox, 9 * 3 + 4);
         int boxW = pad + ringBox + 8 + textW + pad;
@@ -181,11 +182,25 @@ public final class TargetHudMod {
         g.fill(boxX, boxY, boxX + boxW, boxY + boxH, clamp(cfg.bgAlpha, 60, 220) << 24);
         drawBorder(g, boxX, boxY, boxX + boxW, boxY + boxH, accent);
 
-        // circular HP ring
+        // HP ring
         int rcx = boxX + pad + ringR, rcy = boxY + boxH / 2;
-        drawRing(g, rcx, rcy, ringR, ringR - 4, in.frac(), hpColor(in.frac()), 0xFF303030);
-        String pct = (int)(in.frac() * 100) + "%";
-        g.drawString(font, pct, rcx - font.width(pct) / 2, rcy - font.lineHeight / 2, 0xFFFFFFFF, false);
+        int inner = ringR - 4;
+        drawRing(g, rcx, rcy, ringR, inner, in.frac(), hpColor(in.frac()), 0xFF303030);
+
+        // live entity portrait in the ring's hole; fall back to HP% if it throws
+        boolean drew = false;
+        try {
+            int half = inner - 2;                       // stay inside the ring
+            float mcx = rcx, mcy = rcy;                  // "mouse" at center → faces forward
+            InventoryScreen.renderEntityInInventoryFollowsMouse(
+                g, rcx - half, rcy - half, rcx + half, rcy + half,
+                (int)(half * 1.7f), 0.0f, mcx, mcy, target);
+            drew = true;
+        } catch (Throwable ignored) {}
+        if (!drew) {
+            String pct = (int)(in.frac() * 100) + "%";
+            g.drawString(font, pct, rcx - font.width(pct) / 2, rcy - font.lineHeight / 2, 0xFFFFFFFF, false);
+        }
 
         // text column to the right of the ring
         int tx = boxX + pad + ringBox + 8;

@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.17** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.18** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.17** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.17.jar
+# JAR → build/libs/valencia-1.7.18.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.18 — TargetHUD 環形改放真．實體模型
+- **Style 3 Ring 中央改成渲染目標實體模型**（取代原本的 HP% 數字），用 vanilla `InventoryScreen.renderEntityInInventoryFollowsMouse`（簽名以 javap 對 1.21.11 loom jar 確認），「滑鼠」釘在環中心讓實體正面朝前
+- 包 try/catch：萬一這支 API 在 HUD pass 丟例外，靜默 fallback 回 HP% 文字，HUD 不會 crash。環半徑 16→20 讓頭像看得清
 
 ### v1.7.17 — 真．不同版面（ClickGUI 側欄 + TargetHUD 環形）
 - 這次是**整套版面重寫**，不是換色。原版面都保留為 0 號且仍是預設，不切就完全不變
