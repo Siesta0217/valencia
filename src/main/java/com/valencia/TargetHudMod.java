@@ -13,11 +13,12 @@ import net.minecraft.world.entity.LivingEntity;
  * combat module is active (KillAura > MaceAura > SpearAura), falling back to
  * the entity under the crosshair and then the last mob that hit us.
  *
- * Three switchable looks via {@code cfg.targetHudStyle} — style 0 (Classic) is
+ * Four switchable looks via {@code cfg.targetHudStyle} — style 0 (Classic) is
  * the original box, kept byte-for-byte so existing users see no change:
  *   0 Classic  — name + distance header, accent box, solid HP bar, HP text
  *   1 Compact  — one slim line (name / HP / distance) with a 2px HP strip
  *   2 Gradient — bigger panel, shaved corners, red→green gradient HP bar
+ *   3 Ring     — circular HP ring with the HP% inside, name/HP/distance beside
  */
 public final class TargetHudMod {
 
@@ -54,6 +55,7 @@ public final class TargetHudMod {
         switch (cfg.targetHudStyle) {
             case 1 -> renderCompact(g, font, cfg, in, viewW);
             case 2 -> renderGradient(g, font, cfg, in, viewW);
+            case 3 -> renderRing(g, font, cfg, in, viewW);
             default -> renderClassic(g, font, cfg, in, viewW);
         }
     }
@@ -159,6 +161,53 @@ public final class TargetHudMod {
 
         int hpW = font.width(hpText);
         g.drawString(font, hpText, boxX + (boxW - hpW) / 2, cy, 0xFFFFFFFF, true);
+    }
+
+    // ── Style 3: Ring ────────────────────────────────────────────────────────
+    private static void renderRing(GuiGraphics g, Font font, ModConfig cfg, Info in, int viewW) {
+        String hpText = fmtHp(in);
+        String distText = String.format("%.1fm", in.dist());
+
+        int pad = 6, ringR = 16, ringBox = ringR * 2;
+        int textW = Math.max(font.width(in.name()), Math.max(font.width(hpText), font.width(distText)));
+        int contentH = Math.max(ringBox, 9 * 3 + 4);
+        int boxW = pad + ringBox + 8 + textW + pad;
+        int boxH = contentH + pad * 2;
+
+        int boxX = (viewW - boxW) / 2;
+        int boxY = 24;
+
+        int accent = accent(cfg);
+        g.fill(boxX, boxY, boxX + boxW, boxY + boxH, clamp(cfg.bgAlpha, 60, 220) << 24);
+        drawBorder(g, boxX, boxY, boxX + boxW, boxY + boxH, accent);
+
+        // circular HP ring
+        int rcx = boxX + pad + ringR, rcy = boxY + boxH / 2;
+        drawRing(g, rcx, rcy, ringR, ringR - 4, in.frac(), hpColor(in.frac()), 0xFF303030);
+        String pct = (int)(in.frac() * 100) + "%";
+        g.drawString(font, pct, rcx - font.width(pct) / 2, rcy - font.lineHeight / 2, 0xFFFFFFFF, false);
+
+        // text column to the right of the ring
+        int tx = boxX + pad + ringBox + 8;
+        int ty = boxY + (boxH - (9 * 3 + 4)) / 2;
+        g.drawString(font, in.name(), tx, ty, 0xFFFFFFFF, true);          ty += 11;
+        g.drawString(font, hpText,    tx, ty, hpColor(in.frac()), false); ty += 11;
+        g.drawString(font, distText,  tx, ty, 0xFFAAAAAA, false);
+    }
+
+    /** Filled annulus; the fg arc sweeps clockwise from the top up to {@code frac}. */
+    private static void drawRing(GuiGraphics g, int cx, int cy, int rOuter, int rInner, float frac, int fg, int bg) {
+        float f = Math.max(0f, Math.min(1f, frac));
+        int o2 = rOuter * rOuter, i2 = rInner * rInner;
+        for (int dy = -rOuter; dy <= rOuter; dy++) {
+            for (int dx = -rOuter; dx <= rOuter; dx++) {
+                int d2 = dx * dx + dy * dy;
+                if (d2 > o2 || d2 < i2) continue;
+                double ang = Math.atan2(dx, -dy);          // 0 at top, +clockwise
+                if (ang < 0) ang += Math.PI * 2;
+                g.fill(cx + dx, cy + dy, cx + dx + 1, cy + dy + 1, (ang / (Math.PI * 2)) <= f ? fg : bg);
+            }
+        }
     }
 
     // ── Target picking (shared) ──────────────────────────────────────────────

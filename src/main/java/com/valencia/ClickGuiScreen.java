@@ -82,10 +82,19 @@ public class ClickGuiScreen extends Screen {
     private final List<Panel> panels = new ArrayList<>();
     private Panel  sliderPanel;
     private int    sliderIdx  = -1;
-    private Panel  rebindPanel;
-    private int    rebindIdx  = -1;
+    private KeyS   rebindTarget;   // key setting currently capturing input (either layout); null = none
     private long   openTime;
     private GuiSkin skin;   // resolved each frame from cfg.guiStyle (live switch)
+
+    // ── Sidebar layout state (guiLayout == 1) ────────────────────────────────
+    private int sbWinX = -1, sbWinY = -1;   // window top-left; -1 = center on first render
+    private boolean sbDragging;
+    private int sbDragOX, sbDragOY;
+    private int sbCatIdx;                    // selected category (index into panels)
+    private ModEntry sbExpanded;             // module shown in the settings pane (null = none)
+    private int sbScrollMods, sbScrollSett;  // scroll offsets for the two scrollable columns
+    private SliderS sbSliderActive;          // slider being dragged
+    private int sbSliderX, sbSliderW;
 
     // ── Waifu ───────────────────────────────────────────────────────────────
     private Identifier waifuLoc;
@@ -286,7 +295,7 @@ public class ClickGuiScreen extends Screen {
         add(Cat.RENDER, new ModEntry("TargetHUD",
             TargetHudMod::isEnabled, () -> { TargetHudMod.toggle(); cfg.targetHudEnabled = TargetHudMod.isEnabled(); cfg.save(); },
             true, List.of(
-            new SliderS("Style", () -> cfg.targetHudStyle, v -> { cfg.targetHudStyle = (int)v; cfg.save(); }, 0, 2)
+            new SliderS("Style", () -> cfg.targetHudStyle, v -> { cfg.targetHudStyle = (int)v; cfg.save(); }, 0, 3)
         )));
 
         add(Cat.RENDER, new ModEntry("ArrayList",
@@ -297,6 +306,7 @@ public class ClickGuiScreen extends Screen {
 
         // ── Client ──────────────────────────────────────────────────────────
         add(Cat.CLIENT, new ModEntry("Theme", () -> false, () -> {}, false, List.of(
+            new SliderS("Layout",    () -> cfg.guiLayout, v -> { cfg.guiLayout = (int)v; cfg.save(); }, 0, 1),
             new SliderS("GUI Style", () -> cfg.guiStyle, v -> { cfg.guiStyle = (int)v; cfg.save(); }, 0, 2),
             new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
             new SliderS("Green",    () -> cfg.accentG, v -> { cfg.accentG = (int)v; cfg.save(); }, 0, 255),
@@ -374,8 +384,9 @@ public class ClickGuiScreen extends Screen {
         int verColor = skin.rainbowVersion ? (astolfo(0, 4890f) | 0xFF000000) : accent;
         g.drawString(font, verStr, 5, height - font.lineHeight - 3, verColor, true);
 
-        // panels
-        for (Panel p : panels) renderPanel(g, p, mx, my, accent, font);
+        // active layout
+        if (cfg.guiLayout == 1) renderSidebar(g, mx, my, accent, font);
+        else for (Panel p : panels) renderPanel(g, p, mx, my, accent, font);
     }
 
     private void renderPanel(GuiGraphics g, Panel p, int mx, int my, int accent, Font font) {
@@ -477,8 +488,7 @@ public class ClickGuiScreen extends Screen {
                 } else if (s instanceof BoolS bs) {
                     drawBool(g, bs, sx, drawY, font, accent);
                 } else if (s instanceof KeyS ks) {
-                    boolean binding = (rebindPanel == p && rebindIdx == i);
-                    drawBind(g, ks, sx, drawY, font, binding);
+                    drawBind(g, ks, sx, drawY, font, rebindTarget == ks);
                 }
             }
             drawY += sh;
@@ -608,6 +618,198 @@ public class ClickGuiScreen extends Screen {
         return String.format("%.1f", v);
     }
 
+    // ═════════════════════════════════════════════════════════════════════════
+    //  SIDEBAR LAYOUT (guiLayout == 1) — single centered window, fully separate
+    //  geometry & hit-testing from the Raven panels. Shares the module data
+    //  (panels), the GuiSkin colors and the drawSlider/Bool/Bind widgets.
+    // ═════════════════════════════════════════════════════════════════════════
+    private static final int SB_W     = 300;
+    private static final int SB_H     = 196;
+    private static final int SB_TITLE = 16;
+    private static final int SB_SIDE  = 58;    // category column width
+    private static final int SB_LIST  = 100;   // module column width
+    private static final int SB_CAT_H = 18;
+    private static final int SB_ROW_H = 14;
+
+    private void ensureSidebarPos() {
+        if (sbWinX < 0) { sbWinX = (width - SB_W) / 2; sbWinY = (height - SB_H) / 2; }
+    }
+
+    private void renderSidebar(GuiGraphics g, int mx, int my, int accent, Font font) {
+        ensureSidebarPos();
+        int x = sbWinX, y = sbWinY, x2 = x + SB_W, y2 = y + SB_H;
+        int aTint = accent & 0x00FFFFFF;
+
+        g.fill(x, y, x2, y2, skin.panelBg);
+
+        // ── title bar (drag handle + close) ──
+        boolean hoverTitle = mx >= x && mx < x2 - 14 && my >= y && my < y + SB_TITLE;
+        g.fill(x, y, x2, y + SB_TITLE, hoverTitle ? skin.headerHover : skin.headerBg);
+        g.drawString(font, "Valencia", x + 6, y + (SB_TITLE - font.lineHeight) / 2 + 1, skin.catLabel, skin.nameShadow);
+        boolean hoverClose = mx >= x2 - 14 && mx < x2 && my >= y && my < y + SB_TITLE;
+        g.drawString(font, "x", x2 - 9, y + (SB_TITLE - font.lineHeight) / 2 + 1, hoverClose ? 0xFFFF5555 : skin.textDim, false);
+        g.fill(x, y + SB_TITLE - 1, x2, y + SB_TITLE, skin.headerUnderline);
+
+        int contentY = y + SB_TITLE;
+        int sideX2 = x + SB_SIDE, listX1 = sideX2 + 1, listX2 = listX1 + SB_LIST;
+        g.fill(sideX2, contentY, sideX2 + 1, y2, skin.borderIdle);
+        g.fill(listX2, contentY, listX2 + 1, y2, skin.borderIdle);
+
+        // ── left: category tabs ──
+        int cy = contentY + 2;
+        for (int i = 0; i < panels.size(); i++) {
+            Cat c = panels.get(i).cat;
+            boolean sel = i == sbCatIdx;
+            boolean hov = mx >= x && mx < sideX2 && my >= cy && my < cy + SB_CAT_H;
+            if (sel)      g.fill(x, cy, sideX2, cy + SB_CAT_H, aTint | 0x50000000);
+            else if (hov) g.fill(x, cy, sideX2, cy + SB_CAT_H, skin.rowHover);
+            if (sel)      g.fill(x, cy, x + 2, cy + SB_CAT_H, accent);
+            g.drawString(font, c.label, x + 6, cy + (SB_CAT_H - font.lineHeight) / 2, sel ? skin.textOn : skin.textDim, skin.nameShadow);
+            cy += SB_CAT_H;
+        }
+
+        // ── middle: module list for the selected category ──
+        Panel cat = panels.get(sbCatIdx);
+        int listTop = contentY + 2, listBot = y2 - 2, listVis = listBot - listTop;
+        int totalList = cat.mods.size() * SB_ROW_H;
+        int maxScrollM = Math.max(0, totalList - listVis);
+        sbScrollMods = Math.max(0, Math.min(sbScrollMods, maxScrollM));
+        int ry = listTop - sbScrollMods;
+        for (ModEntry m : cat.mods) {
+            if (ry + SB_ROW_H > listTop && ry < listBot) {
+                boolean on = m.enabled.getAsBoolean();
+                boolean sel = m == sbExpanded;
+                boolean hov = mx >= listX1 && mx < listX2 && my >= Math.max(ry, listTop) && my < Math.min(ry + SB_ROW_H, listBot);
+                if (sel)      g.fill(listX1, ry, listX2, ry + SB_ROW_H, aTint | 0x40000000);
+                else if (hov) g.fill(listX1, ry, listX2, ry + SB_ROW_H, skin.rowHover);
+                int dotY = ry + (SB_ROW_H - 6) / 2;
+                g.fill(listX1 + 4, dotY, listX1 + 10, dotY + 6, on ? 0xFF55FF55 : 0xFF606060);
+                int tc = m.toggleable ? (on ? skin.textOn : skin.textDim) : skin.textOff;
+                g.drawString(font, m.name, listX1 + 14, ry + (SB_ROW_H - font.lineHeight) / 2, tc, skin.nameShadow);
+                if (!m.settings.isEmpty())
+                    g.drawString(font, "›", listX2 - 8, ry + (SB_ROW_H - font.lineHeight) / 2, skin.textDim, false);
+            }
+            ry += SB_ROW_H;
+        }
+        if (totalList > listVis) {
+            int barH = Math.max(8, listVis * listVis / totalList);
+            int barY = listTop + (int)((listVis - barH) * ((float) sbScrollMods / maxScrollM));
+            g.fill(listX2 - 2, barY, listX2, barY + barH, skin.scrollBar);
+        }
+
+        // ── right: settings for the selected module (reuses Raven widgets) ──
+        int setX = listX2 + 5, setRight = x2 - 5, setW = setRight - setX;
+        int setTop = contentY + 4, setBot = y2 - 3;
+        if (sbExpanded == null) {
+            g.drawString(font, "Pick a module ‹", listX2 + 6, contentY + 6, skin.textOff, false);
+        } else {
+            ModEntry m = sbExpanded;
+            boolean on = m.enabled.getAsBoolean();
+            g.drawString(font, m.name, setX, setTop, on ? skin.textOn : skin.textDim, skin.nameShadow);
+            if (m.toggleable) {
+                String st = on ? "ON" : "OFF";
+                g.drawString(font, st, setRight - font.width(st), setTop, on ? 0xFF55FF55 : 0xFFFF5555, false);
+            }
+            int sListTop = setTop + 12;
+            int totalSet = totalSettingsH(m), setVis = setBot - sListTop;
+            int maxScrollS = Math.max(0, totalSet - setVis);
+            sbScrollSett = Math.max(0, Math.min(sbScrollSett, maxScrollS));
+            int dy = sListTop - sbScrollSett;
+            for (Setting s : m.settings) {
+                int sh = settH(s);
+                if (dy + sh > sListTop && dy < setBot) {
+                    if (s instanceof SliderS sl)    drawSlider(g, sl, setX, dy, setW, font, accent);
+                    else if (s instanceof BoolS bs) drawBool(g, bs, setX, dy, font, accent);
+                    else if (s instanceof KeyS ks)  drawBind(g, ks, setX, dy, font, rebindTarget == ks);
+                }
+                dy += sh;
+            }
+            if (totalSet > setVis) {
+                int barH = Math.max(8, setVis * setVis / totalSet);
+                int barY = sListTop + (int)((setVis - barH) * ((float) sbScrollSett / maxScrollS));
+                g.fill(x2 - 2, barY, x2, barY + barH, skin.scrollBar);
+            }
+        }
+
+        boolean hoverWin = mx >= x && mx < x2 && my >= y && my < y2;
+        drawBorder(g, x, y, x2, y2, hoverWin ? (aTint | 0x80000000) : skin.borderIdle);
+    }
+
+    private boolean sbMouseClicked(int mx, int my, int btn) {
+        ensureSidebarPos();
+        int x = sbWinX, y = sbWinY, x2 = x + SB_W, y2 = y + SB_H;
+        if (mx < x || mx >= x2 || my < y || my >= y2) return false;
+
+        if (my < y + SB_TITLE) {                       // title bar
+            if (btn == 0 && mx >= x2 - 14) { onClose(); return true; }
+            if (btn == 0) { sbDragging = true; sbDragOX = x - mx; sbDragOY = y - my; }
+            return true;
+        }
+
+        int contentY = y + SB_TITLE;
+        int sideX2 = x + SB_SIDE, listX1 = sideX2 + 1, listX2 = listX1 + SB_LIST;
+
+        if (mx < sideX2) {                             // category tabs
+            int cy = contentY + 2;
+            for (int i = 0; i < panels.size(); i++) {
+                if (my >= cy && my < cy + SB_CAT_H) { sbCatIdx = i; sbExpanded = null; sbScrollMods = 0; sbScrollSett = 0; break; }
+                cy += SB_CAT_H;
+            }
+            return true;
+        }
+
+        if (mx < listX2) {                             // module list
+            int listTop = contentY + 2, listBot = y2 - 2;
+            int ry = listTop - sbScrollMods;
+            for (ModEntry m : panels.get(sbCatIdx).mods) {
+                if (my >= Math.max(ry, listTop) && my < Math.min(ry + SB_ROW_H, listBot)) {
+                    if (mx < listX1 + 12) { if (m.toggleable) m.toggle.run(); }   // dot → toggle
+                    else { sbExpanded = (sbExpanded == m) ? null : m; sbScrollSett = 0; }  // row → select
+                    break;
+                }
+                ry += SB_ROW_H;
+            }
+            return true;
+        }
+
+        if (sbExpanded != null) {                      // settings pane
+            ModEntry m = sbExpanded;
+            int setX = listX2 + 5, setRight = x2 - 5, setW = setRight - setX;
+            int setTop = contentY + 4, setBot = y2 - 3;
+            if (my >= setTop && my < setTop + 10) {
+                if (btn == 0 && m.toggleable && mx >= setRight - 24) m.toggle.run();
+                return true;
+            }
+            int sListTop = setTop + 12;
+            int dy = sListTop - sbScrollSett;
+            for (Setting s : m.settings) {
+                int sh = settH(s);
+                if (my >= Math.max(dy, sListTop) && my < Math.min(dy + sh, setBot)) {
+                    if (btn == 0) sbHandleSettClick(s, mx, setX, setW);
+                    break;
+                }
+                dy += sh;
+            }
+        }
+        return true;
+    }
+
+    private void sbHandleSettClick(Setting s, int mx, int setX, int setW) {
+        if (s instanceof SliderS sl) { sbSliderActive = sl; sbSliderX = setX; sbSliderW = setW; applySlider(sl, mx, setX, setW); }
+        else if (s instanceof BoolS bs) bs.toggle().run();
+        else if (s instanceof KeyS ks) rebindTarget = ks;
+    }
+
+    private boolean sbMouseScrolled(int mx, int my, double scrollY) {
+        ensureSidebarPos();
+        int x = sbWinX, y = sbWinY, x2 = x + SB_W, y2 = y + SB_H;
+        if (mx < x || mx >= x2 || my < y || my >= y2) return false;
+        int sideX2 = x + SB_SIDE, listX1 = sideX2 + 1, listX2 = listX1 + SB_LIST;
+        if (mx >= listX1 && mx < listX2) { sbScrollMods -= (int)(scrollY * 8); return true; }
+        if (mx >= listX2 && sbExpanded != null) { sbScrollSett -= (int)(scrollY * 8); return true; }
+        return true;
+    }
+
     // ── Waifu ───────────────────────────────────────────────────────────────
     private static final String[] WAIFU_EXTS = {"png", "jpg", "jpeg", "bmp", "gif"};
 
@@ -664,6 +866,8 @@ public class ClickGuiScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean dbl) {
         int mx = (int)event.x(), my = (int)event.y(), btn = event.button();
+
+        if (ModConfig.get().guiLayout == 1) return sbMouseClicked(mx, my, btn);
 
         for (int i = panels.size() - 1; i >= 0; i--) {
             Panel p = panels.get(i);
@@ -746,8 +950,8 @@ public class ClickGuiScreen extends Screen {
             applySlider(sl, mx, p.x + 4, PANEL_W - 8);
         } else if (s instanceof BoolS bs) {
             bs.toggle().run();
-        } else if (s instanceof KeyS) {
-            rebindPanel = p; rebindIdx = idx;
+        } else if (s instanceof KeyS ks) {
+            rebindTarget = ks;
         }
     }
 
@@ -760,6 +964,12 @@ public class ClickGuiScreen extends Screen {
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
         int mx = (int)event.x(), my = (int)event.y();
+
+        if (ModConfig.get().guiLayout == 1) {
+            if (sbDragging) { sbWinX = sbDragOX + mx; sbWinY = sbDragOY + my; return true; }
+            if (sbSliderActive != null) { applySlider(sbSliderActive, mx, sbSliderX, sbSliderW); return true; }
+            return super.mouseDragged(event, dx, dy);
+        }
 
         // panel drag
         for (Panel p : panels) {
@@ -784,12 +994,15 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseReleased(MouseButtonEvent event) {
         for (Panel p : panels) p.dragging = false;
         sliderPanel = null; sliderIdx = -1;
+        sbDragging = false; sbSliderActive = null;
         return super.mouseReleased(event);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int mx = (int)mouseX, my = (int)mouseY;
+
+        if (ModConfig.get().guiLayout == 1) return sbMouseScrolled(mx, my, scrollY);
 
         // find which panel the mouse is over and scroll its settings
         for (int i = panels.size() - 1; i >= 0; i--) {
@@ -814,12 +1027,9 @@ public class ClickGuiScreen extends Screen {
     @Override
     public boolean keyPressed(KeyEvent event) {
         int key = event.key();
-        if (rebindPanel != null && rebindIdx >= 0) {
-            if (key != GLFW.GLFW_KEY_ESCAPE && rebindPanel.expanded != null) {
-                Setting s = rebindPanel.expanded.settings.get(rebindIdx);
-                if (s instanceof KeyS ks) ks.set().accept(key);
-            }
-            rebindPanel = null; rebindIdx = -1;
+        if (rebindTarget != null) {
+            if (key != GLFW.GLFW_KEY_ESCAPE) rebindTarget.set().accept(key);
+            rebindTarget = null;
             return true;
         }
         if (key == ModConfig.get().guiKey) { onClose(); return true; }

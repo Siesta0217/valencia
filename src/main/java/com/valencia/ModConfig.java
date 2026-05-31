@@ -107,8 +107,10 @@ public class ModConfig {
     public int accentB  = 255;
     public int bgAlpha  = 160;
 
-    // ClickGUI skin: 0=Dark (Raven, original), 1=Light, 2=Glass
+    // ClickGUI skin (colors): 0=Dark (Raven, original), 1=Light, 2=Glass
     public int guiStyle = 0;
+    // ClickGUI layout: 0=Panels (Raven scattered, original), 1=Sidebar window
+    public int guiLayout = 0;
 
     // Module enabled states (persisted across sessions)
     public boolean nofallEnabled     = true;

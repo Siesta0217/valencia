@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.16** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.17** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.16** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.16.jar
+# JAR → build/libs/valencia-1.7.17.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.17 — 真．不同版面（ClickGUI 側欄 + TargetHUD 環形）
+- 這次是**整套版面重寫**，不是換色。原版面都保留為 0 號且仍是預設，不切就完全不變
+- **ClickGUI 版面**新增獨立維度 `Layout`（ClickGUI → Client → Theme → `Layout`），與配色 `GUI Style` 正交：
+  - `0 Panels`：原本的 Raven 散落可拖曳面板（不變）
+  - `1 Sidebar`：單一置中視窗——左側分類分頁、中間模組清單（**綠點=開關、列其餘=選取**）、右側該模組設定。標題列可拖曳、右上 `x` 關閉、清單與設定各自獨立捲動。幾何與命中判定完全獨立，但沿用同一份模組資料 / GuiSkin 配色 / slider・toggle・keybind widget，所以 Light / Glass 配色一樣套得上
+- **TargetHUD** 新增 `Style 3 Ring`（`Style` 範圍變 0–3）：環形血量圈、中央顯示 HP%、右側名字 / 血量 / 距離
+- rebind 狀態統一成單一 `rebindTarget`，兩種版面共用按鍵捕捉
 
 ### v1.7.16 — TargetHUD / ClickGUI 可切換風格
 - **TargetHUD Style 選擇器**（ClickGUI → TargetHUD → `Style` 0–2，預設 0）：
