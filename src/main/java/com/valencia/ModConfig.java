@@ -32,6 +32,9 @@ public class ModConfig {
     public int autoTotemKey  = GLFW.GLFW_KEY_O;
     public int panicKey      = GLFW.GLFW_KEY_DELETE;
 
+    // NoFall: 0=Always spoof onGround, 1=Smart (only when a fall would deal damage)
+    public int nofallMode = 0;
+
     // SpearAura tuning
     public float spearScanRange   = 7.0f;
     public float spearMinReach    = 1.6f;

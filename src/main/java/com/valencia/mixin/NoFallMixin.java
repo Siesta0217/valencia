@@ -29,6 +29,11 @@ public abstract class NoFallMixin {
         // server's fall-flying state and breaks deploy/landing.
         if (self.isFallFlying()) return;
 
+        // Smart mode: only spoof when the fall would actually deal damage, so the
+        // server doesn't get an airborne onGround=true claim every single tick
+        // (the pattern modern anti-cheats flag). Walking / small hops stay honest.
+        if (NoFallMod.mode == 1 && ((Entity) (Object) this).fallDistance <= 2.0) return;
+
         nofall$active = true;
         nofall$savedOnGround = self.onGround();
         self.setOnGround(true);

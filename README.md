@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.18** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.19** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.18** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.18.jar
+# JAR → build/libs/valencia-1.7.19.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.19 — NoFall 智慧 spoof 模式
+- **NoFall 新增 `Mode`**（ClickGUI → Movement → NoFall → `Mode` 0–1）：
+  - `0 Always`：每次 `sendPosition` 都把 onGround spoof 成 true（原本行為）
+  - `1 Smart`：只在 `Entity.fallDistance > 2.0`（真的會摔到傷害）時才 spoof，走路/小跳照實送 onGround，把「半空卻 onGround=true」這個現代 anti-cheat 最愛抓的窗口縮到最小
+- `fallDistance` 是 Entity 的 public double（javap 對 1.21.11 loom jar 確認）
 
 ### v1.7.18 — TargetHUD 環形改放真．實體模型
 - **Style 3 Ring 中央改成渲染目標實體模型**（取代原本的 HP% 數字），用 vanilla `InventoryScreen.renderEntityInInventoryFollowsMouse`（簽名以 javap 對 1.21.11 loom jar 確認），「滑鼠」釘在環中心讓實體正面朝前
