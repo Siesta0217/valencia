@@ -41,6 +41,17 @@ public final class Keybinds {
         new Toggle(() -> cfg().autoTotemKey, AutoTotemMod::isEnabled, AutoTotemMod::toggle,    "AutoTotem")
     );
 
+    /** Minimal (label, enabled) pair exposed for HUDs such as the ArrayList. */
+    public record ModuleEntry(String label, BooleanSupplier enabled) {}
+
+    /**
+     * Every key-toggleable module as (label, enabled). The ArrayList HUD reads
+     * this instead of hand-copying the roster, so adding a row to {@link #TOGGLES}
+     * automatically surfaces it there too — no parallel list to keep in sync.
+     */
+    public static final List<ModuleEntry> TOGGLE_ENTRIES =
+        TOGGLES.stream().map(t -> new ModuleEntry(t.label(), t.enabled())).toList();
+
     private static final boolean[] prevToggle = new boolean[TOGGLES.size()];
     private static boolean prevGui   = false;
     private static boolean prevPanic = false;

@@ -7,7 +7,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 
 /**
  * Top-right "ArrayList" HUD — the classic enabled-module list, right-aligned
@@ -26,31 +25,16 @@ public final class ArrayListMod {
     /** Dark backplate behind each row. */
     public static boolean background = true;
 
-    private record Entry(String label, BooleanSupplier on) {}
-
-    // Modules worth surfacing. Pure-HUD readouts (TargetHUD, DimCoord) and the
-    // ArrayList itself are intentionally excluded.
-    private static final List<Entry> ENTRIES = List.of(
-        new Entry("KillAura",   KillAuraMod::isEnabled),
-        new Entry("MaceAura",   MaceAuraMod::isEnabled),
-        new Entry("SpearAura",  SpearAuraMod::isEnabled),
-        new Entry("CritHit",    CritMod::isEnabled),
-        new Entry("Hitbox",     HitboxMod::isEnabled),
-        new Entry("AutoTotem",  AutoTotemMod::isEnabled),
-        new Entry("Scaffold",   ScaffoldMod::isEnabled),
-        new Entry("BHop",       BHopMod::isEnabled),
-        new Entry("Velocity",   VelocityMod::isEnabled),
-        new Entry("Step",       StepMod::isEnabled),
-        new Entry("Timer",      TimerMod::isEnabled),
-        new Entry("FastPlace",  FastPlaceMod::isEnabled),
-        new Entry("NoSlow",     NoSlowMod::isEnabled),
-        new Entry("NoFall",     NoFallMod::isEnabled),
-        new Entry("NoCrash",    NoCrashMod::isEnabled),
-        new Entry("AutoFish",   AutoFishMod::isEnabled),
-        new Entry("ElytraGoto", ElytraGotoMod::isEnabled),
-        new Entry("XRay",       XRayMod::isEnabled),
-        new Entry("ESP",        ESPMod::isEnabled),
-        new Entry("NameTag",    NameTagMod::isEnabled)
+    // Surfaceable modules that have no keybind, so they aren't in
+    // Keybinds.TOGGLE_ENTRIES. Everything key-toggleable is pulled straight from
+    // Keybinds, so this HUD can never drift from the real module roster.
+    // Pure-HUD readouts (TargetHUD) and the ArrayList itself are excluded.
+    private static final List<Keybinds.ModuleEntry> EXTRAS = List.of(
+        new Keybinds.ModuleEntry("Hitbox",     HitboxMod::isEnabled),
+        new Keybinds.ModuleEntry("NoCrash",    NoCrashMod::isEnabled),
+        new Keybinds.ModuleEntry("AutoFish",   AutoFishMod::isEnabled),
+        new Keybinds.ModuleEntry("ElytraGoto", ElytraGotoMod::isEnabled),
+        new Keybinds.ModuleEntry("ESP",        ESPMod::isEnabled)
     );
 
     private ArrayListMod() {}
@@ -66,9 +50,13 @@ public final class ArrayListMod {
         Font font = mc.font;
         ModConfig cfg = ModConfig.get();
 
-        // Collect active labels, longest first → staircase.
+        // Collect active labels (key-toggleable modules from Keybinds + the
+        // keybind-less extras), longest first → staircase.
         List<String> active = new ArrayList<>();
-        for (Entry e : ENTRIES) if (e.on().getAsBoolean()) active.add(e.label());
+        for (Keybinds.ModuleEntry e : Keybinds.TOGGLE_ENTRIES)
+            if (e.enabled().getAsBoolean()) active.add(e.label());
+        for (Keybinds.ModuleEntry e : EXTRAS)
+            if (e.enabled().getAsBoolean()) active.add(e.label());
         if (active.isEmpty()) return;
         active.sort((a, b) -> font.width(b) - font.width(a));
 
