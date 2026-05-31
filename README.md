@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.15** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.16** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.15** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.15.jar
+# JAR → build/libs/valencia-1.7.16.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,19 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.16 — TargetHUD / ClickGUI 可切換風格
+- **TargetHUD Style 選擇器**（ClickGUI → TargetHUD → `Style` 0–2，預設 0）：
+  - `0 Classic`：原本的方框（完全沒變）
+  - `1 Compact`：單行精簡（名字 / 血量 / 距離）＋ 底部 2px 血條
+  - `2 Gradient`：較大面板、切角假圓角、紅→綠漸層血條
+  - 三種風格共用同一套目標選擇（aura 鎖定 → 準星 → 最後攻擊者），只差繪製
+- **ClickGUI 換膚系統**（ClickGUI → Client → Theme → `GUI Style` 0–2，預設 0）：
+  - `0 Dark`：原本的 Raven 深色配色（完全還原，無變化）
+  - `1 Light`：淺色面板 + 深色文字，啟用列改平鋪 accent 色
+  - `2 Glass`：高透明 accent 染色玻璃風
+  - 新增 `GuiSkin.java` 集中所有顏色；ClickGuiScreen 每幀依 `guiStyle` 解析，**開著 GUI 也能即時切換**
+- 兩個 Style 都預設 0，舊使用者更新後外觀完全不變
 
 ### v1.7.15 — ArrayList HUD 改吃 Keybinds 中央表（消除平行清單）
 - **重構（無行為變化）**：ArrayList 原本手抄一份 20 個模組的清單，新模組得記得同步。改成直接讀 `Keybinds.TOGGLE_ENTRIES`（所有有 keybind 的模組）＋ 一份只剩 5 項的 `EXTRAS`（無 keybind 的 Hitbox / NoCrash / AutoFish / ElytraGoto / ESP）。往 `Keybinds.TOGGLES` 加一行模組就會自動出現在 ArrayList，兩邊不再會漂移。顯示的模組集合與渲染完全不變

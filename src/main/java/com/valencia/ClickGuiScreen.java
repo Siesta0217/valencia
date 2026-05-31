@@ -85,6 +85,7 @@ public class ClickGuiScreen extends Screen {
     private Panel  rebindPanel;
     private int    rebindIdx  = -1;
     private long   openTime;
+    private GuiSkin skin;   // resolved each frame from cfg.guiStyle (live switch)
 
     // ── Waifu ───────────────────────────────────────────────────────────────
     private Identifier waifuLoc;
@@ -284,7 +285,9 @@ public class ClickGuiScreen extends Screen {
 
         add(Cat.RENDER, new ModEntry("TargetHUD",
             TargetHudMod::isEnabled, () -> { TargetHudMod.toggle(); cfg.targetHudEnabled = TargetHudMod.isEnabled(); cfg.save(); },
-            true, List.of()));
+            true, List.of(
+            new SliderS("Style", () -> cfg.targetHudStyle, v -> { cfg.targetHudStyle = (int)v; cfg.save(); }, 0, 2)
+        )));
 
         add(Cat.RENDER, new ModEntry("ArrayList",
             ArrayListMod::isEnabled, () -> { ArrayListMod.toggle(); cfg.arrayListEnabled = ArrayListMod.isEnabled(); cfg.save(); }, true, List.of(
@@ -294,6 +297,7 @@ public class ClickGuiScreen extends Screen {
 
         // ── Client ──────────────────────────────────────────────────────────
         add(Cat.CLIENT, new ModEntry("Theme", () -> false, () -> {}, false, List.of(
+            new SliderS("GUI Style", () -> cfg.guiStyle, v -> { cfg.guiStyle = (int)v; cfg.save(); }, 0, 2),
             new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
             new SliderS("Green",    () -> cfg.accentG, v -> { cfg.accentG = (int)v; cfg.save(); }, 0, 255),
             new SliderS("Blue",     () -> cfg.accentB, v -> { cfg.accentB = (int)v; cfg.save(); }, 0, 255),
@@ -354,6 +358,7 @@ public class ClickGuiScreen extends Screen {
         ModConfig cfg = ModConfig.get();
 
         int accent = 0xFF000000 | (cfg.accentR << 16) | (cfg.accentG << 8) | cfg.accentB;
+        skin = GuiSkin.of(cfg.guiStyle, accent);
 
         // semi-transparent dark background (Raven-style)
         float openAnim = Math.min(1f, (System.currentTimeMillis() - openTime) / 400f);
@@ -366,7 +371,7 @@ public class ClickGuiScreen extends Screen {
         // version string at bottom-left (Raven-style)
         Font font = Minecraft.getInstance().font;
         String verStr = "Valencia";
-        int verColor = astolfo(0, 4890f) | 0xFF000000;
+        int verColor = skin.rainbowVersion ? (astolfo(0, 4890f) | 0xFF000000) : accent;
         g.drawString(font, verStr, 5, height - font.lineHeight - 3, verColor, true);
 
         // panels
@@ -378,14 +383,14 @@ public class ClickGuiScreen extends Screen {
         int x1 = p.x, y1 = p.y, x2 = p.x + PANEL_W, y2 = p.y + ph;
 
         // ── panel background ────────────────────────────────────────────────
-        g.fill(x1, y1, x2, y2, 0xC8141414);
+        g.fill(x1, y1, x2, y2, skin.panelBg);
 
         // ── header ──────────────────────────────────────────────────────────
         boolean hoverHdr = mx >= x1 && mx < x2 && my >= y1 && my < y1 + HDR;
-        g.fill(x1, y1, x2, y1 + HDR, hoverHdr ? 0xFF2D2D2D : 0xFF1E1E1E);
+        g.fill(x1, y1, x2, y1 + HDR, hoverHdr ? skin.headerHover : skin.headerBg);
 
         // category name (left side)
-        g.drawString(font, p.cat.label, x1 + 3, y1 + (HDR - font.lineHeight) / 2 + 1, accent, false);
+        g.drawString(font, p.cat.label, x1 + 3, y1 + (HDR - font.lineHeight) / 2 + 1, skin.catLabel, false);
 
         // +/- indicator (right side, Raven-style: green when open, red when closed)
         String sym = p.open ? "-" : "+";
@@ -393,7 +398,7 @@ public class ClickGuiScreen extends Screen {
         g.drawString(font, sym, x2 - font.width(sym) - 3, y1 + (HDR - font.lineHeight) / 2 + 1, symColor, false);
 
         // thin accent line under header
-        g.fill(x1, y1 + HDR - 1, x2, y1 + HDR, accent);
+        g.fill(x1, y1 + HDR - 1, x2, y1 + HDR, skin.headerUnderline);
 
         if (!p.open) return;
 
@@ -404,7 +409,7 @@ public class ClickGuiScreen extends Screen {
 
         // border (Raven-style: outer border)
         boolean hoverPanel = mx >= x1 && mx < x2 && my >= y1 && my < y2;
-        int borderColor = hoverPanel ? (accent & 0x00FFFFFF) | 0x80000000 : 0x40FFFFFF;
+        int borderColor = hoverPanel ? (accent & 0x00FFFFFF) | 0x80000000 : skin.borderIdle;
         drawBorder(g, x1, y1, x2, y2, borderColor);
     }
 
@@ -415,20 +420,17 @@ public class ClickGuiScreen extends Screen {
             boolean hover = mx >= p.x && mx < p.x + PANEL_W && my >= yo && my < yo + MOD_H;
             boolean on = m.enabled.getAsBoolean();
 
-            // gradient background (Raven-style: top-to-bottom gradient for enabled modules)
+            // enabled-row background (accent gradient or flat tint, per skin)
             if (on) {
-                // green-tinted gradient for enabled
-                int topC = (accent & 0x00FFFFFF) | 0xB0000000;
-                int botC = (accent & 0x00FFFFFF) | 0x60000000;
-                drawGradientV(g, p.x, yo, p.x + PANEL_W, yo + MOD_H, topC, botC);
+                drawEnabledBg(g, p.x, yo, p.x + PANEL_W, yo + MOD_H, accent);
             } else if (hover) {
-                g.fill(p.x, yo, p.x + PANEL_W, yo + MOD_H, 0x40FFFFFF);
+                g.fill(p.x, yo, p.x + PANEL_W, yo + MOD_H, skin.rowHover);
             }
 
             // centered module name (Raven-style)
-            int tc = on ? 0xFFFFFFFF : (m.toggleable ? 0xFFCCCCCC : 0xFF999999);
+            int tc = on ? skin.textOn : (m.toggleable ? skin.textDim : skin.textOff);
             int tw = font.width(m.name);
-            g.drawString(font, m.name, p.x + (PANEL_W - tw) / 2, yo + (MOD_H - font.lineHeight) / 2, tc, true);
+            g.drawString(font, m.name, p.x + (PANEL_W - tw) / 2, yo + (MOD_H - font.lineHeight) / 2, tc, skin.nameShadow);
 
             yo += MOD_H;
         }
@@ -442,20 +444,18 @@ public class ClickGuiScreen extends Screen {
         // module name row with back arrow
         boolean on = m.enabled.getAsBoolean();
         if (on) {
-            int topC = (accent & 0x00FFFFFF) | 0xB0000000;
-            int botC = (accent & 0x00FFFFFF) | 0x60000000;
-            drawGradientV(g, p.x, yo, p.x + PANEL_W, yo + MOD_H, topC, botC);
+            drawEnabledBg(g, p.x, yo, p.x + PANEL_W, yo + MOD_H, accent);
         } else {
-            g.fill(p.x, yo, p.x + PANEL_W, yo + MOD_H, 0xFF2A2A2A);
+            g.fill(p.x, yo, p.x + PANEL_W, yo + MOD_H, skin.expandedOffBg);
         }
-        g.drawString(font, "« " + m.name, p.x + 3, yo + (MOD_H - font.lineHeight) / 2, on ? 0xFFFFFFFF : 0xFFCCCCCC, true);
+        g.drawString(font, "« " + m.name, p.x + 3, yo + (MOD_H - font.lineHeight) / 2, on ? skin.textOn : skin.textDim, skin.nameShadow);
         yo += MOD_H;
 
         // settings area background
         int settStart = yo;
         int totalSettH = totalSettingsH(m);
         int visH = Math.min(totalSettH, MAX_SET_H);
-        g.fill(p.x, settStart, p.x + PANEL_W, settStart + visH, 0xC0101010);
+        g.fill(p.x, settStart, p.x + PANEL_W, settStart + visH, skin.settingsBg);
 
         // clamp scroll
         int maxScroll = Math.max(0, totalSettH - MAX_SET_H);
@@ -489,7 +489,7 @@ public class ClickGuiScreen extends Screen {
             float scrollPct = (float) p.scrollOff / maxScroll;
             int barH = Math.max(8, visH * visH / totalSettH);
             int barY = settStart + (int)((visH - barH) * scrollPct);
-            g.fill(p.x + PANEL_W - 2, barY, p.x + PANEL_W, barY + barH, 0x80FFFFFF);
+            g.fill(p.x + PANEL_W - 2, barY, p.x + PANEL_W, barY + barH, skin.scrollBar);
         }
     }
 
@@ -501,7 +501,7 @@ public class ClickGuiScreen extends Screen {
         // half-scale label (Raven-style)
         g.pose().pushMatrix();
         g.pose().scale(0.5f, 0.5f);
-        g.drawString(font, txt, x * 2, y * 2, 0xFEFFFFFF, false);
+        g.drawString(font, txt, x * 2, y * 2, skin.textOn, false);
         g.pose().popMatrix();
 
         // slider bar
@@ -511,12 +511,12 @@ public class ClickGuiScreen extends Screen {
         int filled = (int)(w * pct);
 
         // bar background (dark, Raven: bordered rounded rect)
-        g.fill(x, barY, x + w, barY + barH, 0x30FFFFFF);
-        drawBorder(g, x, barY, x + w, barY + barH, 0x50FFFFFF);
+        g.fill(x, barY, x + w, barY + barH, skin.sliderTrack);
+        drawBorder(g, x, barY, x + w, barY + barH, skin.sliderTrackBorder);
 
         // filled portion (accent-tinted, Raven uses purple — we use accent)
         if (filled > 0) {
-            int fc = (0xC0 << 24) | (accent & 0x00FFFFFF);
+            int fc = (skin.sliderFillAlpha << 24) | (accent & 0x00FFFFFF);
             g.fill(x, barY, x + filled, barY + barH, fc);
         }
     }
@@ -529,8 +529,8 @@ public class ClickGuiScreen extends Screen {
         int by = y + (S_BOOL - bh) / 2;
 
         // track background
-        g.fill(x, by, x + bw, by + bh, 0xFF000000);
-        drawBorder(g, x, by, x + bw, by + bh, 0x50FFFFFF);
+        g.fill(x, by, x + bw, by + bh, skin.boolTrack);
+        drawBorder(g, x, by, x + bw, by + bh, skin.widgetBorder);
 
         // sliding indicator (Raven: green/red)
         int indW = bw / 2;
@@ -541,7 +541,7 @@ public class ClickGuiScreen extends Screen {
         // half-scale label
         g.pose().pushMatrix();
         g.pose().scale(0.5f, 0.5f);
-        g.drawString(font, bs.label(), (x + bw + 3) * 2, (y + S_BOOL / 2) * 2, 0xFEFFFFFF, false);
+        g.drawString(font, bs.label(), (x + bw + 3) * 2, (y + S_BOOL / 2) * 2, skin.textOn, false);
         g.pose().popMatrix();
     }
 
@@ -550,7 +550,7 @@ public class ClickGuiScreen extends Screen {
         String txt = binding ? "§ePress a key..." : "Bind: §f" + ModConfig.keyName(ks.get().getAsInt());
         g.pose().pushMatrix();
         g.pose().scale(0.5f, 0.5f);
-        g.drawString(font, txt, x * 2, (y + S_BIND / 2) * 2, 0xFEFFFFFF, false);
+        g.drawString(font, txt, x * 2, (y + S_BIND / 2) * 2, skin.textOn, false);
         g.pose().popMatrix();
     }
 
@@ -567,6 +567,18 @@ public class ClickGuiScreen extends Screen {
         int midY = (y1 + y2) / 2;
         g.fill(x1, y1, x2, midY, topC);
         g.fill(x1, midY, x2, y2, botC);
+    }
+
+    /** Enabled-row background: accent vertical gradient (Dark/Glass) or a flat
+     *  accent tint (Light), depending on the active skin. */
+    private void drawEnabledBg(GuiGraphics g, int x1, int y1, int x2, int y2, int accent) {
+        if (skin.enabledRowGradient) {
+            int topC = (accent & 0x00FFFFFF) | 0xB0000000;
+            int botC = (accent & 0x00FFFFFF) | 0x60000000;
+            drawGradientV(g, x1, y1, x2, y2, topC, botC);
+        } else {
+            g.fill(x1, y1, x2, y2, (accent & 0x00FFFFFF) | (skin.enabledFlatAlpha << 24));
+        }
     }
 
     private int panelH(Panel p) {

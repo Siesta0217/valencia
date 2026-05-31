@@ -107,6 +107,9 @@ public class ModConfig {
     public int accentB  = 255;
     public int bgAlpha  = 160;
 
+    // ClickGUI skin: 0=Dark (Raven, original), 1=Light, 2=Glass
+    public int guiStyle = 0;
+
     // Module enabled states (persisted across sessions)
     public boolean nofallEnabled     = true;
     public boolean xrayEnabled       = false;
@@ -171,6 +174,7 @@ public class ModConfig {
 
     // TargetHUD
     public boolean targetHudEnabled = false;
+    public int     targetHudStyle   = 0;   // 0=Classic, 1=Compact, 2=Gradient
 
     // AutoTotem
     public boolean autoTotemEnabled = false;
