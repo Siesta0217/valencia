@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.14** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.15** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -97,7 +97,7 @@ Latest: **v1.7.14** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.14.jar
+# JAR → build/libs/valencia-1.7.15.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +106,9 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.15 — ArrayList HUD 改吃 Keybinds 中央表（消除平行清單）
+- **重構（無行為變化）**：ArrayList 原本手抄一份 20 個模組的清單，新模組得記得同步。改成直接讀 `Keybinds.TOGGLE_ENTRIES`（所有有 keybind 的模組）＋ 一份只剩 5 項的 `EXTRAS`（無 keybind 的 Hitbox / NoCrash / AutoFish / ElytraGoto / ESP）。往 `Keybinds.TOGGLES` 加一行模組就會自動出現在 ArrayList，兩邊不再會漂移。顯示的模組集合與渲染完全不變
 
 ### v1.7.14 — ArrayList HUD
 - **ArrayList（Render）**：右上角顯示目前開啟的模組清單，依字寬遞減排成階梯狀。可選 **Rainbow**（垂直彩虹，預設開）或主題 accent 色、可選 **BG** 背景底（預設開）。掛在 `Gui.render` TAIL，狀態跨 session 保存。純 HUD 讀數（TargetHUD / DimCoord）與 ArrayList 自己不列入清單
