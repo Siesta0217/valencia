@@ -38,7 +38,8 @@ public final class Keybinds {
         new Toggle(() -> cfg().timerKey,     TimerMod::isEnabled,     TimerMod::toggle,        "Timer"),
         new Toggle(() -> cfg().spearAuraKey, SpearAuraMod::isEnabled, SpearAuraMod::toggle,    "SpearAura"),
         new Toggle(() -> cfg().nameTagKey,   NameTagMod::isEnabled,   NameTagMod::toggle,      "NameTag"),
-        new Toggle(() -> cfg().autoTotemKey, AutoTotemMod::isEnabled, AutoTotemMod::toggle,    "AutoTotem")
+        new Toggle(() -> cfg().autoTotemKey, AutoTotemMod::isEnabled, AutoTotemMod::toggle,    "AutoTotem"),
+        new Toggle(() -> cfg().flyKey,       FlyMod::isEnabled,       FlyMod::toggle,          "Fly")
     );
 
     /** Minimal (label, enabled) pair exposed for HUDs such as the ArrayList. */
@@ -107,6 +108,7 @@ public final class Keybinds {
         if (FastPlaceMod.isEnabled())  FastPlaceMod.toggle();
         if (NoSlowMod.isEnabled())     NoSlowMod.toggle();
         if (AutoTotemMod.isEnabled())  AutoTotemMod.toggle();
+        if (FlyMod.isEnabled())        FlyMod.toggle();
         if (ElytraGotoMod.isEnabled()) ElytraGotoMod.toggle();
         if (AutoFishMod.isEnabled())   AutoFishMod.toggle();
         if (NoCrashMod.isEnabled())    NoCrashMod.toggle();
@@ -132,6 +134,7 @@ public final class Keybinds {
         cfg.spearAuraEnabled  = SpearAuraMod.isEnabled();
         cfg.nameTagEnabled    = NameTagMod.isEnabled();
         cfg.autoTotemEnabled  = AutoTotemMod.isEnabled();
+        cfg.flyEnabled        = FlyMod.isEnabled();
         cfg.save();
     }
 

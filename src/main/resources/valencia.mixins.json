@@ -12,6 +12,7 @@
     "HitboxMixin",
     "NoSlowMixin",
     "BHopMixin",
+    "FlyMixin",
     "KillAuraMixin",
     "GlowMixin",
     "VelocityMixin",

@@ -133,6 +133,10 @@ public class NoFallMod implements ClientModInitializer {
 
         if (cfg.autoTotemEnabled != AutoTotemMod.isEnabled()) AutoTotemMod.toggle();
 
+        if (cfg.flyEnabled != FlyMod.isEnabled()) FlyMod.toggle();
+        FlyMod.hSpeed = cfg.flyHSpeed;
+        FlyMod.vSpeed = cfg.flyVSpeed;
+
         if (cfg.arrayListEnabled != ArrayListMod.isEnabled()) ArrayListMod.toggle();
         ArrayListMod.rainbow    = cfg.arrayListRainbow;
         ArrayListMod.background  = cfg.arrayListBackground;

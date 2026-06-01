@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.21** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.22** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -22,6 +22,7 @@ Latest: **v1.7.21** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **CritHit** | `R` | 自動 micro-hop 觸發暴擊 |
 | **Scaffold** | `J` | 自動橋方塊 + Tower 模式（按 SPACE 自動疊塔） |
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
+| **Fly** | `V` | Motion-based 飛行（伺服器可用）：每 tick 直接設速度，WASD 平移 / SPACE 升 / SHIFT 降，H/V Speed 可調。原版伺服器搭 NoFall AntiKick 不被踢 |
 | **SpearAura** | `U` | 1.21.11 Spear 武器自動鎖定 + silent aim，Jab / Charge / Auto 三模式，自動 step-back 避免太近戳不到 |
 | **NoCrash** | — | 鞘翅飛行中前方 raycast 偵測到牆自動減速到 0.4 b/t，server 看到的是自然減速不觸發 wall damage |
 | **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中，Players / Hostile / Animals 三開關 |
@@ -97,7 +98,7 @@ Latest: **v1.7.21** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.21.jar
+# JAR → build/libs/valencia-1.7.22.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -106,6 +107,13 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.22 — Fly 模組（motion-based，伺服器可用）
+- **新模組 Fly**（Movement，預設鍵 `V`）：每 tick 直接 `setDeltaMovement`，看向方向 + 輸入控制（WASD 平移、SPACE 升、左 SHIFT 降），注入點同 BHop 的 `aiStep` HEAD
+  - 為什麼不用 `Abilities.flying` 旗標：survival 伺服器的 abilities 由 server 掌控、會被 resync 蓋掉，所以走 velocity
+  - 中性垂直不會下沉：moveRelative 不動垂直分量、重力只改下一 tick 存量而我們每 tick 覆寫；fallDistance 每 tick 歸零
+  - `H Speed` / `V Speed` 滑桿（0.2–5.0 b/t）+ 可綁鍵；接進 Keybinds（toggle/save/panic）與 ArrayList
+  - **原版伺服器**（`allow-flight=false`）請搭 NoFall（AntiKick 或 Always），不然持續飛會被飛行踢
 
 ### v1.7.21 — NoFall AntiKick（閃原版飛行踢出）
 - **NoFall 新增 `AntiKick`**（Movement → NoFall → `AntiKick`，預設開）：原版伺服器（`allow-flight=false`）持續離地 ~80 tick 會踢 `Flying is not enabled`。NoFall 現在追蹤連續離地 tick，在 Smart 模式下每 60 tick 強制補一次 `onGround=true` 把伺服器計數器歸零，持續飛/懸停不會被踢。Always 模式本來每 tick 補就免疫；fall-flying（鞘翅）本身豁免不動

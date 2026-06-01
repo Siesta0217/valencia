@@ -30,7 +30,13 @@ public class ModConfig {
     public int spearAuraKey  = GLFW.GLFW_KEY_U;
     public int nameTagKey    = GLFW.GLFW_KEY_Y;
     public int autoTotemKey  = GLFW.GLFW_KEY_O;
+    public int flyKey        = GLFW.GLFW_KEY_V;
     public int panicKey      = GLFW.GLFW_KEY_DELETE;
+
+    // Fly (motion-based, server-usable)
+    public boolean flyEnabled = false;
+    public float   flyHSpeed  = 1.0f;
+    public float   flyVSpeed  = 1.0f;
 
     // NoFall: 0=Always spoof onGround, 1=Smart (only when a fall would deal damage)
     public int nofallMode = 0;

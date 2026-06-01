@@ -219,6 +219,12 @@ public class ClickGuiScreen extends Screen {
         add(Cat.MOVEMENT, new ModEntry("FastPlace", FastPlaceMod::isEnabled, FastPlaceMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.fastPlaceKey, v -> { cfg.fastPlaceKey = v; cfg.save(); }))));
 
+        add(Cat.MOVEMENT, new ModEntry("Fly", FlyMod::isEnabled, FlyMod::toggle, true, List.of(
+            new SliderS("H Speed", () -> cfg.flyHSpeed, v -> { cfg.flyHSpeed = (float)v; FlyMod.hSpeed = (float)v; cfg.save(); }, 0.2, 5.0),
+            new SliderS("V Speed", () -> cfg.flyVSpeed, v -> { cfg.flyVSpeed = (float)v; FlyMod.vSpeed = (float)v; cfg.save(); }, 0.2, 5.0),
+            new KeyS("Key", () -> cfg.flyKey, v -> { cfg.flyKey = v; cfg.save(); })
+        )));
+
         // ── Player ──────────────────────────────────────────────────────────
         add(Cat.PLAYER, new ModEntry("Scaffold", ScaffoldMod::isEnabled, ScaffoldMod::toggle, true, List.of(
             new BoolS("Tower",     () -> cfg.scaffoldTower,      () -> { cfg.scaffoldTower = !cfg.scaffoldTower;           ScaffoldMod.tower = cfg.scaffoldTower;           cfg.save(); }),
@@ -1071,6 +1077,7 @@ public class ClickGuiScreen extends Screen {
         cfg.autoFishEnabled  = AutoFishMod.isEnabled();
         cfg.autoTotemEnabled = AutoTotemMod.isEnabled();
         cfg.arrayListEnabled = ArrayListMod.isEnabled();
+        cfg.flyEnabled       = FlyMod.isEnabled();
         cfg.save();
     }
 }
