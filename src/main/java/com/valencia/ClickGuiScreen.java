@@ -200,6 +200,7 @@ public class ClickGuiScreen extends Screen {
 
         add(Cat.MOVEMENT, new ModEntry("NoFall", NoFallMod::isEnabled, NoFallMod::toggleManual, true, List.of(
             new SliderS("Mode", () -> cfg.nofallMode, v -> { cfg.nofallMode = (int)v; NoFallMod.mode = (int)v; cfg.save(); }, 0, 1),
+            new BoolS("AntiKick", () -> cfg.nofallNoFlightKick, () -> { cfg.nofallNoFlightKick = !cfg.nofallNoFlightKick; NoFallMod.noFlightKick = cfg.nofallNoFlightKick; cfg.save(); }),
             new KeyS("Key", () -> cfg.nofallKey, v -> { cfg.nofallKey = v; cfg.save(); })
         )));
         add(Cat.MOVEMENT, new ModEntry("NoSlow", NoSlowMod::isEnabled, NoSlowMod::toggle, true,

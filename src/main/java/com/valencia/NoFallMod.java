@@ -8,6 +8,8 @@ public class NoFallMod implements ClientModInitializer {
 
     /** 0 = always spoof onGround, 1 = smart (only spoof when a fall would hurt). */
     public static int mode = 0;
+    /** Periodically reset the server's airborne counter to dodge the vanilla flight kick. */
+    public static boolean noFlightKick = true;
 
     public static boolean isEnabled() { return enabled; }
     public static void toggleManual() { enabled = !enabled; }
@@ -19,6 +21,7 @@ public class NoFallMod implements ClientModInitializer {
         // Restore module enabled states from last session
         enabled                   = cfg.nofallEnabled;
         mode                      = cfg.nofallMode;
+        noFlightKick              = cfg.nofallNoFlightKick;
         if (cfg.xrayEnabled     != XRayMod.isEnabled())     XRayMod.toggle();
         if (cfg.maceAuraEnabled != MaceAuraMod.isEnabled()) MaceAuraMod.toggle();
         if (cfg.noSlowEnabled   != NoSlowMod.isEnabled())   NoSlowMod.toggle();

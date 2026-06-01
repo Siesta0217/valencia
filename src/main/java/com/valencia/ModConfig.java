@@ -34,6 +34,9 @@ public class ModConfig {
 
     // NoFall: 0=Always spoof onGround, 1=Smart (only when a fall would deal damage)
     public int nofallMode = 0;
+    // Reset the vanilla server's airborne counter periodically so sustained
+    // flight/hover isn't kicked as "Flying is not enabled" (allow-flight=false).
+    public boolean nofallNoFlightKick = true;
 
     // SpearAura tuning
     public float spearScanRange   = 7.0f;
