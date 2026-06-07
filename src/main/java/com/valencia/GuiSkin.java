@@ -32,6 +32,7 @@ final class GuiSkin {
         return switch (style) {
             case 1 -> light(a);
             case 2 -> glass(a);
+            case 3 -> tenacity(a);
             default -> dark(a);
         };
     }
@@ -89,6 +90,42 @@ final class GuiSkin {
         s.enabledFlatAlpha = 0x66;
         s.rainbowVersion = false;
         s.nameShadow = false;
+        return s;
+    }
+
+    /**
+     * Style 3 (Tenacity). Modern ghost-client look: near-black cool base, and
+     * the accent threaded through every edge — header underline, panel border,
+     * widget borders and scrollbar are all accent-tinted, which reads as a soft
+     * accent "outline glow" around the whole GUI (Tenacity's signature). Solid
+     * accent branding instead of the rainbow. Pairs well with a teal/cyan accent
+     * but honours whatever accent the user sets.
+     */
+    private static GuiSkin tenacity(int a) {
+        GuiSkin s = new GuiSkin();
+        s.name = "Tenacity";
+        s.panelBg = 0xE60C0D11;          // near-black, faint cool tint, mostly opaque
+        s.headerBg = 0xFF14151B;         // dark slate
+        s.headerHover = 0xFF1D1F28;
+        s.headerUnderline = 0xFF000000 | a;   // bold accent line under header
+        s.catLabel = 0xFF000000 | a;          // accent category names
+        s.settingsBg = 0xE6090A0E;
+        s.expandedOffBg = 0xFF181A22;
+        s.rowHover = 0x33FFFFFF;
+        s.textOn = 0xFFFFFFFF;
+        s.textDim = 0xFFB8BCC8;          // cool gray
+        s.textOff = 0xFF6E7280;
+        s.sliderTrack = 0x33FFFFFF;
+        s.sliderTrackBorder = 0x66000000 | a;
+        s.sliderFillAlpha = 0xE6;
+        s.boolTrack = 0xFF0A0A0E;
+        s.widgetBorder = 0x66000000 | a;      // accent-tinted widget borders
+        s.borderIdle = 0x70000000 | a;        // accent outline around the whole panel
+        s.scrollBar = 0xC0000000 | a;
+        s.enabledRowGradient = true;
+        s.enabledFlatAlpha = 0xC0;
+        s.rainbowVersion = false;             // solid accent branding
+        s.nameShadow = true;
         return s;
     }
 

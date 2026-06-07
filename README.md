@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.23** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.24** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.23** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.23.jar
+# JAR → build/libs/valencia-1.7.24.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.24 — Tenacity ClickGUI 配色
+- **新增 `3 Tenacity` GUI Style**（ClickGUI → Client → Theme → `GUI Style` 改為 0–3）：現代 ghost-client 風格——近黑冷色底，accent 穿過每個邊緣（header 底線、面板外框、widget 邊框、捲軸全部 accent 染色），整體像有一圈 accent 外光暈（Tenacity 招牌）；品牌字改純 accent（非彩虹）。accent 仍吃使用者設定，配 teal/cyan 最對味
+- 只動 `GuiSkin.java`（加 `tenacity()` factory + `case 3`）與 GUI Style slider 上限 2→3；Panels / Sidebar 兩種版面都套得上
 
 ### v1.7.23 — Freecam 模組（純 client 鏡頭脫離）
 - **新模組 Freecam**（Render，預設鍵 `P`）：鏡頭脫離身體自由飛、穿牆偵察。**完全 client-side、不送任何封包 → 任何伺服器/AC 都偵測不到**
@@ -155,10 +159,11 @@ cd valencia
   - `1 Compact`：單行精簡（名字 / 血量 / 距離）＋ 底部 2px 血條
   - `2 Gradient`：較大面板、切角假圓角、紅→綠漸層血條
   - 三種風格共用同一套目標選擇（aura 鎖定 → 準星 → 最後攻擊者），只差繪製
-- **ClickGUI 換膚系統**（ClickGUI → Client → Theme → `GUI Style` 0–2，預設 0）：
+- **ClickGUI 換膚系統**（ClickGUI → Client → Theme → `GUI Style` 0–3，預設 0）：
   - `0 Dark`：原本的 Raven 深色配色（完全還原，無變化）
   - `1 Light`：淺色面板 + 深色文字，啟用列改平鋪 accent 色
   - `2 Glass`：高透明 accent 染色玻璃風
+  - `3 Tenacity`：近黑冷色底 + 全域 accent 描邊外光（v1.7.24 加）
   - 新增 `GuiSkin.java` 集中所有顏色；ClickGuiScreen 每幀依 `guiStyle` 解析，**開著 GUI 也能即時切換**
 - 兩個 Style 都預設 0，舊使用者更新後外觀完全不變
 
