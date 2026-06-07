@@ -96,6 +96,17 @@ public class ClickGuiScreen extends Screen {
     private SliderS sbSliderActive;          // slider being dragged
     private int sbSliderX, sbSliderW;
 
+    // ── Tenacity layout state (guiLayout == 2) ───────────────────────────────
+    private int tnWinX = -1, tnWinY = -1;    // window top-left; -1 = center on first render
+    private boolean tnDragging;
+    private int tnDragOX, tnDragOY;
+    private int tnCatIdx;                     // selected category (index into panels)
+    private ModEntry tnExpanded;             // inline-expanded module card (null = none)
+    private int tnScroll;                     // card-list scroll offset
+    private SliderS tnSliderActive;          // slider being dragged
+    private int tnSliderX, tnSliderW;
+    private final java.util.Map<String, Float> tnKnob = new java.util.HashMap<>();  // pill knob slide anim
+
     // ── Waifu ───────────────────────────────────────────────────────────────
     private Identifier waifuLoc;
     private int waifuTexW, waifuTexH;
@@ -322,7 +333,7 @@ public class ClickGuiScreen extends Screen {
 
         // ── Client ──────────────────────────────────────────────────────────
         add(Cat.CLIENT, new ModEntry("Theme", () -> false, () -> {}, false, List.of(
-            new SliderS("Layout",    () -> cfg.guiLayout, v -> { cfg.guiLayout = (int)v; cfg.save(); }, 0, 1),
+            new SliderS("Layout",    () -> cfg.guiLayout, v -> { cfg.guiLayout = (int)v; cfg.save(); }, 0, 2),
             new SliderS("GUI Style", () -> cfg.guiStyle, v -> { cfg.guiStyle = (int)v; cfg.save(); }, 0, 3),
             new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
             new SliderS("Green",    () -> cfg.accentG, v -> { cfg.accentG = (int)v; cfg.save(); }, 0, 255),
@@ -401,7 +412,8 @@ public class ClickGuiScreen extends Screen {
         g.drawString(font, verStr, 5, height - font.lineHeight - 3, verColor, true);
 
         // active layout
-        if (cfg.guiLayout == 1) renderSidebar(g, mx, my, accent, font);
+        if (cfg.guiLayout == 2) renderTenacity(g, mx, my, accent, font);
+        else if (cfg.guiLayout == 1) renderSidebar(g, mx, my, accent, font);
         else for (Panel p : panels) renderPanel(g, p, mx, my, accent, font);
     }
 
@@ -826,6 +838,264 @@ public class ClickGuiScreen extends Screen {
         return true;
     }
 
+    // ═════════════════════════════════════════════════════════════════════════
+    //  TENACITY LAYOUT (guiLayout == 2) — single rounded window: a category rail
+    //  on the left, rounded module cards with pill toggles + inline accordion
+    //  settings on the right. Custom widgets (thumb slider, sliding pill toggle,
+    //  key chip) with a knob-slide animation. Geometry/hit-testing are fully
+    //  self-contained; colours come from the active GuiSkin so it pairs with any
+    //  skin (best with Dark / Tenacity).
+    // ═════════════════════════════════════════════════════════════════════════
+    private static final int TEN_W = 344, TEN_H = 234;
+    private static final int TEN_TITLE = 24;
+    private static final int TEN_RAIL  = 84;
+    private static final int TEN_CAT_H = 22;
+    private static final int TEN_CARD_H = 22;
+    private static final int TEN_SLIDER = 22, TEN_BOOL = 16, TEN_BIND = 16;
+
+    private void ensureTenPos() {
+        if (tnWinX < 0) { tnWinX = (width - TEN_W) / 2; tnWinY = (height - TEN_H) / 2; }
+    }
+
+    private void renderTenacity(GuiGraphics g, int mx, int my, int accent, Font font) {
+        ensureTenPos();
+        int x = tnWinX, y = tnWinY, x2 = x + TEN_W, y2 = y + TEN_H;
+        int aT = accent & 0x00FFFFFF;
+
+        roundRect(g, x, y, x2, y2, skin.panelBg);
+
+        // ── title bar ──
+        g.drawString(font, "Valencia", x + 10, y + (TEN_TITLE - font.lineHeight) / 2, skin.catLabel, skin.nameShadow);
+        boolean hovClose = mx >= x2 - 16 && mx < x2 && my >= y && my < y + TEN_TITLE;
+        g.drawString(font, "x", x2 - 12, y + (TEN_TITLE - font.lineHeight) / 2, hovClose ? 0xFFFF5555 : skin.textDim, false);
+        g.fill(x + 10, y + TEN_TITLE - 1, x2 - 10, y + TEN_TITLE, accent);
+
+        int contentY = y + TEN_TITLE;
+        int railX2 = x + TEN_RAIL;
+        g.fill(railX2, contentY + 2, railX2 + 1, y2 - 4, skin.borderIdle);   // rail divider
+
+        // ── left rail: category tabs ──
+        int cy = contentY + 6;
+        for (int i = 0; i < panels.size(); i++) {
+            Cat c = panels.get(i).cat;
+            boolean sel = i == tnCatIdx;
+            boolean hov = mx >= x + 6 && mx < railX2 - 4 && my >= cy && my < cy + TEN_CAT_H;
+            if (sel)      roundRect(g, x + 6, cy, railX2 - 4, cy + TEN_CAT_H, aT | 0x40000000);
+            else if (hov) roundRect(g, x + 6, cy, railX2 - 4, cy + TEN_CAT_H, skin.rowHover);
+            if (sel) g.fill(x + 6, cy + 4, x + 8, cy + TEN_CAT_H - 4, accent);
+            g.drawString(font, c.label, x + 14, cy + (TEN_CAT_H - font.lineHeight) / 2, sel ? skin.textOn : skin.textDim, skin.nameShadow);
+            cy += TEN_CAT_H + 2;
+        }
+
+        // ── right: module cards (scrollable, clipped) ──
+        int listX1 = railX2 + 6, listX2 = x2 - 6, listW = listX2 - listX1;
+        int listTop = contentY + 6, listBot = y2 - 6, listVis = listBot - listTop;
+        int total = tnContentH(panels.get(tnCatIdx));
+        int maxScroll = Math.max(0, total - listVis);
+        tnScroll = Math.max(0, Math.min(tnScroll, maxScroll));
+
+        g.enableScissor(listX1, listTop, listX2, listBot);
+        int ry = listTop - tnScroll;
+        for (ModEntry m : panels.get(tnCatIdx).mods) {
+            int ch = TEN_CARD_H + (m == tnExpanded ? tnExpandedH(m) : 0);
+            if (ry + ch > listTop && ry < listBot) tnDrawCard(g, m, listX1, ry, listW, mx, my, font, accent);
+            ry += ch + 4;
+        }
+        g.disableScissor();
+
+        if (total > listVis) {
+            int barH = Math.max(10, listVis * listVis / total);
+            int barY = listTop + (int)((listVis - barH) * ((float) tnScroll / maxScroll));
+            roundRect(g, listX2 - 2, barY, listX2, barY + barH, skin.scrollBar);
+        }
+
+        roundBorder(g, x, y, x2, y2, skin.borderIdle);
+    }
+
+    private void tnDrawCard(GuiGraphics g, ModEntry m, int x, int y, int w, int mx, int my, Font font, int accent) {
+        int ch = TEN_CARD_H + (m == tnExpanded ? tnExpandedH(m) : 0);
+        boolean on = m.enabled.getAsBoolean();
+        boolean hovRow = mx >= x && mx < x + w && my >= y && my < y + TEN_CARD_H;
+
+        roundRect(g, x, y, x + w, y + ch, hovRow ? skin.headerHover : skin.expandedOffBg);
+        if (m == tnExpanded) g.fill(x + 1, y + TEN_CARD_H, x + w - 1, y + ch - 1, skin.settingsBg);
+        if (on) g.fill(x, y + 3, x + 2, y + TEN_CARD_H - 3, accent);
+
+        g.drawString(font, m.name, x + 8, y + (TEN_CARD_H - font.lineHeight) / 2, on ? skin.textOn : skin.textDim, skin.nameShadow);
+
+        int pillW = 18, pillX = x + w - 8 - pillW, pillCy = y + TEN_CARD_H / 2;
+        if (m.toggleable) tnPill(g, pillX, pillCy, on, tnKnobProg(m.name, on), accent);
+        if (!m.settings.isEmpty()) {
+            String chev = m == tnExpanded ? "-" : "+";
+            int chx = m.toggleable ? pillX - 10 : x + w - 12;
+            g.drawString(font, chev, chx, y + (TEN_CARD_H - font.lineHeight) / 2, skin.textDim, false);
+        }
+
+        if (m == tnExpanded) {
+            int sy = y + TEN_CARD_H + 2, sx = x + 12, sw = w - 22;
+            for (Setting s : m.settings) {
+                if (s instanceof SliderS sl)    tnSlider(g, sl, sx, sy + 2, sw, font, accent);
+                else if (s instanceof BoolS bs) tnBool(g, bs, sx, sy, sw, font, accent);
+                else if (s instanceof KeyS ks)  tnBind(g, ks, sx, sy + 2, sw, font, rebindTarget == ks);
+                sy += tenSettH(s);
+            }
+        }
+    }
+
+    private void tnPill(GuiGraphics g, int x, int cy, boolean on, float prog, int accent) {
+        int w = 18, h = 10, y = cy - h / 2;
+        roundRect(g, x, y, x + w, y + h, on ? (accent & 0x00FFFFFF) | 0xCC000000 : skin.boolTrack);
+        int kd = h - 4, kx = x + 2 + (int)((w - 4 - kd) * prog);
+        roundRect(g, kx, y + 2, kx + kd, y + 2 + kd, 0xFFFFFFFF);
+    }
+
+    private void tnSlider(GuiGraphics g, SliderS sl, int x, int y, int w, Font font, int accent) {
+        double val = sl.get().getAsDouble();
+        g.drawString(font, sl.label(), x, y, skin.textDim, skin.nameShadow);
+        String vs = fmtVal(val);
+        g.drawString(font, vs, x + w - font.width(vs), y, skin.textOn, skin.nameShadow);
+        int barY = y + 12, barH = 4;
+        double pct = Math.max(0, Math.min(1, (val - sl.min()) / (sl.max() - sl.min())));
+        int filled = (int)(w * pct);
+        roundRect(g, x, barY, x + w, barY + barH, skin.sliderTrack);
+        if (filled > 0) roundRect(g, x, barY, x + filled, barY + barH, (accent & 0x00FFFFFF) | 0xFF000000);
+        int tx = x + filled, tr = 4, tcy = barY + barH / 2;
+        roundRect(g, tx - tr, tcy - tr, tx + tr, tcy + tr, 0xFFFFFFFF);
+    }
+
+    private void tnBool(GuiGraphics g, BoolS bs, int x, int y, int w, Font font, int accent) {
+        boolean on = bs.get().getAsBoolean();
+        g.drawString(font, bs.label(), x, y + (TEN_BOOL - font.lineHeight) / 2, skin.textDim, skin.nameShadow);
+        int pillW = 18;
+        tnPill(g, x + w - pillW, y + TEN_BOOL / 2, on, tnKnobProg(m_key(bs), on), accent);
+    }
+
+    private void tnBind(GuiGraphics g, KeyS ks, int x, int y, int w, Font font, boolean binding) {
+        g.drawString(font, "Key", x, y + (TEN_BIND - font.lineHeight) / 2, skin.textDim, skin.nameShadow);
+        String v = binding ? "..." : ModConfig.keyName(ks.get().getAsInt());
+        int cw = font.width(v) + 8, cx = x + w - cw, ccy = y + TEN_BIND / 2;
+        roundRect(g, cx, ccy - 6, x + w, ccy + 6, skin.sliderTrack);
+        g.drawString(font, v, cx + 4, ccy - font.lineHeight / 2, binding ? 0xFFFFD050 : skin.textOn, false);
+    }
+
+    private String m_key(BoolS bs) { return (tnExpanded != null ? tnExpanded.name : "") + ":" + bs.label(); }
+
+    private float tnKnobProg(String key, boolean on) {
+        float target = on ? 1f : 0f;
+        float cur = tnKnob.getOrDefault(key, target);
+        cur += (target - cur) * 0.3f;
+        if (Math.abs(target - cur) < 0.01f) cur = target;
+        tnKnob.put(key, cur);
+        return cur;
+    }
+
+    private int tenSettH(Setting s) {
+        if (s instanceof SliderS) return TEN_SLIDER;
+        if (s instanceof BoolS)   return TEN_BOOL;
+        if (s instanceof KeyS)    return TEN_BIND;
+        return 0;
+    }
+
+    private int tnExpandedH(ModEntry m) {
+        int h = 4;
+        for (Setting s : m.settings) h += tenSettH(s);
+        return h;
+    }
+
+    private int tnContentH(Panel p) {
+        int h = 0;
+        for (ModEntry m : p.mods) h += TEN_CARD_H + (m == tnExpanded ? tnExpandedH(m) : 0) + 4;
+        return h;
+    }
+
+    // ── Tenacity rounded-rect helpers (2px corner shave) ──
+    private void roundRect(GuiGraphics g, int x1, int y1, int x2, int y2, int c) {
+        if (x2 - x1 < 4 || y2 - y1 < 4) { g.fill(x1, y1, x2, y2, c); return; }
+        g.fill(x1 + 2, y1,     x2 - 2, y1 + 1, c);
+        g.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 2, c);
+        g.fill(x1,     y1 + 2, x2,     y2 - 2, c);
+        g.fill(x1 + 1, y2 - 2, x2 - 1, y2 - 1, c);
+        g.fill(x1 + 2, y2 - 1, x2 - 2, y2,     c);
+    }
+
+    private void roundBorder(GuiGraphics g, int x1, int y1, int x2, int y2, int c) {
+        g.fill(x1 + 2, y1,     x2 - 2, y1 + 1, c);
+        g.fill(x1 + 2, y2 - 1, x2 - 2, y2,     c);
+        g.fill(x1,     y1 + 2, x1 + 1, y2 - 2, c);
+        g.fill(x2 - 1, y1 + 2, x2,     y2 - 2, c);
+        g.fill(x1 + 1, y1 + 1, x1 + 2, y1 + 2, c);
+        g.fill(x2 - 2, y1 + 1, x2 - 1, y1 + 2, c);
+        g.fill(x1 + 1, y2 - 2, x1 + 2, y2 - 1, c);
+        g.fill(x2 - 2, y2 - 2, x2 - 1, y2 - 1, c);
+    }
+
+    private boolean tnMouseClicked(int mx, int my, int btn) {
+        ensureTenPos();
+        int x = tnWinX, y = tnWinY, x2 = x + TEN_W, y2 = y + TEN_H;
+        if (mx < x || mx >= x2 || my < y || my >= y2) return false;
+
+        if (my < y + TEN_TITLE) {                       // title bar
+            if (btn == 0 && mx >= x2 - 16) { onClose(); return true; }
+            if (btn == 0) { tnDragging = true; tnDragOX = x - mx; tnDragOY = y - my; }
+            return true;
+        }
+
+        int contentY = y + TEN_TITLE, railX2 = x + TEN_RAIL;
+        if (mx < railX2) {                              // rail tabs
+            int cy = contentY + 6;
+            for (int i = 0; i < panels.size(); i++) {
+                if (my >= cy && my < cy + TEN_CAT_H) { tnCatIdx = i; tnExpanded = null; tnScroll = 0; break; }
+                cy += TEN_CAT_H + 2;
+            }
+            return true;
+        }
+
+        int listX1 = railX2 + 6, listX2 = x2 - 6, listW = listX2 - listX1;
+        int listTop = contentY + 6, listBot = y2 - 6;
+        if (mx < listX1 || mx >= listX2 || my < listTop || my >= listBot) return true;
+
+        int ry = listTop - tnScroll;
+        for (ModEntry m : panels.get(tnCatIdx).mods) {
+            int ch = TEN_CARD_H + (m == tnExpanded ? tnExpandedH(m) : 0);
+            if (my >= ry && my < ry + TEN_CARD_H) {     // header row
+                int pillW = 18, pillX = listX1 + listW - 8 - pillW;
+                if (btn == 0 && m.toggleable && mx >= pillX - 2 && mx < pillX + pillW + 2) m.toggle.run();
+                else if (!m.settings.isEmpty()) tnExpanded = (m == tnExpanded) ? null : m;
+                else if (btn == 0 && m.toggleable) m.toggle.run();
+                return true;
+            }
+            if (m == tnExpanded && my >= ry + TEN_CARD_H && my < ry + ch) {   // settings
+                int sy = ry + TEN_CARD_H + 2, sx = listX1 + 12, sw = listW - 22;
+                for (Setting s : m.settings) {
+                    int sh = tenSettH(s);
+                    if (my >= sy && my < sy + sh) { if (btn == 0) tnSettClick(s, mx, sx, sw); break; }
+                    sy += sh;
+                }
+                return true;
+            }
+            ry += ch + 4;
+        }
+        return true;
+    }
+
+    private void tnSettClick(Setting s, int mx, int sx, int sw) {
+        if (s instanceof SliderS sl) { tnSliderActive = sl; tnSliderX = sx; tnSliderW = sw; applySlider(sl, mx, sx, sw); }
+        else if (s instanceof BoolS bs) bs.toggle().run();
+        else if (s instanceof KeyS ks) rebindTarget = ks;
+    }
+
+    private boolean tnMouseScrolled(int mx, int my, double scrollY) {
+        ensureTenPos();
+        int x = tnWinX, y = tnWinY, x2 = x + TEN_W, y2 = y + TEN_H;
+        if (mx < x || mx >= x2 || my < y || my >= y2) return false;
+        if (mx >= x + TEN_RAIL) {
+            int listVis = (y2 - 6) - (y + TEN_TITLE + 6);
+            int maxScroll = Math.max(0, tnContentH(panels.get(tnCatIdx)) - listVis);
+            tnScroll = Math.max(0, Math.min(tnScroll - (int)(scrollY * 12), maxScroll));
+        }
+        return true;
+    }
+
     // ── Waifu ───────────────────────────────────────────────────────────────
     private static final String[] WAIFU_EXTS = {"png", "jpg", "jpeg", "bmp", "gif"};
 
@@ -883,6 +1153,7 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseClicked(MouseButtonEvent event, boolean dbl) {
         int mx = (int)event.x(), my = (int)event.y(), btn = event.button();
 
+        if (ModConfig.get().guiLayout == 2) return tnMouseClicked(mx, my, btn);
         if (ModConfig.get().guiLayout == 1) return sbMouseClicked(mx, my, btn);
 
         for (int i = panels.size() - 1; i >= 0; i--) {
@@ -981,6 +1252,12 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
         int mx = (int)event.x(), my = (int)event.y();
 
+        if (ModConfig.get().guiLayout == 2) {
+            if (tnDragging) { tnWinX = tnDragOX + mx; tnWinY = tnDragOY + my; return true; }
+            if (tnSliderActive != null) { applySlider(tnSliderActive, mx, tnSliderX, tnSliderW); return true; }
+            return super.mouseDragged(event, dx, dy);
+        }
+
         if (ModConfig.get().guiLayout == 1) {
             if (sbDragging) { sbWinX = sbDragOX + mx; sbWinY = sbDragOY + my; return true; }
             if (sbSliderActive != null) { applySlider(sbSliderActive, mx, sbSliderX, sbSliderW); return true; }
@@ -1011,6 +1288,7 @@ public class ClickGuiScreen extends Screen {
         for (Panel p : panels) p.dragging = false;
         sliderPanel = null; sliderIdx = -1;
         sbDragging = false; sbSliderActive = null;
+        tnDragging = false; tnSliderActive = null;
         return super.mouseReleased(event);
     }
 
@@ -1018,6 +1296,7 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int mx = (int)mouseX, my = (int)mouseY;
 
+        if (ModConfig.get().guiLayout == 2) return tnMouseScrolled(mx, my, scrollY);
         if (ModConfig.get().guiLayout == 1) return sbMouseScrolled(mx, my, scrollY);
 
         // find which panel the mouse is over and scroll its settings

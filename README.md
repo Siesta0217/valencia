@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.24** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.25** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.24** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.24.jar
+# JAR → build/libs/valencia-1.7.25.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,16 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.25 — Tenacity 版面（完整重做，不只配色）
+- **新增 `2 Tenacity` Layout**（ClickGUI → Client → Theme → `Layout` 改為 0–2）：一個獨立幾何的單一視窗，不是換色——
+  - 圓角視窗（2px 削角）+ accent 外框、accent 標題分隔線、可拖標題列、右上 `x` 關閉
+  - 左側分類側欄（選取有 accent 左條 + 染色底）
+  - 右側**模組卡片**：圓角卡、啟用有 accent 左條、右邊 **pill 開關**（滑塊會滑動的動畫）、有設定的顯示 `+/-`
+  - 點卡片本體**就地展開**（accordion）顯示設定，用重做的 widget：**滑桿帶可拖白色圓鈕** + 數值、設定列 pill 開關、按鍵做成圓角 chip
+  - 卡片清單 `enableScissor` 裁切捲動、獨立捲軸
+  - 幾何/命中判定完全自帶，但顏色沿用當前 GuiSkin（配 Dark/Tenacity 配色最對味）
+- 跟 `1 Sidebar` 一樣是獨立 render 路徑，與 `GUI Style` 配色正交
 
 ### v1.7.24 — Tenacity ClickGUI 配色
 - **新增 `3 Tenacity` GUI Style**（ClickGUI → Client → Theme → `GUI Style` 改為 0–3）：現代 ghost-client 風格——近黑冷色底，accent 穿過每個邊緣（header 底線、面板外框、widget 邊框、捲軸全部 accent 染色），整體像有一圈 accent 外光暈（Tenacity 招牌）；品牌字改純 accent（非彩虹）。accent 仍吃使用者設定，配 teal/cyan 最對味
@@ -150,6 +160,7 @@ cd valencia
 - **ClickGUI 版面**新增獨立維度 `Layout`（ClickGUI → Client → Theme → `Layout`），與配色 `GUI Style` 正交：
   - `0 Panels`：原本的 Raven 散落可拖曳面板（不變）
   - `1 Sidebar`：單一置中視窗——左側分類分頁、中間模組清單（**綠點=開關、列其餘=選取**）、右側該模組設定。標題列可拖曳、右上 `x` 關閉、清單與設定各自獨立捲動。幾何與命中判定完全獨立，但沿用同一份模組資料 / GuiSkin 配色 / slider・toggle・keybind widget，所以 Light / Glass 配色一樣套得上
+  - `2 Tenacity`：圓角視窗 + 分類側欄 + 模組卡片 + pill 開關（滑動動畫）+ 就地展開設定（滑桿帶圓鈕）。完整重做的幾何，非換色（v1.7.25）
 - **TargetHUD** 新增 `Style 3 Ring`（`Style` 範圍變 0–3）：環形血量圈、中央顯示 HP%、右側名字 / 血量 / 距離
 - rebind 狀態統一成單一 `rebindTarget`，兩種版面共用按鍵捕捉
 
