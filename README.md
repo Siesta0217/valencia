@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.22** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.23** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -23,6 +23,7 @@ Latest: **v1.7.22** — [Download JAR](https://github.com/Siesta0217/valencia/re
 | **Scaffold** | `J` | 自動橋方塊 + Tower 模式（按 SPACE 自動疊塔） |
 | **Timer** | `T` | 玩家 tick 倍速（1.0–3.0×），等同 movement-only speedhack |
 | **Fly** | `V` | Motion-based 飛行（伺服器可用）：每 tick 直接設速度，WASD 平移 / SPACE 升 / SHIFT 降，H/V Speed 可調。原版伺服器搭 NoFall AntiKick 不被踢 |
+| **Freecam** | `P` | 鏡頭脫離身體自由飛（穿牆偵察）。純 client、零封包、任何伺服器偵測不到；身體原地凍結，強制第三人稱。Speed 可調 |
 | **SpearAura** | `U` | 1.21.11 Spear 武器自動鎖定 + silent aim，Jab / Charge / Auto 三模式，自動 step-back 避免太近戳不到 |
 | **NoCrash** | — | 鞘翅飛行中前方 raycast 偵測到牆自動減速到 0.4 b/t，server 看到的是自然減速不觸發 wall damage |
 | **Hitbox** | — | 其他實體 bounding box 放大讓邊緣攻擊也命中，Players / Hostile / Animals 三開關 |
@@ -98,7 +99,7 @@ Latest: **v1.7.22** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.22.jar
+# JAR → build/libs/valencia-1.7.23.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -107,6 +108,13 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.23 — Freecam 模組（純 client 鏡頭脫離）
+- **新模組 Freecam**（Render，預設鍵 `P`）：鏡頭脫離身體自由飛、穿牆偵察。**完全 client-side、不送任何封包 → 任何伺服器/AC 都偵測不到**
+  - `FreecamCameraMixin`（`Camera.setup` TAIL）：覆寫相機位置；旋轉沿用玩家視角，所以滑鼠照樣瞄 freecam（javap 確認 `setup(Level, Entity, boolean, boolean, float)` / `setPosition(double,double,double)`）
+  - `ClientInputMixin`（`ClientInput.tick` TAIL）：啟用時清空移動輸入（`keyPresses=Input.EMPTY`、`moveVector=Vec2.ZERO`），身體原地凍結、WASD 只開鏡頭
+  - `FreecamMod.tick()`（TickMixin）依看向 yaw 用原始 WASD/SPACE/SHIFT 飛鏡頭；啟用時強制 `THIRD_PERSON_BACK` 看得到自己身體、不會有浮空的手
+  - `Speed` 滑桿（0.2–5.0 b/t）+ 可綁鍵；接進 Keybinds（toggle/panic）與 ArrayList。**啟用狀態刻意不持久化**（不想一進遊戲就在脫離鏡頭）。已知限制：相機只能看到身體周圍已載入的區塊
 
 ### v1.7.22 — Fly 模組（motion-based，伺服器可用）
 - **新模組 Fly**（Movement，預設鍵 `V`）：每 tick 直接 `setDeltaMovement`，看向方向 + 輸入控制（WASD 平移、SPACE 升、左 SHIFT 降），注入點同 BHop 的 `aiStep` HEAD

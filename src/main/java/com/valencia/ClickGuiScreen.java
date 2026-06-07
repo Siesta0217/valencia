@@ -303,6 +303,11 @@ public class ClickGuiScreen extends Screen {
             NetherCoordMod::isEnabled, () -> { NetherCoordMod.toggle(); cfg.netherCoordEnabled = NetherCoordMod.isEnabled(); cfg.save(); },
             true, List.of()));
 
+        add(Cat.RENDER, new ModEntry("Freecam", FreecamMod::isEnabled, FreecamMod::toggle, true, List.of(
+            new SliderS("Speed", () -> cfg.freecamSpeed, v -> { cfg.freecamSpeed = (float)v; FreecamMod.speed = (float)v; cfg.save(); }, 0.2, 5.0),
+            new KeyS("Key", () -> cfg.freecamKey, v -> { cfg.freecamKey = v; cfg.save(); })
+        )));
+
         add(Cat.RENDER, new ModEntry("TargetHUD",
             TargetHudMod::isEnabled, () -> { TargetHudMod.toggle(); cfg.targetHudEnabled = TargetHudMod.isEnabled(); cfg.save(); },
             true, List.of(

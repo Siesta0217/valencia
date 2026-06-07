@@ -39,7 +39,8 @@ public final class Keybinds {
         new Toggle(() -> cfg().spearAuraKey, SpearAuraMod::isEnabled, SpearAuraMod::toggle,    "SpearAura"),
         new Toggle(() -> cfg().nameTagKey,   NameTagMod::isEnabled,   NameTagMod::toggle,      "NameTag"),
         new Toggle(() -> cfg().autoTotemKey, AutoTotemMod::isEnabled, AutoTotemMod::toggle,    "AutoTotem"),
-        new Toggle(() -> cfg().flyKey,       FlyMod::isEnabled,       FlyMod::toggle,          "Fly")
+        new Toggle(() -> cfg().flyKey,       FlyMod::isEnabled,       FlyMod::toggle,          "Fly"),
+        new Toggle(() -> cfg().freecamKey,   FreecamMod::isEnabled,   FreecamMod::toggle,      "Freecam")
     );
 
     /** Minimal (label, enabled) pair exposed for HUDs such as the ArrayList. */
@@ -109,6 +110,7 @@ public final class Keybinds {
         if (NoSlowMod.isEnabled())     NoSlowMod.toggle();
         if (AutoTotemMod.isEnabled())  AutoTotemMod.toggle();
         if (FlyMod.isEnabled())        FlyMod.toggle();
+        if (FreecamMod.isEnabled())    FreecamMod.toggle();
         if (ElytraGotoMod.isEnabled()) ElytraGotoMod.toggle();
         if (AutoFishMod.isEnabled())   AutoFishMod.toggle();
         if (NoCrashMod.isEnabled())    NoCrashMod.toggle();

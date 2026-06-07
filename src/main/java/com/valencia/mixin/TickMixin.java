@@ -4,6 +4,7 @@ import com.valencia.AutoFishMod;
 import com.valencia.AutoTotemMod;
 import com.valencia.ElytraGotoMod;
 import com.valencia.FastPlaceMod;
+import com.valencia.FreecamMod;
 import com.valencia.Keybinds;
 import com.valencia.NoCrashMod;
 import com.valencia.ScaffoldMod;
@@ -36,5 +37,6 @@ public abstract class TickMixin {
         AutoFishMod.tick();
         NoCrashMod.tick();
         AutoTotemMod.tick();
+        FreecamMod.tick();
     }
 }

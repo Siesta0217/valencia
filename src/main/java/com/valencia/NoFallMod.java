@@ -137,6 +137,10 @@ public class NoFallMod implements ClientModInitializer {
         FlyMod.hSpeed = cfg.flyHSpeed;
         FlyMod.vSpeed = cfg.flyVSpeed;
 
+        // Freecam: tuning only — enabled state is intentionally not persisted
+        // (don't want to boot straight into a detached camera).
+        FreecamMod.speed = cfg.freecamSpeed;
+
         if (cfg.arrayListEnabled != ArrayListMod.isEnabled()) ArrayListMod.toggle();
         ArrayListMod.rainbow    = cfg.arrayListRainbow;
         ArrayListMod.background  = cfg.arrayListBackground;

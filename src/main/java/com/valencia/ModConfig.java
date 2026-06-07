@@ -38,6 +38,10 @@ public class ModConfig {
     public float   flyHSpeed  = 1.0f;
     public float   flyVSpeed  = 1.0f;
 
+    // Freecam (client-only camera detach; intentionally NOT persisted enabled)
+    public int   freecamKey   = GLFW.GLFW_KEY_P;
+    public float freecamSpeed = 1.0f;
+
     // NoFall: 0=Always spoof onGround, 1=Smart (only when a fall would deal damage)
     public int nofallMode = 0;
     // Reset the vanilla server's airborne counter periodically so sustained
