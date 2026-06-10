@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.26** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.27** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.26** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.26.jar
+# JAR → build/libs/valencia-1.7.27.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.27 — TargetHUD Aurora 風格
+- **TargetHUD 新增 `4 Aurora` Style**（ClickGUI → Render → TargetHUD → `Style` 改為 0–4）：跟 Layout 3 同一套液態玻璃——玻璃底 + 頂部高光、掃過面板的光帶、流動極光血條（圓角軌）、極光發光邊框；血量靠血條長度 + 紅黃綠染色的 HP 數字判讀
+- **抽出共用 `Aurora.java` 繪圖工具**（調色盤取樣、條帶漸層、圓角、玻璃面板、掃光、發光邊框），ClickGUI Aurora 版面改為薄委派，零邏輯複製、行為不變
 
 ### v1.7.26 — Aurora Glass 版面（iOS 液態玻璃 + 流動極光）
 - **新增 `3 Aurora` Layout**（ClickGUI → Client → Theme → `Layout` 改為 0–3）：

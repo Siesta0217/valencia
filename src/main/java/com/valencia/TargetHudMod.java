@@ -14,12 +14,13 @@ import net.minecraft.world.entity.LivingEntity;
  * combat module is active (KillAura > MaceAura > SpearAura), falling back to
  * the entity under the crosshair and then the last mob that hit us.
  *
- * Four switchable looks via {@code cfg.targetHudStyle} — style 0 (Classic) is
+ * Five switchable looks via {@code cfg.targetHudStyle} — style 0 (Classic) is
  * the original box, kept byte-for-byte so existing users see no change:
  *   0 Classic  — name + distance header, accent box, solid HP bar, HP text
  *   1 Compact  — one slim line (name / HP / distance) with a 2px HP strip
  *   2 Gradient — bigger panel, shaved corners, red→green gradient HP bar
  *   3 Ring     — circular HP ring with the HP% inside, name/HP/distance beside
+ *   4 Aurora   — liquid-glass panel + flowing aurora bar (matches Layout 3)
  */
 public final class TargetHudMod {
 
@@ -57,6 +58,7 @@ public final class TargetHudMod {
             case 1 -> renderCompact(g, font, cfg, in, viewW);
             case 2 -> renderGradient(g, font, cfg, in, viewW);
             case 3 -> renderRing(g, font, cfg, in, target, viewW);
+            case 4 -> renderAurora(g, font, in, viewW);
             default -> renderClassic(g, font, cfg, in, viewW);
         }
     }
@@ -208,6 +210,43 @@ public final class TargetHudMod {
         g.drawString(font, in.name(), tx, ty, 0xFFFFFFFF, true);          ty += 11;
         g.drawString(font, hpText,    tx, ty, hpColor(in.frac()), false); ty += 11;
         g.drawString(font, distText,  tx, ty, 0xFFAAAAAA, false);
+    }
+
+    // ── Style 4: Aurora (liquid glass, matches the Aurora ClickGUI layout) ───
+    private static void renderAurora(GuiGraphics g, Font font, Info in, int viewW) {
+        String distText = String.format("%.1fm", in.dist());
+        String hpText = fmtHp(in);
+
+        int padX = 8, padY = 6, barH = 5;
+        int nameW = font.width(in.name());
+        int distW = font.width(distText);
+        int contentW = Math.max(150, nameW + 12 + distW);
+        int contentH = 9 + 4 + barH + 4 + 9;
+        int boxW = contentW + padX * 2;
+        int boxH = contentH + padY * 2;
+        int boxX = (viewW - boxW) / 2;
+        int boxY = 24;
+
+        Aurora.glassPanel(g, boxX, boxY, boxX + boxW, boxY + boxH);
+
+        int cy = boxY + padY + 1;
+        g.drawString(font, in.name(), boxX + padX,                cy, 0xFFFFFFFF, true);
+        g.drawString(font, distText,  boxX + boxW - padX - distW,  cy, 0xFFB8BCC8, false);
+        cy += 9 + 4;
+
+        // rounded track + flowing aurora fill; health reads from bar length
+        // and the hp-coloured text (the aurora hue itself stays decorative).
+        int barX = boxX + padX, barW = boxW - padX * 2;
+        Aurora.roundRect(g, barX, cy, barX + barW, cy + barH, 0xFF202531);
+        int filled = (int)((barW - 2) * in.frac());
+        if (filled > 0) Aurora.fill(g, barX + 1, cy + 1, barX + 1 + filled, cy + barH - 1, 0xFF, 0.35f);
+        cy += barH + 4;
+
+        int hpW = font.width(hpText);
+        g.drawString(font, hpText, boxX + (boxW - hpW) / 2, cy, hpColor(in.frac()), true);
+
+        Aurora.sheen(g, boxX, boxY, boxX + boxW, boxY + boxH);
+        Aurora.border(g, boxX, boxY, boxX + boxW, boxY + boxH);
     }
 
     /** Filled annulus; the fg arc sweeps clockwise from the top up to {@code frac}. */

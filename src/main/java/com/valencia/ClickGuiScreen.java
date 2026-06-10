@@ -332,7 +332,7 @@ public class ClickGuiScreen extends Screen {
         add(Cat.RENDER, new ModEntry("TargetHUD",
             TargetHudMod::isEnabled, () -> { TargetHudMod.toggle(); cfg.targetHudEnabled = TargetHudMod.isEnabled(); cfg.save(); },
             true, List.of(
-            new SliderS("Style", () -> cfg.targetHudStyle, v -> { cfg.targetHudStyle = (int)v; cfg.save(); }, 0, 3)
+            new SliderS("Style", () -> cfg.targetHudStyle, v -> { cfg.targetHudStyle = (int)v; cfg.save(); }, 0, 4)
         )));
 
         add(Cat.RENDER, new ModEntry("ArrayList",
@@ -1121,74 +1121,22 @@ public class ClickGuiScreen extends Screen {
     private static final int AU_TABS  = 18;
     private static final int AU_CARD_H = 22;
 
-    /** Looping palette: cyan → purple → pink → purple → (cyan). */
-    private static final int[] AURORA_STOPS = {0xFF22D3EE, 0xFFA855F7, 0xFFEC4899, 0xFFA855F7};
-
-    private static float auroraTime() { return (System.currentTimeMillis() % 8000L) / 8000f; }
-
-    /** rgb-only lerp (alpha is applied by callers). */
-    private static int lerpColor(int c1, int c2, float t) {
-        int r = (int)(((c1 >> 16) & 0xFF) + ((((c2 >> 16) & 0xFF) - ((c1 >> 16) & 0xFF)) * t));
-        int gr = (int)(((c1 >> 8) & 0xFF) + ((((c2 >> 8) & 0xFF) - ((c1 >> 8) & 0xFF)) * t));
-        int b = (int)((c1 & 0xFF) + (((c2 & 0xFF) - (c1 & 0xFF)) * t));
-        return (r << 16) | (gr << 8) | b;
-    }
-
-    /** Sample the looping aurora palette at any phase (wraps). Returns rgb. */
-    private static int auroraColor(float phase) {
-        phase -= (float) Math.floor(phase);
-        float seg = phase * AURORA_STOPS.length;
-        int i = (int) seg;
-        int j = (i + 1) % AURORA_STOPS.length;
-        return lerpColor(AURORA_STOPS[i % AURORA_STOPS.length], AURORA_STOPS[j], seg - i);
-    }
-
-    /** Horizontal flowing aurora gradient drawn as 3px strips. */
+    // The aurora drawing primitives live in the shared Aurora kit (also used by
+    // the Aurora TargetHUD style); these thin wrappers keep call sites short.
     private void auroraFill(GuiGraphics g, int x1, int y1, int x2, int y2, int alpha, float span) {
-        int w = x2 - x1;
-        if (w <= 0 || y2 <= y1) return;
-        float t = auroraTime();
-        for (int sx = 0; sx < w; sx += 3) {
-            int ex = Math.min(sx + 3, w);
-            int c = (alpha << 24) | auroraColor(t + span * sx / w);
-            g.fill(x1 + sx, y1, x1 + ex, y2, c);
-        }
+        Aurora.fill(g, x1, y1, x2, y2, alpha, span);
     }
 
-    /** Translucent glass base + specular top highlight + bottom inner shade. */
     private void auGlassPanel(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        roundRect(g, x1, y1, x2, y2, 0xB40C1016);
-        g.fill(x1 + 3, y1 + 1, x2 - 3, y1 + 2, 0x46FFFFFF);
-        g.fill(x1 + 2, y1 + 2, x2 - 2, y1 + 4, 0x1EFFFFFF);
-        g.fill(x1 + 2, y1 + 4, x2 - 2, y1 + 7, 0x0CFFFFFF);
-        g.fill(x1 + 2, y2 - 3, x2 - 2, y2 - 1, 0x28000000);
+        Aurora.glassPanel(g, x1, y1, x2, y2);
     }
 
-    /** Slow light band sweeping the window — the "liquid" reflection. Drawn
-     *  over the content at very low alpha so it reads as glass, not haze. */
     private void auSheen(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        float t = (System.currentTimeMillis() % 5200L) / 5200f;
-        int span = (x2 - x1) + 80;
-        int bx = x1 - 40 + (int)(span * t);
-        g.enableScissor(x1 + 2, y1 + 2, x2 - 2, y2 - 2);
-        g.fill(bx,      y1, bx + 7,  y2, 0x06FFFFFF);
-        g.fill(bx + 7,  y1, bx + 16, y2, 0x0CFFFFFF);
-        g.fill(bx + 16, y1, bx + 23, y2, 0x06FFFFFF);
-        g.disableScissor();
+        Aurora.sheen(g, x1, y1, x2, y2);
     }
 
-    /** Aurora-sampled window border + a 1px soft outer glow ring. */
     private void auBorder(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        float t = auroraTime();
-        auroraFill(g, x1 + 2, y1, x2 - 2, y1 + 1, 0xFF, 0.5f);
-        auroraFill(g, x1 + 2, y2 - 1, x2 - 2, y2, 0xFF, 0.5f);
-        int lc = auroraColor(t), rc = auroraColor(t + 0.5f);
-        g.fill(x1, y1 + 2, x1 + 1, y2 - 2, 0xFF000000 | lc);
-        g.fill(x2 - 1, y1 + 2, x2, y2 - 2, 0xFF000000 | rc);
-        auroraFill(g, x1 + 2, y1 - 1, x2 - 2, y1, 0x38, 0.5f);
-        auroraFill(g, x1 + 2, y2, x2 - 2, y2 + 1, 0x38, 0.5f);
-        g.fill(x1 - 1, y1 + 2, x1, y2 - 2, 0x38000000 | lc);
-        g.fill(x2, y1 + 2, x2 + 1, y2 - 2, 0x38000000 | rc);
+        Aurora.border(g, x1, y1, x2, y2);
     }
 
     private void ensureAuPos() {

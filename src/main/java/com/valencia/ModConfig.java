@@ -194,7 +194,7 @@ public class ModConfig {
 
     // TargetHUD
     public boolean targetHudEnabled = false;
-    public int     targetHudStyle   = 0;   // 0=Classic, 1=Compact, 2=Gradient
+    public int     targetHudStyle   = 0;   // 0=Classic, 1=Compact, 2=Gradient, 3=Ring, 4=Aurora
 
     // AutoTotem
     public boolean autoTotemEnabled = false;
