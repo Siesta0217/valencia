@@ -107,6 +107,16 @@ public class ClickGuiScreen extends Screen {
     private int tnSliderX, tnSliderW;
     private final java.util.Map<String, Float> tnKnob = new java.util.HashMap<>();  // pill knob slide anim
 
+    // ── Aurora Glass layout state (guiLayout == 3) ───────────────────────────
+    private int auWinX = -1, auWinY = -1;    // window top-left; -1 = center on first render
+    private boolean auDragging;
+    private int auDragOX, auDragOY;
+    private int auCatIdx;                     // selected category tab
+    private ModEntry auExpanded;             // inline-expanded module card (null = none)
+    private int auScroll;                     // card-list scroll offset
+    private SliderS auSliderActive;          // slider being dragged
+    private int auSliderX, auSliderW;
+
     // ── Waifu ───────────────────────────────────────────────────────────────
     private Identifier waifuLoc;
     private int waifuTexW, waifuTexH;
@@ -333,7 +343,7 @@ public class ClickGuiScreen extends Screen {
 
         // ── Client ──────────────────────────────────────────────────────────
         add(Cat.CLIENT, new ModEntry("Theme", () -> false, () -> {}, false, List.of(
-            new SliderS("Layout",    () -> cfg.guiLayout, v -> { cfg.guiLayout = (int)v; cfg.save(); }, 0, 2),
+            new SliderS("Layout",    () -> cfg.guiLayout, v -> { cfg.guiLayout = (int)v; cfg.save(); }, 0, 3),
             new SliderS("GUI Style", () -> cfg.guiStyle, v -> { cfg.guiStyle = (int)v; cfg.save(); }, 0, 3),
             new SliderS("Red",      () -> cfg.accentR, v -> { cfg.accentR = (int)v; cfg.save(); }, 0, 255),
             new SliderS("Green",    () -> cfg.accentG, v -> { cfg.accentG = (int)v; cfg.save(); }, 0, 255),
@@ -412,7 +422,8 @@ public class ClickGuiScreen extends Screen {
         g.drawString(font, verStr, 5, height - font.lineHeight - 3, verColor, true);
 
         // active layout
-        if (cfg.guiLayout == 2) renderTenacity(g, mx, my, accent, font);
+        if (cfg.guiLayout == 3) renderAurora(g, mx, my, font);
+        else if (cfg.guiLayout == 2) renderTenacity(g, mx, my, accent, font);
         else if (cfg.guiLayout == 1) renderSidebar(g, mx, my, accent, font);
         else for (Panel p : panels) renderPanel(g, p, mx, my, accent, font);
     }
@@ -1096,6 +1107,297 @@ public class ClickGuiScreen extends Screen {
         return true;
     }
 
+    // ═════════════════════════════════════════════════════════════════════════
+    //  AURORA GLASS LAYOUT (guiLayout == 3) — iOS liquid-glass single window.
+    //  A translucent panel (the world shows through) with a specular top
+    //  highlight and a slow light band sweeping across the whole window, plus a
+    //  flowing aurora gradient (cyan→purple→pink) through the title bar, tab
+    //  underline, enabled rows, pills and slider fills. GuiGraphics has no real
+    //  blur or gradients: glass = low-alpha fills + layered white highlights,
+    //  gradients = 3px strip fills sampling a looping palette with a time phase.
+    // ═════════════════════════════════════════════════════════════════════════
+    private static final int AU_W = 280, AU_H = 250;
+    private static final int AU_TITLE = 22;
+    private static final int AU_TABS  = 18;
+    private static final int AU_CARD_H = 22;
+
+    /** Looping palette: cyan → purple → pink → purple → (cyan). */
+    private static final int[] AURORA_STOPS = {0xFF22D3EE, 0xFFA855F7, 0xFFEC4899, 0xFFA855F7};
+
+    private static float auroraTime() { return (System.currentTimeMillis() % 8000L) / 8000f; }
+
+    /** rgb-only lerp (alpha is applied by callers). */
+    private static int lerpColor(int c1, int c2, float t) {
+        int r = (int)(((c1 >> 16) & 0xFF) + ((((c2 >> 16) & 0xFF) - ((c1 >> 16) & 0xFF)) * t));
+        int gr = (int)(((c1 >> 8) & 0xFF) + ((((c2 >> 8) & 0xFF) - ((c1 >> 8) & 0xFF)) * t));
+        int b = (int)((c1 & 0xFF) + (((c2 & 0xFF) - (c1 & 0xFF)) * t));
+        return (r << 16) | (gr << 8) | b;
+    }
+
+    /** Sample the looping aurora palette at any phase (wraps). Returns rgb. */
+    private static int auroraColor(float phase) {
+        phase -= (float) Math.floor(phase);
+        float seg = phase * AURORA_STOPS.length;
+        int i = (int) seg;
+        int j = (i + 1) % AURORA_STOPS.length;
+        return lerpColor(AURORA_STOPS[i % AURORA_STOPS.length], AURORA_STOPS[j], seg - i);
+    }
+
+    /** Horizontal flowing aurora gradient drawn as 3px strips. */
+    private void auroraFill(GuiGraphics g, int x1, int y1, int x2, int y2, int alpha, float span) {
+        int w = x2 - x1;
+        if (w <= 0 || y2 <= y1) return;
+        float t = auroraTime();
+        for (int sx = 0; sx < w; sx += 3) {
+            int ex = Math.min(sx + 3, w);
+            int c = (alpha << 24) | auroraColor(t + span * sx / w);
+            g.fill(x1 + sx, y1, x1 + ex, y2, c);
+        }
+    }
+
+    /** Translucent glass base + specular top highlight + bottom inner shade. */
+    private void auGlassPanel(GuiGraphics g, int x1, int y1, int x2, int y2) {
+        roundRect(g, x1, y1, x2, y2, 0xB40C1016);
+        g.fill(x1 + 3, y1 + 1, x2 - 3, y1 + 2, 0x46FFFFFF);
+        g.fill(x1 + 2, y1 + 2, x2 - 2, y1 + 4, 0x1EFFFFFF);
+        g.fill(x1 + 2, y1 + 4, x2 - 2, y1 + 7, 0x0CFFFFFF);
+        g.fill(x1 + 2, y2 - 3, x2 - 2, y2 - 1, 0x28000000);
+    }
+
+    /** Slow light band sweeping the window — the "liquid" reflection. Drawn
+     *  over the content at very low alpha so it reads as glass, not haze. */
+    private void auSheen(GuiGraphics g, int x1, int y1, int x2, int y2) {
+        float t = (System.currentTimeMillis() % 5200L) / 5200f;
+        int span = (x2 - x1) + 80;
+        int bx = x1 - 40 + (int)(span * t);
+        g.enableScissor(x1 + 2, y1 + 2, x2 - 2, y2 - 2);
+        g.fill(bx,      y1, bx + 7,  y2, 0x06FFFFFF);
+        g.fill(bx + 7,  y1, bx + 16, y2, 0x0CFFFFFF);
+        g.fill(bx + 16, y1, bx + 23, y2, 0x06FFFFFF);
+        g.disableScissor();
+    }
+
+    /** Aurora-sampled window border + a 1px soft outer glow ring. */
+    private void auBorder(GuiGraphics g, int x1, int y1, int x2, int y2) {
+        float t = auroraTime();
+        auroraFill(g, x1 + 2, y1, x2 - 2, y1 + 1, 0xFF, 0.5f);
+        auroraFill(g, x1 + 2, y2 - 1, x2 - 2, y2, 0xFF, 0.5f);
+        int lc = auroraColor(t), rc = auroraColor(t + 0.5f);
+        g.fill(x1, y1 + 2, x1 + 1, y2 - 2, 0xFF000000 | lc);
+        g.fill(x2 - 1, y1 + 2, x2, y2 - 2, 0xFF000000 | rc);
+        auroraFill(g, x1 + 2, y1 - 1, x2 - 2, y1, 0x38, 0.5f);
+        auroraFill(g, x1 + 2, y2, x2 - 2, y2 + 1, 0x38, 0.5f);
+        g.fill(x1 - 1, y1 + 2, x1, y2 - 2, 0x38000000 | lc);
+        g.fill(x2, y1 + 2, x2 + 1, y2 - 2, 0x38000000 | rc);
+    }
+
+    private void ensureAuPos() {
+        if (auWinX < 0) { auWinX = (width - AU_W) / 2; auWinY = (height - AU_H) / 2; }
+    }
+
+    private void renderAurora(GuiGraphics g, int mx, int my, Font font) {
+        ensureAuPos();
+        int x = auWinX, y = auWinY, x2 = x + AU_W, y2 = y + AU_H;
+
+        auGlassPanel(g, x, y, x2, y2);
+
+        // ── title bar: flowing aurora gradient, dark text ──
+        auroraFill(g, x + 2, y + 1, x2 - 2, y + AU_TITLE, 0xE6, 0.6f);
+        g.fill(x + 3, y + 1, x2 - 3, y + 2, 0x50FFFFFF);
+        g.drawString(font, "Valencia", x + 8, y + (AU_TITLE - font.lineHeight) / 2 + 1, 0xFF0B1018, false);
+        boolean hovClose = mx >= x2 - 16 && mx < x2 && my >= y && my < y + AU_TITLE;
+        g.drawString(font, "x", x2 - 11, y + (AU_TITLE - font.lineHeight) / 2 + 1, hovClose ? 0xFF7F1D1D : 0xFF0B1018, false);
+
+        // ── tabs with aurora underline on the active one ──
+        int tabY = y + AU_TITLE + 2;
+        int tx = x + 8;
+        for (int i = 0; i < panels.size(); i++) {
+            String lbl = panels.get(i).cat.label;
+            int tw = font.width(lbl);
+            boolean sel = i == auCatIdx;
+            boolean hov = mx >= tx - 2 && mx < tx + tw + 2 && my >= tabY && my < tabY + AU_TABS;
+            g.drawString(font, lbl, tx, tabY + (AU_TABS - font.lineHeight) / 2, sel ? 0xFFFFFFFF : (hov ? 0xFFD0D4E0 : 0xFF8B90A0), sel);
+            if (sel) auroraFill(g, tx - 1, tabY + AU_TABS - 2, tx + tw + 1, tabY + AU_TABS - 1, 0xFF, 0.25f);
+            tx += tw + 10;
+        }
+
+        // ── module cards (scrollable, clipped) ──
+        int listX1 = x + 6, listX2 = x2 - 6, listW = listX2 - listX1;
+        int listTop = tabY + AU_TABS + 2, listBot = y2 - 6, listVis = listBot - listTop;
+        int total = auContentH(panels.get(auCatIdx));
+        int maxScroll = Math.max(0, total - listVis);
+        auScroll = Math.max(0, Math.min(auScroll, maxScroll));
+
+        g.enableScissor(listX1, listTop, listX2, listBot);
+        int ry = listTop - auScroll;
+        for (ModEntry m : panels.get(auCatIdx).mods) {
+            int ch = AU_CARD_H + (m == auExpanded ? auExpandedH(m) : 0);
+            if (ry + ch > listTop && ry < listBot) auDrawCard(g, m, listX1, ry, listW, mx, my, font);
+            ry += ch + 3;
+        }
+        g.disableScissor();
+
+        if (total > listVis) {
+            int barH = Math.max(10, listVis * listVis / total);
+            int barY = listTop + (int)((listVis - barH) * ((float) auScroll / maxScroll));
+            g.fill(listX2 - 1, barY, listX2 + 1, barY + barH, 0x66FFFFFF);
+        }
+
+        auSheen(g, x, y, x2, y2);
+        auBorder(g, x, y, x2, y2);
+    }
+
+    private void auDrawCard(GuiGraphics g, ModEntry m, int x, int y, int w, int mx, int my, Font font) {
+        int ch = AU_CARD_H + (m == auExpanded ? auExpandedH(m) : 0);
+        boolean on = m.enabled.getAsBoolean();
+        boolean hovRow = mx >= x && mx < x + w && my >= y && my < y + AU_CARD_H;
+
+        roundRect(g, x, y, x + w, y + ch, hovRow ? 0x2EFFFFFF : 0x1AFFFFFF);
+        if (on) {
+            auroraFill(g, x + 1, y + 1, x + w - 1, y + AU_CARD_H - 1, 0x3C, 0.35f);
+            auroraFill(g, x, y + 3, x + 2, y + AU_CARD_H - 3, 0xFF, 0.1f);
+        }
+        if (m == auExpanded) g.fill(x + 1, y + AU_CARD_H, x + w - 1, y + ch - 1, 0x28000000);
+
+        g.drawString(font, m.name, x + 8, y + (AU_CARD_H - font.lineHeight) / 2, on ? 0xFFFFFFFF : 0xFFC2C6D2, on);
+
+        int pillW = 20, pillX = x + w - 7 - pillW;
+        if (m.toggleable) auPill(g, pillX, y + AU_CARD_H / 2, on, tnKnobProg("au:" + m.name, on));
+        if (!m.settings.isEmpty()) {
+            String chev = m == auExpanded ? "-" : "+";
+            int chx = m.toggleable ? pillX - 9 : x + w - 12;
+            g.drawString(font, chev, chx, y + (AU_CARD_H - font.lineHeight) / 2, 0xFF9BA0B0, false);
+        }
+
+        if (m == auExpanded) {
+            int sy = y + AU_CARD_H + 2, sx = x + 10, sw = w - 18;
+            for (Setting s : m.settings) {
+                if (s instanceof SliderS sl)    auSlider(g, sl, sx, sy + 2, sw, font);
+                else if (s instanceof BoolS bs) auBool(g, bs, sx, sy, sw, font, m);
+                else if (s instanceof KeyS ks)  auBind(g, ks, sx, sy + 2, sw, font, rebindTarget == ks);
+                sy += tenSettH(s);
+            }
+        }
+    }
+
+    private void auPill(GuiGraphics g, int x, int cy, boolean on, float prog) {
+        int w = 20, h = 11, y = cy - h / 2;
+        roundRect(g, x, y, x + w, y + h, on ? 0xFF14181F : 0xFF262A34);
+        if (on) auroraFill(g, x + 1, y + 1, x + w - 1, y + h - 1, 0xE6, 0.4f);
+        int kd = h - 4;
+        int kx = x + 2 + (int)((w - 4 - kd) * prog);
+        roundRect(g, kx, y + 2, kx + kd, y + 2 + kd, 0xFFFFFFFF);
+    }
+
+    private void auSlider(GuiGraphics g, SliderS sl, int x, int y, int w, Font font) {
+        double val = sl.get().getAsDouble();
+        g.drawString(font, sl.label(), x, y, 0xFFC2C6D2, false);
+        String vs = fmtVal(val);
+        g.drawString(font, vs, x + w - font.width(vs), y, 0xFFFFFFFF, false);
+        int barY = y + 12, barH = 4;
+        double pct = Math.max(0, Math.min(1, (val - sl.min()) / (sl.max() - sl.min())));
+        int filled = (int)(w * pct);
+        roundRect(g, x, barY, x + w, barY + barH, 0xFF202531);
+        if (filled > 0) auroraFill(g, x, barY, x + filled, barY + barH, 0xFF, 0.35f);
+        int tx = x + filled, tr = 4, tcy = barY + barH / 2;
+        roundRect(g, tx - tr, tcy - tr, tx + tr, tcy + tr, 0xFFFFFFFF);
+    }
+
+    private void auBool(GuiGraphics g, BoolS bs, int x, int y, int w, Font font, ModEntry owner) {
+        boolean on = bs.get().getAsBoolean();
+        g.drawString(font, bs.label(), x, y + (TEN_BOOL - font.lineHeight) / 2, 0xFFC2C6D2, false);
+        auPill(g, x + w - 20, y + TEN_BOOL / 2, on, tnKnobProg("au:" + owner.name + ":" + bs.label(), on));
+    }
+
+    private void auBind(GuiGraphics g, KeyS ks, int x, int y, int w, Font font, boolean binding) {
+        g.drawString(font, "Key", x, y + (TEN_BIND - font.lineHeight) / 2, 0xFFC2C6D2, false);
+        String v = binding ? "..." : ModConfig.keyName(ks.get().getAsInt());
+        int cw = font.width(v) + 8, cx = x + w - cw, ccy = y + TEN_BIND / 2;
+        roundRect(g, cx, ccy - 6, x + w, ccy + 6, 0x33FFFFFF);
+        g.drawString(font, v, cx + 4, ccy - font.lineHeight / 2, binding ? 0xFFFFD050 : 0xFFFFFFFF, false);
+    }
+
+    private int auExpandedH(ModEntry m) {
+        int h = 4;
+        for (Setting s : m.settings) h += tenSettH(s);
+        return h;
+    }
+
+    private int auContentH(Panel p) {
+        int h = 0;
+        for (ModEntry m : p.mods) h += AU_CARD_H + (m == auExpanded ? auExpandedH(m) : 0) + 3;
+        return h;
+    }
+
+    private boolean auMouseClicked(int mx, int my, int btn) {
+        ensureAuPos();
+        Font font = Minecraft.getInstance().font;
+        int x = auWinX, y = auWinY, x2 = x + AU_W, y2 = y + AU_H;
+        if (mx < x || mx >= x2 || my < y || my >= y2) return false;
+
+        if (my < y + AU_TITLE) {                        // title bar
+            if (btn == 0 && mx >= x2 - 16) { onClose(); return true; }
+            if (btn == 0) { auDragging = true; auDragOX = x - mx; auDragOY = y - my; }
+            return true;
+        }
+
+        int tabY = y + AU_TITLE + 2;
+        if (my >= tabY && my < tabY + AU_TABS) {        // tabs
+            int tx = x + 8;
+            for (int i = 0; i < panels.size(); i++) {
+                int tw = font.width(panels.get(i).cat.label);
+                if (mx >= tx - 2 && mx < tx + tw + 2) { auCatIdx = i; auExpanded = null; auScroll = 0; break; }
+                tx += tw + 10;
+            }
+            return true;
+        }
+
+        int listX1 = x + 6, listX2 = x2 - 6, listW = listX2 - listX1;
+        int listTop = tabY + AU_TABS + 2, listBot = y2 - 6;
+        if (mx < listX1 || mx >= listX2 || my < listTop || my >= listBot) return true;
+
+        int ry = listTop - auScroll;
+        for (ModEntry m : panels.get(auCatIdx).mods) {
+            int ch = AU_CARD_H + (m == auExpanded ? auExpandedH(m) : 0);
+            if (my >= ry && my < ry + AU_CARD_H) {      // header row
+                int pillW = 20, pillX = listX1 + listW - 7 - pillW;
+                if (btn == 0 && m.toggleable && mx >= pillX - 2 && mx < pillX + pillW + 2) m.toggle.run();
+                else if (!m.settings.isEmpty()) auExpanded = (m == auExpanded) ? null : m;
+                else if (btn == 0 && m.toggleable) m.toggle.run();
+                return true;
+            }
+            if (m == auExpanded && my >= ry + AU_CARD_H && my < ry + ch) {   // settings
+                int sy = ry + AU_CARD_H + 2, sx = listX1 + 10, sw = listW - 18;
+                for (Setting s : m.settings) {
+                    int sh = tenSettH(s);
+                    if (my >= sy && my < sy + sh) {
+                        if (btn == 0) {
+                            if (s instanceof SliderS sl) { auSliderActive = sl; auSliderX = sx; auSliderW = sw; applySlider(sl, mx, sx, sw); }
+                            else if (s instanceof BoolS bs) bs.toggle().run();
+                            else if (s instanceof KeyS ks) rebindTarget = ks;
+                        }
+                        break;
+                    }
+                    sy += sh;
+                }
+                return true;
+            }
+            ry += ch + 3;
+        }
+        return true;
+    }
+
+    private boolean auMouseScrolled(int mx, int my, double scrollY) {
+        ensureAuPos();
+        int x = auWinX, y = auWinY, x2 = x + AU_W, y2 = y + AU_H;
+        if (mx < x || mx >= x2 || my < y || my >= y2) return false;
+        int listTop = y + AU_TITLE + 2 + AU_TABS + 2;
+        int listVis = (y2 - 6) - listTop;
+        int maxScroll = Math.max(0, auContentH(panels.get(auCatIdx)) - listVis);
+        auScroll = Math.max(0, Math.min(auScroll - (int)(scrollY * 12), maxScroll));
+        return true;
+    }
+
     // ── Waifu ───────────────────────────────────────────────────────────────
     private static final String[] WAIFU_EXTS = {"png", "jpg", "jpeg", "bmp", "gif"};
 
@@ -1153,6 +1455,7 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseClicked(MouseButtonEvent event, boolean dbl) {
         int mx = (int)event.x(), my = (int)event.y(), btn = event.button();
 
+        if (ModConfig.get().guiLayout == 3) return auMouseClicked(mx, my, btn);
         if (ModConfig.get().guiLayout == 2) return tnMouseClicked(mx, my, btn);
         if (ModConfig.get().guiLayout == 1) return sbMouseClicked(mx, my, btn);
 
@@ -1252,6 +1555,12 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
         int mx = (int)event.x(), my = (int)event.y();
 
+        if (ModConfig.get().guiLayout == 3) {
+            if (auDragging) { auWinX = auDragOX + mx; auWinY = auDragOY + my; return true; }
+            if (auSliderActive != null) { applySlider(auSliderActive, mx, auSliderX, auSliderW); return true; }
+            return super.mouseDragged(event, dx, dy);
+        }
+
         if (ModConfig.get().guiLayout == 2) {
             if (tnDragging) { tnWinX = tnDragOX + mx; tnWinY = tnDragOY + my; return true; }
             if (tnSliderActive != null) { applySlider(tnSliderActive, mx, tnSliderX, tnSliderW); return true; }
@@ -1289,6 +1598,7 @@ public class ClickGuiScreen extends Screen {
         sliderPanel = null; sliderIdx = -1;
         sbDragging = false; sbSliderActive = null;
         tnDragging = false; tnSliderActive = null;
+        auDragging = false; auSliderActive = null;
         return super.mouseReleased(event);
     }
 
@@ -1296,6 +1606,7 @@ public class ClickGuiScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int mx = (int)mouseX, my = (int)mouseY;
 
+        if (ModConfig.get().guiLayout == 3) return auMouseScrolled(mx, my, scrollY);
         if (ModConfig.get().guiLayout == 2) return tnMouseScrolled(mx, my, scrollY);
         if (ModConfig.get().guiLayout == 1) return sbMouseScrolled(mx, my, scrollY);
 

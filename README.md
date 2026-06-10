@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.25** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.26** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.25** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.25.jar
+# JAR → build/libs/valencia-1.7.26.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.26 — Aurora Glass 版面（iOS 液態玻璃 + 流動極光）
+- **新增 `3 Aurora` Layout**（ClickGUI → Client → Theme → `Layout` 改為 0–3）：
+  - **液態玻璃**：低透明度玻璃底（遊戲世界透出來）、頂部 specular 高光遞減、底部內陰影，加一條**緩慢掃過整個視窗的光帶**（液態反光感，低 alpha 蓋在內容上）。GuiGraphics 沒有真模糊，這是逼近版
+  - **流動極光漸層**（青→紫→粉循環調色盤，3px 條帶取樣 + 時間相位，整體 8 秒一輪）：跑在標題列、active 分頁底線、啟用列底色、pill 開關、滑桿填色與整圈視窗邊框（外加 1px 低 alpha 外光暈）
+  - 版面：漸層標題列（深色字）+ 橫向分類分頁 + 圓角模組卡片（就地展開設定）+ 動畫 pill + 圓鈕滑桿，scissor 裁切捲動
+  - 配色固定走極光調色盤（不吃 accent），與 `GUI Style` 無關
+- Layout slider 上限 2→3；幾何/命中判定獨立，Panels / Sidebar / Tenacity 不受影響
 
 ### v1.7.25 — Tenacity 版面（完整重做，不只配色）
 - **新增 `2 Tenacity` Layout**（ClickGUI → Client → Theme → `Layout` 改為 0–2）：一個獨立幾何的單一視窗，不是換色——
@@ -161,6 +169,7 @@ cd valencia
   - `0 Panels`：原本的 Raven 散落可拖曳面板（不變）
   - `1 Sidebar`：單一置中視窗——左側分類分頁、中間模組清單（**綠點=開關、列其餘=選取**）、右側該模組設定。標題列可拖曳、右上 `x` 關閉、清單與設定各自獨立捲動。幾何與命中判定完全獨立，但沿用同一份模組資料 / GuiSkin 配色 / slider・toggle・keybind widget，所以 Light / Glass 配色一樣套得上
   - `2 Tenacity`：圓角視窗 + 分類側欄 + 模組卡片 + pill 開關（滑動動畫）+ 就地展開設定（滑桿帶圓鈕）。完整重做的幾何，非換色（v1.7.25）
+  - `3 Aurora`：iOS 液態玻璃 + 流動極光漸層（掃光、漸層標題列、橫向分頁、極光 pill/滑桿、發光邊框）（v1.7.26）
 - **TargetHUD** 新增 `Style 3 Ring`（`Style` 範圍變 0–3）：環形血量圈、中央顯示 HP%、右側名字 / 血量 / 距離
 - rebind 狀態統一成單一 `rebindTarget`，兩種版面共用按鍵捕捉
 
