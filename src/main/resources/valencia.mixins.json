@@ -19,6 +19,7 @@
     "GlowMixin",
     "VelocityMixin",
     "VelocityPacketMixin",
+    "VelocityExplosionMixin",
     "CritMixin",
     "ScaffoldMixin",
     "StepMixin",

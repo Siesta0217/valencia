@@ -4,6 +4,7 @@ import com.valencia.KillAuraMod;
 import com.valencia.SpearAuraMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -59,6 +60,12 @@ public abstract class SpearAuraMixin {
             rot = KillAuraMod.smoothRotation(
                 SpearAuraMod.savedYRot, SpearAuraMod.savedXRot,
                 rot[0], rot[1], Math.max(1f, SpearAuraMod.maxTurnDeg));
+        }
+        // Keep the silent-aim delta on the player's real mouse GCD grid, same
+        // as KillAura — arbitrary float rotations fail the anti-cheat GCD check.
+        if (SpearAuraMod.gcdSnap) {
+            rot[0] = KillAuraMod.snapGcd(SpearAuraMod.savedYRot, rot[0], true);
+            rot[1] = Mth.clamp(KillAuraMod.snapGcd(SpearAuraMod.savedXRot, rot[1], false), -90f, 90f);
         }
         self.setYRot(rot[0]);
         self.setXRot(rot[1]);

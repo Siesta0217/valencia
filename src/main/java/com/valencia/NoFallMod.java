@@ -62,6 +62,7 @@ public class NoFallMod implements ClientModInitializer {
         SpearAuraMod.skipInvisible      = cfg.spearSkipInvis;
         SpearAuraMod.smoothRot          = cfg.spearSmoothRot;
         SpearAuraMod.maxTurnDeg         = cfg.spearMaxTurn;
+        SpearAuraMod.gcdSnap            = cfg.spearGcd;
 
         ScaffoldMod.tower      = cfg.scaffoldTower;
         ScaffoldMod.towerMove  = cfg.scaffoldTowerMove;
@@ -85,6 +86,7 @@ public class NoFallMod implements ClientModInitializer {
         MaceAuraMod.skipInvisible  = cfg.maceSkipInvis;
         MaceAuraMod.smoothRot      = cfg.maceSmoothRot;
         MaceAuraMod.maxTurnDeg     = cfg.maceMaxTurn;
+        MaceAuraMod.gcdSnap        = cfg.maceGcd;
         StepMod.stepHeight         = cfg.stepHeight;
         KillAuraMod.RANGE        = cfg.killRange;
         KillAuraMod.ATTACK_RANGE = cfg.killAttackRange;

@@ -168,6 +168,7 @@ public class ClickGuiScreen extends Screen {
             new BoolS("Skip Inv",() -> cfg.maceSkipInvis, () -> { cfg.maceSkipInvis = !cfg.maceSkipInvis; MaceAuraMod.skipInvisible = cfg.maceSkipInvis; cfg.save(); }),
             new BoolS("Smooth",  () -> cfg.maceSmoothRot, () -> { cfg.maceSmoothRot = !cfg.maceSmoothRot; MaceAuraMod.smoothRot = cfg.maceSmoothRot;     cfg.save(); }),
             new SliderS("Max Turn", () -> cfg.maceMaxTurn, v -> { cfg.maceMaxTurn = (int)v; MaceAuraMod.maxTurnDeg = (int)v; cfg.save(); }, 10, 180),
+            new BoolS("GCD",     () -> cfg.maceGcd,        () -> { cfg.maceGcd = !cfg.maceGcd;             MaceAuraMod.gcdSnap = cfg.maceGcd;             cfg.save(); }),
             new KeyS("Key", () -> cfg.maceAuraKey, v -> { cfg.maceAuraKey = v; cfg.save(); })
         )));
 
@@ -185,6 +186,7 @@ public class ClickGuiScreen extends Screen {
             new BoolS("Skip Inv", () -> cfg.spearSkipInvis, () -> { cfg.spearSkipInvis = !cfg.spearSkipInvis; SpearAuraMod.skipInvisible = cfg.spearSkipInvis; cfg.save(); }),
             new BoolS("Smooth",   () -> cfg.spearSmoothRot, () -> { cfg.spearSmoothRot = !cfg.spearSmoothRot; SpearAuraMod.smoothRot = cfg.spearSmoothRot;     cfg.save(); }),
             new SliderS("Max Turn", () -> cfg.spearMaxTurn, v -> { cfg.spearMaxTurn = (int)v; SpearAuraMod.maxTurnDeg = (int)v; cfg.save(); }, 10, 180),
+            new BoolS("GCD",      () -> cfg.spearGcd,       () -> { cfg.spearGcd = !cfg.spearGcd;             SpearAuraMod.gcdSnap = cfg.spearGcd;             cfg.save(); }),
             new KeyS("Key", () -> cfg.spearAuraKey, v -> { cfg.spearAuraKey = v; cfg.save(); })
         )));
 
@@ -391,12 +393,6 @@ public class ClickGuiScreen extends Screen {
     private static int astolfo(int yOffset, float speed) {
         float hue = (float)((System.currentTimeMillis() % (long)speed) + yOffset) / speed;
         return java.awt.Color.HSBtoRGB(hue % 1f, 0.55f, 1.0f);
-    }
-
-    /** Smooth gradient from top to bottom color. */
-    private static int gradVert(int y, int topColor, int botColor) {
-        // just return topColor; Raven uses GL shading — we approximate with solid
-        return topColor;
     }
 
     @Override

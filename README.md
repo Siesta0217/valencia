@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.27** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.28** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.27** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.27.jar
+# JAR → build/libs/valencia-1.7.28.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.28 — 補洞：Mace/Spear GCD + Velocity 爆炸擊退
+- **MaceAura / SpearAura 補 GCD 旋轉量化**（各自 ClickGUI `GCD` 開關，預設開）：先前只有 KillAura 會把 silent-aim 旋轉 delta 對齊滑鼠靈敏度 GCD 網格，Mace/Spear 送出的任意 float 旋轉正是 anti-cheat GCD 檢查會抓的破綻。現在三個 aura 一致（複用 `KillAuraMod.snapGcd`）
+- **Velocity 補爆炸擊退**：TNT / 水晶 / 苦力怕的擊退不走 `SetEntityMotionPacket`，而是包在 `ClientboundExplodePacket.playerKnockback` 裡，先前 Velocity 完全攔不到。新增 `VelocityExplosionMixin` redirect 該 getter 按 Horiz/Vert 縮放——設 0 即完全免疫水晶/TNT 擊退（簽名已 javap 驗證）
+- 清死碼：`ClickGuiScreen.gradVert`（從未被呼叫）
 
 ### v1.7.27 — TargetHUD Aurora 風格
 - **TargetHUD 新增 `4 Aurora` Style**（ClickGUI → Render → TargetHUD → `Style` 改為 0–4）：跟 Layout 3 同一套液態玻璃——玻璃底 + 頂部高光、掃過面板的光帶、流動極光血條（圓角軌）、極光發光邊框；血量靠血條長度 + 紅黃綠染色的 HP 數字判讀

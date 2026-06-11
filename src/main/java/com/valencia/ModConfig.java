@@ -63,6 +63,7 @@ public class ModConfig {
     public boolean spearSkipInvis = true;
     public boolean spearSmoothRot = true;
     public int     spearMaxTurn   = 60;
+    public boolean spearGcd       = true;
 
     // NoCrash (elytra wall damage mitigation)
     public boolean noCrashEnabled  = false;
@@ -86,6 +87,7 @@ public class ModConfig {
     public boolean maceSkipInvis = true;
     public boolean maceSmoothRot = true;
     public int     maceMaxTurn   = 60;
+    public boolean maceGcd       = true;
 
     // Step tuning
     public float stepHeight = 1.0f;

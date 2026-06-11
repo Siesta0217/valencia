@@ -63,6 +63,7 @@ public class SpearAuraMod {
     public static boolean skipInvisible = true;   // ignore invisible targets
     public static boolean smoothRot     = true;   // clamp silent-aim turn rate
     public static float   maxTurnDeg    = 60.0f;  // max degrees/tick when smoothing
+    public static boolean gcdSnap       = true;   // quantize rotation to the mouse GCD grid
 
     // ── Public API ───────────────────────────────────────────────────────────
     public static boolean isEnabled() { return enabled; }
