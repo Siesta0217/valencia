@@ -1,6 +1,7 @@
 package com.valencia.mixin;
 
 import com.valencia.FlyMod;
+import com.valencia.FreecamMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -27,8 +28,11 @@ public abstract class FlyMixin {
         if (!((Object) this instanceof LocalPlayer player)) return;
         if (!FlyMod.isActive()) return;
 
-        // Don't drive movement while a screen is open (chat/GUI) — hover in place.
-        boolean guiOpen = Minecraft.getInstance().screen != null;
+        // Don't drive movement while a screen is open (chat/GUI) — hover in
+        // place. Same while Freecam is active: Fly reads raw GLFW keys, which
+        // bypasses ClientInputMixin's input freeze, so without this WASD would
+        // fly the body away while the camera is detached.
+        boolean guiOpen = Minecraft.getInstance().screen != null || FreecamMod.isActive();
         long handle = GLFW.glfwGetCurrentContext();
         if (handle == 0L) return;
 

@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.28** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.29** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.28** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.28.jar
+# JAR → build/libs/valencia-1.7.29.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,9 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.29 — 修 Fly + Freecam 互動 bug
+- **Fly 在 Freecam 作用中改為原地懸停**：Freecam 靠 ClientInputMixin 凍結身體輸入，但 Fly 讀的是原始 GLFW 按鍵、繞過了凍結——兩個同開時按 WASD 鏡頭在飛、身體也跟著飛走。現在 Freecam 開著時 Fly 視同 GUI 開啟（速度歸零懸停），身體乖乖留在原地
 
 ### v1.7.28 — 補洞：Mace/Spear GCD + Velocity 爆炸擊退
 - **MaceAura / SpearAura 補 GCD 旋轉量化**（各自 ClickGUI `GCD` 開關，預設開）：先前只有 KillAura 會把 silent-aim 旋轉 delta 對齊滑鼠靈敏度 GCD 網格，Mace/Spear 送出的任意 float 旋轉正是 anti-cheat GCD 檢查會抓的破綻。現在三個 aura 一致（複用 `KillAuraMod.snapGcd`）
