@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.29** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.30** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.29** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.29.jar
+# JAR → build/libs/valencia-1.7.30.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.30 — 清完剩餘的 raw-key 互動 bug
+- **BHop**：跟 Fly 同病——讀原始 GLFW WASD，繞過 Freecam 的輸入凍結與開啟中的畫面。修掉兩個情境：(1) freecam 中按 WASD 飛鏡頭，凍結的身體會自動起跳亂跳；(2) **聊天框打字打到 W/A/S/D，身體會原地自動跳**（之前就存在的 bug，跟 Freecam 無關）。KB Boost 不依賴按鍵、保持運作
+- **Scaffold**：Tower 讀 `keyJump`，freecam 中按 SPACE 升鏡頭會讓凍結的身體自己疊塔上升。Freecam 作用中 Scaffold 整個暫停（換槽位會自動還原）
+- 全 codebase grep 過 raw-key 讀取點：Fly（v1.7.29 已修）、BHop、Scaffold、Freecam 本身（有 screen 檢查）、Keybinds（中央表，本來就該全域生效）——已全數處理
 
 ### v1.7.29 — 修 Fly + Freecam 互動 bug
 - **Fly 在 Freecam 作用中改為原地懸停**：Freecam 靠 ClientInputMixin 凍結身體輸入，但 Fly 讀的是原始 GLFW 按鍵、繞過了凍結——兩個同開時按 WASD 鏡頭在飛、身體也跟著飛走。現在 Freecam 開著時 Fly 視同 GUI 開啟（速度歸零懸停），身體乖乖留在原地

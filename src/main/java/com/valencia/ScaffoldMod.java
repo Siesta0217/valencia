@@ -90,6 +90,10 @@ public class ScaffoldMod {
 
     public static boolean isActive() {
         if (!enabled) return false;
+        // Tower reads keyJump, which stays pressed while SPACE is flying the
+        // detached Freecam — pausing here keeps the frozen body from towering
+        // up on its own (tick() restores the hotbar slot on the way out).
+        if (FreecamMod.isActive()) return false;
         Minecraft mc = Minecraft.getInstance();
         return mc.player != null && mc.level != null && mc.gameMode != null;
     }

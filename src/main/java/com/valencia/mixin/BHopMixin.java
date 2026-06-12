@@ -1,6 +1,8 @@
 package com.valencia.mixin;
 
 import com.valencia.BHopMod;
+import com.valencia.FreecamMod;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
@@ -41,6 +43,13 @@ public abstract class BHopMixin {
             }
         }
         bhop$prevHurtTime = hurtTime;
+
+        // The movement below reads raw GLFW key state, which ignores both open
+        // screens and Freecam's input freeze — without these guards the body
+        // auto-jumps while typing WASD letters in chat, and bunny-hops away
+        // while those keys are flying the detached camera.
+        if (Minecraft.getInstance().screen != null) return;
+        if (FreecamMod.isActive()) return;
 
         long handle = GLFW.glfwGetCurrentContext();
         if (handle == 0L) return;
