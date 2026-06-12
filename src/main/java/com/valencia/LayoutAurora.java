@@ -56,12 +56,13 @@ final class LayoutAurora implements GuiLayout {
 
         auGlassPanel(g, x, y, x2, y2);
 
-        // ── title bar: flowing aurora gradient, dark text ──
-        auroraFill(g, x + 2, y + 1, x2 - 2, y + AU_TITLE, 0xE6, 0.6f);
-        g.fill(x + 3, y + 1, x2 - 3, y + 2, 0x50FFFFFF);
-        g.drawString(font, "Valencia", x + 8, y + (AU_TITLE - font.lineHeight) / 2 + 1, 0xFF0B1018, false);
+        // ── title bar: dark glass with white branding; the aurora gradient
+        // lives in a thin underline instead of a full bright bar (which read
+        // as cheap RGB lighting and fought every other element for attention).
+        g.drawString(font, "Valencia", x + 8, y + (AU_TITLE - font.lineHeight) / 2 + 1, 0xFFFFFFFF, true);
         boolean hovClose = mx >= x2 - 16 && mx < x2 && my >= y && my < y + AU_TITLE;
-        g.drawString(font, "x", x2 - 11, y + (AU_TITLE - font.lineHeight) / 2 + 1, hovClose ? 0xFF7F1D1D : 0xFF0B1018, false);
+        g.drawString(font, "x", x2 - 11, y + (AU_TITLE - font.lineHeight) / 2 + 1, hovClose ? 0xFFFF6B6B : 0xFF8B90A0, false);
+        auroraFill(g, x + 6, y + AU_TITLE - 1, x2 - 6, y + AU_TITLE, 0xE6, 0.5f);
 
         // ── tabs with aurora underline on the active one ──
         int tabY = y + AU_TITLE + 2;
@@ -109,7 +110,10 @@ final class LayoutAurora implements GuiLayout {
 
         GuiDraw.roundRect(g, x, y, x + w, y + ch, hovRow ? 0x2EFFFFFF : 0x1AFFFFFF);
         if (on) {
-            auroraFill(g, x + 1, y + 1, x + w - 1, y + AU_CARD_H - 1, 0x3C, 0.35f);
+            // Subtle wash — the enabled state is carried by the left bar, the
+            // pill and the white text; a louder wash turned the list into
+            // wall-to-wall gradient.
+            auroraFill(g, x + 1, y + 1, x + w - 1, y + AU_CARD_H - 1, 0x26, 0.35f);
             auroraFill(g, x, y + 3, x + 2, y + AU_CARD_H - 3, 0xFF, 0.1f);
         }
         if (m == auExpanded) g.fill(x + 1, y + AU_CARD_H, x + w - 1, y + ch - 1, 0x28000000);

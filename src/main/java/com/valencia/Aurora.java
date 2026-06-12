@@ -13,8 +13,11 @@ import net.minecraft.client.gui.GuiGraphics;
  */
 public final class Aurora {
 
-    /** Looping palette: cyan → purple → pink → purple → (cyan). */
-    private static final int[] STOPS = {0xFF22D3EE, 0xFFA855F7, 0xFFEC4899, 0xFFA855F7};
+    /** Looping palette: cyan → purple → pink → purple → (cyan). Desaturated
+     *  ~20% from the original neon stops — full-saturation cyan/magenta read
+     *  as cheap RGB lighting in-game; these softer tones keep the aurora feel
+     *  without the colour clash. */
+    private static final int[] STOPS = {0xFF4FC3E8, 0xFF9D7BE8, 0xFFE87BB8, 0xFF9D7BE8};
 
     private Aurora() {}
 
@@ -37,15 +40,16 @@ public final class Aurora {
         return lerpColor(STOPS[i % STOPS.length], STOPS[j], seg - i);
     }
 
-    /** Horizontal flowing aurora gradient drawn as 3px strips. */
+    /** Horizontal flowing aurora gradient drawn as 1px strips — 3px steps
+     *  produced visible colour banding in-game. Fills are batched quads, so
+     *  the extra strip count is free at GUI scale. */
     public static void fill(GuiGraphics g, int x1, int y1, int x2, int y2, int alpha, float span) {
         int w = x2 - x1;
         if (w <= 0 || y2 <= y1) return;
         float t = time();
-        for (int sx = 0; sx < w; sx += 3) {
-            int ex = Math.min(sx + 3, w);
+        for (int sx = 0; sx < w; sx++) {
             int c = (alpha << 24) | color(t + span * sx / w);
-            g.fill(x1 + sx, y1, x1 + ex, y2, c);
+            g.fill(x1 + sx, y1, x1 + sx + 1, y2, c);
         }
     }
 
@@ -61,7 +65,7 @@ public final class Aurora {
 
     /** Translucent glass base + specular top highlight + bottom inner shade. */
     public static void glassPanel(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        roundRect(g, x1, y1, x2, y2, 0xB40C1016);
+        roundRect(g, x1, y1, x2, y2, 0xCC0B0E14);
         g.fill(x1 + 3, y1 + 1, x2 - 3, y1 + 2, 0x46FFFFFF);
         g.fill(x1 + 2, y1 + 2, x2 - 2, y1 + 4, 0x1EFFFFFF);
         g.fill(x1 + 2, y1 + 4, x2 - 2, y1 + 7, 0x0CFFFFFF);
@@ -71,27 +75,32 @@ public final class Aurora {
     /** Slow light band sweeping the surface — the "liquid" reflection. Drawn
      *  over the content at very low alpha so it reads as glass, not haze. */
     public static void sheen(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        float t = (System.currentTimeMillis() % 5200L) / 5200f;
-        int span = (x2 - x1) + 80;
-        int bx = x1 - 40 + (int)(span * t);
+        float t = (System.currentTimeMillis() % 6500L) / 6500f;
+        int span = (x2 - x1) + 120;
+        int bx = x1 - 60 + (int)(span * t);
+        // Wide band with graduated edges — the old 3 hard strips read as a
+        // stray vertical line instead of a soft reflection.
         g.enableScissor(x1 + 2, y1 + 2, x2 - 2, y2 - 2);
-        g.fill(bx,      y1, bx + 7,  y2, 0x06FFFFFF);
-        g.fill(bx + 7,  y1, bx + 16, y2, 0x0CFFFFFF);
-        g.fill(bx + 16, y1, bx + 23, y2, 0x06FFFFFF);
+        g.fill(bx,      y1, bx + 8,  y2, 0x03FFFFFF);
+        g.fill(bx + 8,  y1, bx + 16, y2, 0x07FFFFFF);
+        g.fill(bx + 16, y1, bx + 26, y2, 0x0BFFFFFF);
+        g.fill(bx + 26, y1, bx + 34, y2, 0x07FFFFFF);
+        g.fill(bx + 34, y1, bx + 42, y2, 0x03FFFFFF);
         g.disableScissor();
     }
 
-    /** Aurora-sampled border + a 1px soft outer glow ring. */
+    /** Aurora-sampled border + a 1px soft outer glow ring. Edges run at 0xD8
+     *  instead of full alpha so the frame reads as tinted glass, not a wire. */
     public static void border(GuiGraphics g, int x1, int y1, int x2, int y2) {
         float t = time();
-        fill(g, x1 + 2, y1, x2 - 2, y1 + 1, 0xFF, 0.5f);
-        fill(g, x1 + 2, y2 - 1, x2 - 2, y2, 0xFF, 0.5f);
+        fill(g, x1 + 2, y1, x2 - 2, y1 + 1, 0xD8, 0.5f);
+        fill(g, x1 + 2, y2 - 1, x2 - 2, y2, 0xD8, 0.5f);
         int lc = color(t), rc = color(t + 0.5f);
-        g.fill(x1, y1 + 2, x1 + 1, y2 - 2, 0xFF000000 | lc);
-        g.fill(x2 - 1, y1 + 2, x2, y2 - 2, 0xFF000000 | rc);
-        fill(g, x1 + 2, y1 - 1, x2 - 2, y1, 0x38, 0.5f);
-        fill(g, x1 + 2, y2, x2 - 2, y2 + 1, 0x38, 0.5f);
-        g.fill(x1 - 1, y1 + 2, x1, y2 - 2, 0x38000000 | lc);
-        g.fill(x2, y1 + 2, x2 + 1, y2 - 2, 0x38000000 | rc);
+        g.fill(x1, y1 + 2, x1 + 1, y2 - 2, 0xD8000000 | lc);
+        g.fill(x2 - 1, y1 + 2, x2, y2 - 2, 0xD8000000 | rc);
+        fill(g, x1 + 2, y1 - 1, x2 - 2, y1, 0x28, 0.5f);
+        fill(g, x1 + 2, y2, x2 - 2, y2 + 1, 0x28, 0.5f);
+        g.fill(x1 - 1, y1 + 2, x1, y2 - 2, 0x28000000 | lc);
+        g.fill(x2, y1 + 2, x2 + 1, y2 - 2, 0x28000000 | rc);
     }
 }

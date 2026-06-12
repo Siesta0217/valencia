@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.30** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.31** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.30** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.30.jar
+# JAR → build/libs/valencia-1.7.31.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,15 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.31 — Aurora 視覺打磨（回饋：太醜）
+- **漸層 1px 條帶**：原 3px 條帶在遊戲內有明顯色階紋，全部改 1px 平滑取樣
+- **調色盤降飽和 ~20%**：原霓虹青/紫/粉在遊戲裡像廉價 RGB 燈效，換柔和粉彩調（`4FC3E8`/`9D7BE8`/`E87BB8`）
+- **標題列重做**：整條高亮漸層 bar 砍掉——深玻璃底 + 白字品牌，極光只活在標題下一條 1px 細線
+- **啟用列 wash 減半**（0x3C→0x26）：開很多模組時不再整面漸層牆，狀態靠左條 + pill + 白字表達
+- **掃光變柔**：3 條硬邊（像一根怪線）→ 42px 寬五段漸變光帶，週期放慢
+- **邊框收斂**：邊緣 alpha 0xFF→0xD8（染色玻璃感而非電線）、外光暈 0x38→0x28、玻璃底加深（內容對比更好）
+- 改動都在共用 `Aurora.java` + `LayoutAurora.java`，**TargetHUD 的 Aurora 風格同步受益**
 
 ### v1.7.30 — 清完剩餘的 raw-key 互動 bug
 - **BHop**：跟 Fly 同病——讀原始 GLFW WASD，繞過 Freecam 的輸入凍結與開啟中的畫面。修掉兩個情境：(1) freecam 中按 WASD 飛鏡頭，凍結的身體會自動起跳亂跳；(2) **聊天框打字打到 W/A/S/D，身體會原地自動跳**（之前就存在的 bug，跟 Freecam 無關）。KB Boost 不依賴按鍵、保持運作
