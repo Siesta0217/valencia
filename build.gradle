@@ -44,10 +44,7 @@ jar {
     }
 }
 
-// Cross-platform: resolve with the OS-correct separator instead of hardcoded
-// Windows backslashes, so the deploy task works on Windows/Linux/macOS alike.
-def lunarModsDir = java.nio.file.Paths.get(System.getProperty('user.home'),
-        '.lunarclient', 'profiles', 'lunar', '1.21', 'mods', 'fabric-1.21.11').toFile()
+def lunarModsDir = file("${System.getProperty('user.home')}\\.lunarclient\\profiles\\lunar\\1.21\\mods\\fabric-1.21.11")
 
 tasks.register("deploy") {
     dependsOn remapJar
