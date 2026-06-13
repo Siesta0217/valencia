@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.32** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.33** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.32** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.32.jar
+# JAR → build/libs/valencia-1.7.33.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.33 — 修 `.nf goto stop` 之後卡住
+- **`goto stop` 在空中改成「接管緩降落地」**：之前 stop 直接撒手，但伺服器端沒有取消滑翔的封包，玩家會繼續滑翔/失速卡在空中。現在 `requestStop()` 偵測到還在 fall-flying 時進入 landing 模式——緩降（15° 俯衝、近地 8m 內拉平）、不鎖視角（自己選落點）、不放火箭，落地 vanilla 自然結束滑翔後完全釋放；已在地面則立即停止。10 秒安全上限避免 landing 模式自己卡住
+- `.nf goto <座標>` 重設目標時會清掉 landing 旗標
 
 ### v1.7.32 — Liquid 配色：分列式 Panels 變液態玻璃天藍
 - **新增 `4 Liquid` GUI Style**（ClickGUI → Client → Theme → `GUI Style` 改為 0–4）：給分列式 **Panels 版面（Layout 0）** 套上 iOS 液態玻璃——每個分類面板用 `Aurora.glassPanel`（半透明玻璃底＋頂部 specular 高光）＋淡天藍 wash，每個面板各自有掃光、天藍發光邊框（`Aurora.glassBorder`）。標題/啟用列/滑桿/捲軸全走固定**天藍**（`38BDF8`，不吃 accent）

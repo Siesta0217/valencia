@@ -63,11 +63,11 @@ public class ChatMixin {
     private static void handleGoto(String message) {
         Minecraft mc = Minecraft.getInstance();
         String[] parts = message.split("\\s+");
-        // .nf goto stop
+        // .nf goto stop — glides down to the ground first if mid-flight, then
+        // releases (the server has no cancel-fall-flying packet, so abandoning
+        // control mid-glide just leaves the player stuck gliding/stalling).
         if (parts.length == 3 && parts[2].equalsIgnoreCase("stop")) {
-            ElytraGotoMod.stop();
-            msg(mc, "§7[Goto] §cstopped");
-            msg(mc, "§8tip: 想走路請先脫掉鞘翅 — vanilla MC 機制下，穿著鞘翅按 SPACE 在空中會自動展翅");
+            ElytraGotoMod.requestStop();
             return;
         }
 

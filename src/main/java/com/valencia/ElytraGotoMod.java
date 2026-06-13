@@ -75,6 +75,14 @@ public class ElytraGotoMod {
      *  switch from "spam to bridge sync gap" to "normal 50-tick cooldown". */
     private static boolean rocketConfirmed = false;
 
+    /** "Stopping while airborne" state: instead of abandoning the player mid-
+     *  glide (the server has no cancel-fall-flying packet, so they'd keep
+     *  gliding / stall = "stuck"), keep a hands-off managed descent — gentle
+     *  dive, no yaw lock, no rockets — until they touch ground and vanilla ends
+     *  fall-flying, then fully release. */
+    private static boolean landing = false;
+    private static int landingTicks = 0;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
@@ -95,6 +103,7 @@ public class ElytraGotoMod {
         redeployTriggers = 0;
         rocketConfirmed = false;
         deployFailTicks = 0;
+        landing = false;
         if (!enabled) enabled = true;
     }
 
@@ -108,6 +117,31 @@ public class ElytraGotoMod {
         redeployTriggers = 0;
         rocketConfirmed = false;
         airborneTicks = 0;
+        landing = false;
+        landingTicks = 0;
+    }
+
+    /**
+     * Chat {@code .nf goto stop}. If the player is mid-glide we can't tell the
+     * server to cancel fall-flying, so abandoning control leaves them gliding
+     * / stalling ("stuck"). Instead enter a managed descent that flies them
+     * down to the ground (where vanilla ends fall-flying) and then releases.
+     * On the ground already → stop immediately.
+     */
+    public static void requestStop() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p != null && p.isFallFlying() && !p.onGround()) {
+            landing = true;
+            landingTicks = 0;
+            hasTarget = false;   // no more target steering
+            enabled = true;      // keep tick() alive for the descent
+            p.displayClientMessage(Component.literal(
+                "§e[Goto] §7landing — gliding down, control releases on touchdown"), false);
+        } else {
+            stop();
+            if (p != null) p.displayClientMessage(Component.literal("§7[Goto] §cstopped"), false);
+        }
     }
 
     public static boolean inWrongDimension() {
@@ -131,6 +165,7 @@ public class ElytraGotoMod {
     }
 
     public static void tick() {
+        if (landing) { tickLanding(); return; }
         if (!isActive()) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -345,6 +380,32 @@ public class ElytraGotoMod {
         if (rocketCooldown > 0) rocketCooldown--;
 
         showStatus(p, horizDist, "flying");
+    }
+
+    /** Managed descent after {@code .nf goto stop} while airborne. Gentle dive,
+     *  flare near the ground, no yaw lock (player picks the landing spot), no
+     *  rockets. Releases the moment fall-flying ends (touchdown) or after a
+     *  10s safety cap so it can never itself get stuck. */
+    private static void tickLanding() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null || mc.level == null) { stop(); return; }
+
+        landingTicks++;
+        boolean grounded = p.onGround() || !p.isFallFlying();
+        if (grounded || !p.isAlive() || landingTicks > 200) {
+            stop();
+            p.displayClientMessage(Component.literal(grounded
+                ? "§a[Goto] landed — control released"
+                : "§e[Goto] released §7(脫掉鞘翅才能走路)"), true);
+            return;
+        }
+
+        // Dive to lose altitude, level out within ~8m of the ground to soften
+        // the touchdown (pair with NoFall if a fast landing would hurt).
+        double below = nearestBelow(p, mc, 8, isNether());
+        smoothSetPitch(p, below < 8 ? 0f : 15f);
+        p.displayClientMessage(Component.literal("§e[Goto] §7landing…"), true);
     }
 
     // ── Rotation smoothing ──────────────────────────────────────────────────
