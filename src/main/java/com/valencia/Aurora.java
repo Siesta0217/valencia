@@ -19,9 +19,27 @@ public final class Aurora {
      *  without the colour clash. */
     private static final int[] STOPS = {0xFF4FC3E8, 0xFF9D7BE8, 0xFFE87BB8, 0xFF9D7BE8};
 
+    /** Sky blue, rgb only — the Liquid glass skin's signature tint. */
+    public static final int SKY = 0x38BDF8;
+
     private Aurora() {}
 
     public static float time() { return (System.currentTimeMillis() % 8000L) / 8000f; }
+
+    /** Solid-tint glass border: edges at 0xD8 + a 1px 0x28 outer glow ring.
+     *  Mono-colour sibling of {@link #border} for skins that want one fixed
+     *  accent (e.g. the sky-blue Liquid skin) instead of the flowing palette. */
+    public static void glassBorder(GuiGraphics g, int x1, int y1, int x2, int y2, int rgb) {
+        rgb &= 0x00FFFFFF;
+        g.fill(x1 + 2, y1,     x2 - 2, y1 + 1, 0xD8000000 | rgb);   // top
+        g.fill(x1 + 2, y2 - 1, x2 - 2, y2,     0xD8000000 | rgb);   // bottom
+        g.fill(x1,     y1 + 2, x1 + 1, y2 - 2, 0xD8000000 | rgb);   // left
+        g.fill(x2 - 1, y1 + 2, x2,     y2 - 2, 0xD8000000 | rgb);   // right
+        g.fill(x1 + 1, y1 - 1, x2 - 1, y1,     0x28000000 | rgb);   // outer glow
+        g.fill(x1 + 1, y2,     x2 - 1, y2 + 1, 0x28000000 | rgb);
+        g.fill(x1 - 1, y1 + 1, x1,     y2 - 1, 0x28000000 | rgb);
+        g.fill(x2,     y1 + 1, x2 + 1, y2 - 1, 0x28000000 | rgb);
+    }
 
     /** rgb-only lerp (alpha is applied by callers). */
     private static int lerpColor(int c1, int c2, float t) {

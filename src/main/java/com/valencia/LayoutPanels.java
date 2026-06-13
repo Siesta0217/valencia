@@ -53,14 +53,22 @@ final class LayoutPanels implements GuiLayout {
         int ph = panelH(p);
         int x1 = p.x, y1 = p.y, x2 = p.x + PANEL_W, y2 = p.y + ph;
 
+        // Liquid skin ignores the user accent and drives everything sky-blue.
+        int acc = skin.liquid ? (0xFF000000 | Aurora.SKY) : accent;
+
         // ── panel background ──
-        g.fill(x1, y1, x2, y2, skin.panelBg);
+        if (skin.liquid) {
+            Aurora.glassPanel(g, x1, y1, x2, y2);                       // translucent glass + specular
+            g.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, 0x12000000 | Aurora.SKY);  // faint sky wash
+        } else {
+            g.fill(x1, y1, x2, y2, skin.panelBg);
+        }
 
         // ── header ──
         boolean hoverHdr = mx >= x1 && mx < x2 && my >= y1 && my < y1 + HDR;
         g.fill(x1, y1, x2, y1 + HDR, hoverHdr ? skin.headerHover : skin.headerBg);
 
-        g.drawString(font, p.cat.label, x1 + 3, y1 + (HDR - font.lineHeight) / 2 + 1, skin.catLabel, false);
+        g.drawString(font, p.cat.label, x1 + 3, y1 + (HDR - font.lineHeight) / 2 + 1, skin.catLabel, skin.liquid);
 
         String sym = p.open ? "-" : "+";
         int symColor = p.open ? 0xFF55FF55 : 0xFFFF5555;
@@ -68,16 +76,24 @@ final class LayoutPanels implements GuiLayout {
 
         g.fill(x1, y1 + HDR - 1, x2, y1 + HDR, skin.headerUnderline);
 
-        if (!p.open) return;
+        if (!p.open) {
+            if (skin.liquid) Aurora.glassBorder(g, x1, y1, x2, y2, Aurora.SKY);
+            return;
+        }
 
         if (p.expanded != null)
-            drawExpanded(g, p, mx, my, font, accent);
+            drawExpanded(g, p, mx, my, font, acc);
         else
-            drawModList(g, p, mx, my, font, accent);
+            drawModList(g, p, mx, my, font, acc);
 
-        boolean hoverPanel = mx >= x1 && mx < x2 && my >= y1 && my < y2;
-        int borderColor = hoverPanel ? (accent & 0x00FFFFFF) | 0x80000000 : skin.borderIdle;
-        GuiDraw.drawBorder(g, x1, y1, x2, y2, borderColor);
+        if (skin.liquid) {
+            Aurora.sheen(g, x1, y1, x2, y2);
+            Aurora.glassBorder(g, x1, y1, x2, y2, Aurora.SKY);
+        } else {
+            boolean hoverPanel = mx >= x1 && mx < x2 && my >= y1 && my < y2;
+            int borderColor = hoverPanel ? (accent & 0x00FFFFFF) | 0x80000000 : skin.borderIdle;
+            GuiDraw.drawBorder(g, x1, y1, x2, y2, borderColor);
+        }
     }
 
     private void drawModList(GuiGraphics g, Panel p, int mx, int my, Font font, int accent) {

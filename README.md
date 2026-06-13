@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.31** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.32** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.31** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.31.jar
+# JAR → build/libs/valencia-1.7.32.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.32 — Liquid 配色：分列式 Panels 變液態玻璃天藍
+- **新增 `4 Liquid` GUI Style**（ClickGUI → Client → Theme → `GUI Style` 改為 0–4）：給分列式 **Panels 版面（Layout 0）** 套上 iOS 液態玻璃——每個分類面板用 `Aurora.glassPanel`（半透明玻璃底＋頂部 specular 高光）＋淡天藍 wash，每個面板各自有掃光、天藍發光邊框（`Aurora.glassBorder`）。標題/啟用列/滑桿/捲軸全走固定**天藍**（`38BDF8`，不吃 accent）
+- 液態玻璃處理只在 Panels；其他版面套這個 skin 也會得到一致的天藍玻璃配色（只是沒有掃光特效）
+- 共用 `Aurora` kit 加 `SKY` 常數 + 單色 `glassBorder`；版面結構/拖曳/收合完全不變，純配色升級
 
 ### v1.7.31 — Aurora 視覺打磨（回饋：太醜）
 - **漸層 1px 條帶**：原 3px 條帶在遊戲內有明顯色階紋，全部改 1px 平滑取樣

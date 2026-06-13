@@ -127,7 +127,7 @@ public class ModConfig {
     public int accentB  = 255;
     public int bgAlpha  = 160;
 
-    // ClickGUI skin (colors): 0=Dark (Raven, original), 1=Light, 2=Glass
+    // ClickGUI skin (colors): 0=Dark (Raven, original), 1=Light, 2=Glass, 3=Tenacity, 4=Liquid (sky glass)
     public int guiStyle = 0;
     // ClickGUI layout: 0=Panels (Raven scattered, original), 1=Sidebar window
     public int guiLayout = 0;

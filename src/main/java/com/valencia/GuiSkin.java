@@ -22,6 +22,7 @@ final class GuiSkin {
     boolean enabledRowGradient;  // accent vertical gradient (Dark/Glass) vs flat accent tint (Light)
     boolean rainbowVersion;      // bottom-left "Valencia" string: rainbow vs flat accent
     boolean nameShadow;          // drop shadow on module names (off for dark-text Light theme)
+    boolean liquid;              // LayoutPanels draws iOS liquid-glass panels (glassPanel + sheen)
     String name;
 
     private GuiSkin() {}
@@ -33,8 +34,47 @@ final class GuiSkin {
             case 1 -> light(a);
             case 2 -> glass(a);
             case 3 -> tenacity(a);
+            case 4 -> liquid(a);
             default -> dark(a);
         };
+    }
+
+    /**
+     * Style 4 (Liquid). iOS liquid-glass take on the Panels layout: translucent
+     * glass panels (drawn by {@link LayoutPanels} via the {@link Aurora} kit —
+     * specular highlight + sweeping sheen) with a fixed sky-blue tint instead of
+     * the user accent. Other layouts under this style still get a coherent
+     * sky-blue glass palette from these fields; the liquid panel treatment is
+     * Panels-only.
+     */
+    private static GuiSkin liquid(int a) {
+        GuiSkin s = new GuiSkin();
+        s.name = "Liquid";
+        int sky = Aurora.SKY;
+        s.panelBg = 0xCC0B0E14;               // fallback; LayoutPanels uses Aurora.glassPanel
+        s.headerBg = 0x33000000 | sky;
+        s.headerHover = 0x4D000000 | sky;
+        s.headerUnderline = 0xFF000000 | sky;
+        s.catLabel = 0xFFFFFFFF;
+        s.settingsBg = 0x700B1018;
+        s.expandedOffBg = 0x80142030;
+        s.rowHover = 0x33FFFFFF;
+        s.textOn = 0xFFFFFFFF;
+        s.textDim = 0xFFCBD5E1;
+        s.textOff = 0xFF8A93A3;
+        s.sliderTrack = 0x40FFFFFF;
+        s.sliderTrackBorder = 0x80000000 | sky;
+        s.sliderFillAlpha = 0xE6;
+        s.boolTrack = 0x80000000;
+        s.widgetBorder = 0x70000000 | sky;
+        s.borderIdle = 0x80000000 | sky;
+        s.scrollBar = 0xB0000000 | sky;
+        s.enabledRowGradient = true;
+        s.enabledFlatAlpha = 0xC0;
+        s.rainbowVersion = false;
+        s.nameShadow = true;
+        s.liquid = true;
+        return s;
     }
 
     private static GuiSkin dark(int a) {
