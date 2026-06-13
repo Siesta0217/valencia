@@ -129,7 +129,7 @@ public class ModConfig {
 
     // ClickGUI skin (colors): 0=Dark (Raven, original), 1=Light, 2=Glass, 3=Tenacity, 4=Liquid (sky glass)
     public int guiStyle = 0;
-    // ClickGUI layout: 0=Panels (Raven scattered, original), 1=Sidebar window
+    // ClickGUI layout: 0=Panels (Raven scattered), 1=Sidebar, 2=Tenacity, 3=Aurora, 4=Glass (rebuilt scattered panels)
     public int guiLayout = 0;
 
     // Module enabled states (persisted across sessions)

@@ -42,7 +42,8 @@ public class ClickGuiScreen extends Screen {
     private final LayoutSidebar  sidebarLayout  = new LayoutSidebar(this);
     private final LayoutTenacity tenacityLayout = new LayoutTenacity(this);
     private final LayoutAurora   auroraLayout   = new LayoutAurora(this);
-    private final GuiLayout[] layouts = { panelsLayout, sidebarLayout, tenacityLayout, auroraLayout };
+    private final LayoutGlass    glassLayout    = new LayoutGlass(this);
+    private final GuiLayout[] layouts = { panelsLayout, sidebarLayout, tenacityLayout, auroraLayout, glassLayout };
 
     // ── Waifu background ─────────────────────────────────────────────────────
     private Identifier waifuLoc;
@@ -64,6 +65,7 @@ public class ClickGuiScreen extends Screen {
 
     private GuiLayout active(ModConfig cfg) {
         switch (cfg.guiLayout) {
+            case 4:  return glassLayout;
             case 3:  return auroraLayout;
             case 2:  return tenacityLayout;
             case 1:  return sidebarLayout;

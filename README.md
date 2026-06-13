@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.33** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.34** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.33** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.33.jar
+# JAR → build/libs/valencia-1.7.34.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,15 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.34 — 全新 Glass 版面（分列式從頭重做）
+- **新增 `4 Glass` Layout**（ClickGUI → Client → Theme → `Layout` 改為 0–4）：不是換色，是把分列式從幾何層重寫的獨立版面 `LayoutGlass`。保留熟悉的操作（一分類一個可拖面板、左鍵切換、右鍵展開設定、+/- 收合），但：
+  - 面板加寬到 118px、列高 16px、**正常字級**（不再用 0.5 縮放擠字）
+  - 圓角 iOS 液態玻璃面板（半透明＋頂部高光＋掃光）＋天藍發光邊框
+  - 啟用列：天藍左條 + 天藍底 + 白字；**pill 開關**（滑動動畫）
+  - 展開設定用新 widget：**圓鈕滑桿** + 數值、pill 開關、按鍵 chip，超出高度可捲動
+  - 固定天藍配色（不吃 accent），走共用 `Aurora` glass kit
+- 跟舊的 `0 Panels` 並存——舊版面原封不動，Glass 是另一個選項
 
 ### v1.7.33 — 修 `.nf goto stop` 之後卡住
 - **`goto stop` 在空中改成「接管緩降落地」**：之前 stop 直接撒手，但伺服器端沒有取消滑翔的封包，玩家會繼續滑翔/失速卡在空中。現在 `requestStop()` 偵測到還在 fall-flying 時進入 landing 模式——緩降（15° 俯衝、近地 8m 內拉平）、不鎖視角（自己選落點）、不放火箭，落地 vanilla 自然結束滑翔後完全釋放；已在地面則立即停止。10 秒安全上限避免 landing 模式自己卡住
