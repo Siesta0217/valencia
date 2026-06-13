@@ -77,8 +77,8 @@ final class LayoutGlass implements GuiLayout {
         int ph = panelH(p);
         int x1 = p.x, y1 = p.y, x2 = p.x + PANEL_W, y2 = p.y + ph;
 
-        Aurora.glassPanel(g, x1, y1, x2, y2);
-        g.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, 0x12000000 | SKY);   // faint sky wash
+        Aurora.frostPanel(g, x1, y1, x2, y2);                       // translucent frost over the blurred world
+        g.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, 0x14000000 | SKY);   // faint sky tint
 
         // ── header ──
         boolean hoverHdr = mx >= x1 && mx < x2 && my >= y1 && my < y1 + HDR;

@@ -90,6 +90,18 @@ public final class Aurora {
         g.fill(x1 + 2, y2 - 3, x2 - 2, y2 - 1, 0x28000000);
     }
 
+    /** Frosted-glass panel for use OVER a blurred backdrop (LayoutGlass calls
+     *  {@code Screen.renderBlurredBackground} first). Far more translucent than
+     *  {@link #glassPanel} so the blurred world reads through it as real frosted
+     *  glass, with a bright specular top edge and a soft bottom shade. */
+    public static void frostPanel(GuiGraphics g, int x1, int y1, int x2, int y2) {
+        roundRect(g, x1, y1, x2, y2, 0x6E141A24);          // ~43% dark veil — blur shows through
+        g.fill(x1 + 2, y1 + 1, x2 - 2, y1 + 2, 0x66FFFFFF);   // bright specular top line
+        g.fill(x1 + 2, y1 + 2, x2 - 2, y1 + 4, 0x28FFFFFF);
+        g.fill(x1 + 2, y1 + 4, x2 - 2, y1 + 8, 0x12FFFFFF);   // highlight falloff
+        g.fill(x1 + 2, y2 - 3, x2 - 2, y2 - 1, 0x33000000);   // bottom inner shade
+    }
+
     /** Slow light band sweeping the surface — the "liquid" reflection. Drawn
      *  over the content at very low alpha so it reads as glass, not haze. */
     public static void sheen(GuiGraphics g, int x1, int y1, int x2, int y2) {

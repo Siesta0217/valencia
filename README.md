@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.34** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.35** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.34** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.34.jar
+# JAR → build/libs/valencia-1.7.35.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.35 — Glass 版面用「真背景模糊」做霜面玻璃
+- 釐清誤解：之前的「液態玻璃」缺的不是亮度是**背景模糊**——只堆半透明深色塊不會有玻璃感
+- **Glass 版面(Layout 4)現在會把 GUI 後面的世界模糊掉**：`ClickGuiScreen` 在 Layout 4 時改呼叫 vanilla 的 `Screen.renderBlurredBackground`（即選單背景那條 blur post-chain），取代原本的平面變暗
+- 面板改用新的 `Aurora.frostPanel`——比 `glassPanel` 更透（~43% 深色霜面），讓糊掉的世界透上來＝真 dark-mode 霜面玻璃；保留亮高光頂邊。白字在深霜面上仍清楚
+- 其他版面不受影響（只有 Layout 4 啟用模糊）；blur API 失敗會 fallback 回平面變暗
 
 ### v1.7.34 — 全新 Glass 版面（分列式從頭重做）
 - **新增 `4 Glass` Layout**（ClickGUI → Client → Theme → `Layout` 改為 0–4）：不是換色，是把分列式從幾何層重寫的獨立版面 `LayoutGlass`。保留熟悉的操作（一分類一個可拖面板、左鍵切換、右鍵展開設定、+/- 收合），但：

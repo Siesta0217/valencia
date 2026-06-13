@@ -87,10 +87,20 @@ public class ClickGuiScreen extends Screen {
         int accent = 0xFF000000 | (cfg.accentR << 16) | (cfg.accentG << 8) | cfg.accentB;
         skin = GuiSkin.of(cfg.guiStyle, accent);
 
-        // semi-transparent dark background (Raven-style), with open animation
+        // Background. The Glass layout (4) frosts the world behind it via the
+        // vanilla blur post-chain (real liquid glass needs the backdrop blurred,
+        // not just a dark tint); other layouts keep the flat semi-transparent
+        // dim. renderBlurredBackground also lays down a subtle scrim, so no
+        // extra fill is needed there.
         float openAnim = Math.min(1f, (System.currentTimeMillis() - openTime) / 400f);
-        int bgA = (int)(cfg.bgAlpha * openAnim);
-        g.fill(0, 0, width, height, (bgA << 24));
+        boolean blurred = false;
+        if (cfg.guiLayout == 4) {
+            try { renderBlurredBackground(g); blurred = true; } catch (Throwable ignored) {}
+        }
+        if (!blurred) {
+            int bgA = (int)(cfg.bgAlpha * openAnim);
+            g.fill(0, 0, width, height, (bgA << 24));
+        }
 
         renderWaifu(g);
 
