@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.37** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.38** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.37** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.37.jar
+# JAR → build/libs/valencia-1.7.38.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.38 — 修 CritHit 完全沒作用
+- 根因：CritMixin 注入在 `Player.attack` HEAD,但 vanilla 的 `MultiPlayerGameMode.attack` 是**先送攻擊封包、才呼叫 `player.attack()`**——假跳位置封包永遠比攻擊封包晚送,伺服器判暴擊時還沒收到,等於沒效
+- 改注入到 `MultiPlayerGameMode.attack` HEAD(攻擊封包送出之前),3 個 mini-hop 位置封包保證先到,伺服器看到 fallDistance>0 + onGround=false → 真暴擊。簽名已 javap 確認
+- 條件不變(站地面、冷卻滿、非疾跑/水中/坐騎),也對 KillAura 的攻擊生效
 
 ### v1.7.37 — Glass 拉近真 liquid glass（看截圖後調）
 - 看到實機截圖後修三個最明顯的差距：
