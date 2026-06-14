@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.36** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.37** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.36** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.36.jar
+# JAR → build/libs/valencia-1.7.37.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,14 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.37 — Glass 拉近真 liquid glass（看截圖後調）
+- 看到實機截圖後修三個最明顯的差距：
+  - **大圓角**：新增 `Aurora.roundRectR`（真圓形角，逐列 inset），面板圓角從 3px 拉到 8px，砍掉「方塊感」
+  - **更透不灰**：白霜濃度 32%→~19%，背後模糊的世界更鮮豔透出來（之前太灰）
+  - **亮鏡邊**：面板自帶一圈亮玻璃 rim + 清楚的頂部高光（取代舊的弱斜邊）
+- 字改回**亮白 + 陰影**（玻璃很透時白字最好讀，iOS 也是亮內容）；啟用列亮天藍字/左條
+- 誠實說明：Apple liquid glass 的折射 + vibrancy 是 MC 平面渲染做不到的，這是逼近版
 
 ### v1.7.36 — Glass 改成「亮、近乎透明」的 iOS 霜面玻璃
 - 依回饋改方向：要 iOS 26 那種**亮、近乎透明**的玻璃,不是深色

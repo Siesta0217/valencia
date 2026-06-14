@@ -90,34 +90,33 @@ public final class Aurora {
         g.fill(x1 + 2, y2 - 3, x2 - 2, y2 - 1, 0x28000000);
     }
 
-    /** Bright frosted-glass panel for use OVER a blurred backdrop (LayoutGlass
-     *  calls {@code Screen.renderBlurredBackground} first). A light, near-clear
-     *  white veil so the blurred world glows through — the iOS-style bright
-     *  liquid glass, not a dark tint. 3px rounded with a bright specular top. */
-    public static void frostPanel(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        int veil = 0x52FFFFFF;   // ~32% white — bright, near-transparent
-        if (x2 - x1 < 6 || y2 - y1 < 6) { g.fill(x1, y1, x2, y2, veil); return; }
-        g.fill(x1 + 3, y1,     x2 - 3, y1 + 1, veil);
-        g.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 3, veil);
-        g.fill(x1,     y1 + 3, x2,     y2 - 3, veil);
-        g.fill(x1 + 1, y2 - 3, x2 - 1, y2 - 1, veil);
-        g.fill(x1 + 3, y2 - 1, x2 - 3, y2,     veil);
-        g.fill(x1 + 3, y1 + 1, x2 - 3, y1 + 2, 0x80FFFFFF);   // bright specular top
-        g.fill(x1 + 3, y1 + 2, x2 - 3, y1 + 4, 0x30FFFFFF);   // falloff
-        g.fill(x1 + 3, y2 - 2, x2 - 3, y2 - 1, 0x33FFFFFF);   // light bottom edge
+    /** Real rounded rectangle of radius {@code r} (circular corners, per-row
+     *  insets). GuiGraphics only fills rects, so big rounding has to be drawn
+     *  scanline-by-scanline — but it's what kills the "boxy" tell. */
+    public static void roundRectR(GuiGraphics g, int x1, int y1, int x2, int y2, int c, int r) {
+        int w = x2 - x1, h = y2 - y1;
+        if (w <= 0 || h <= 0) return;
+        r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+        if (r == 0) { g.fill(x1, y1, x2, y2, c); return; }
+        g.fill(x1, y1 + r, x2, y2 - r, c);                       // middle slab
+        for (int i = 0; i < r; i++) {
+            double dyc = r - i - 0.5;
+            int inset = (int) Math.round(r - Math.sqrt(Math.max(0, (double) r * r - dyc * dyc)));
+            g.fill(x1 + inset, y1 + i,     x2 - inset, y1 + i + 1, c);   // top cap
+            g.fill(x1 + inset, y2 - 1 - i, x2 - inset, y2 - i,     c);   // bottom cap
+        }
     }
 
-    /** Beveled bright-glass rim for {@link #frostPanel}: bright top/left,
-     *  softer bottom/right, matching the 3px rounding. */
-    public static void frostBorder(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        g.fill(x1 + 3, y1,     x2 - 3, y1 + 1, 0x90FFFFFF);   // top
-        g.fill(x1,     y1 + 3, x1 + 1, y2 - 3, 0x70FFFFFF);   // left
-        g.fill(x1 + 3, y2 - 1, x2 - 3, y2,     0x44FFFFFF);   // bottom
-        g.fill(x2 - 1, y1 + 3, x2,     y2 - 3, 0x44FFFFFF);   // right
-        g.fill(x1 + 1, y1 + 1, x1 + 3, y1 + 2, 0x70FFFFFF);   // corner steps
-        g.fill(x2 - 3, y1 + 1, x2 - 1, y1 + 2, 0x70FFFFFF);
-        g.fill(x1 + 1, y2 - 2, x1 + 3, y2 - 1, 0x44FFFFFF);
-        g.fill(x2 - 3, y2 - 2, x2 - 1, y2 - 1, 0x44FFFFFF);
+    /** Bright iOS-style liquid glass panel OVER a blurred backdrop. Big circular
+     *  rounding, a bright glowing rim, and a low-opacity veil so the vivid
+     *  blurred content shows through (not a grey haze). The rim is part of the
+     *  panel; no separate border call needed. */
+    public static void frostPanel(GuiGraphics g, int x1, int y1, int x2, int y2) {
+        int r = 8;
+        roundRectR(g, x1, y1, x2, y2, 0x73FFFFFF, r);            // bright glass rim
+        roundRectR(g, x1 + 1, y1 + 1, x2 - 1, y2 - 1, 0x30FFFFFF, r - 1);  // ~19% veil — clear, not grey
+        g.fill(x1 + r, y1 + 1, x2 - r, y1 + 2, 0x99FFFFFF);      // crisp specular top edge
+        g.fill(x1 + r, y1 + 2, x2 - r, y1 + 4, 0x33FFFFFF);      // falloff
     }
 
     /** Slow light band sweeping the surface — the "liquid" reflection. Drawn

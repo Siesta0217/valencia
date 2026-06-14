@@ -27,12 +27,13 @@ final class LayoutGlass implements GuiLayout {
     private static final int MAX_SET_H = 168;  // expanded-settings cap before scroll
     private static final int S_SLIDER  = 22, S_BOOL = 16, S_BIND = 16;
 
-    // Bright-glass palette: dark text reads on the light frosted panel; sky for
-    // accents/fills. (The panel itself is drawn by Aurora.frostPanel.)
+    // Light-content palette: the veil is very transparent (~19%) over the
+    // blurred world, so white text + shadow reads everywhere (the iOS glass
+    // uses light content too). Sky for accents/fills.
     private static final int SKY     = Aurora.SKY;
-    private static final int T_DARK  = 0xFF141A24;   // primary text (near-black navy)
-    private static final int T_DIM   = 0xFF49525F;   // secondary text
-    private static final int ACC     = 0xFF1577C2;   // accent bar / enabled name (deep sky, readable on light)
+    private static final int T_DARK  = 0xFFFFFFFF;   // primary text (white)
+    private static final int T_DIM   = 0xFFCBD6E2;   // secondary text (light gray)
+    private static final int ACC     = 0xFF9BD9FF;   // accent bar / enabled name (bright sky)
     private static final int FILL    = 0xFF000000 | SKY;   // pill / slider fill
 
     private final ClickGuiScreen gui;
@@ -86,10 +87,10 @@ final class LayoutGlass implements GuiLayout {
 
         // ── header ──
         boolean hoverHdr = mx >= x1 && mx < x2 && my >= y1 && my < y1 + HDR;
-        if (hoverHdr) g.fill(x1 + 1, y1 + 1, x2 - 1, y1 + HDR, 0x22FFFFFF);
-        g.drawString(font, p.cat.label, x1 + PAD, y1 + (HDR - font.lineHeight) / 2, T_DARK, false);
+        if (hoverHdr) g.fill(x1 + 2, y1 + 2, x2 - 2, y1 + HDR, 0x18FFFFFF);
+        g.drawString(font, p.cat.label, x1 + PAD, y1 + (HDR - font.lineHeight) / 2, T_DARK, true);
         String sym = p.open ? "–" : "+";
-        g.drawString(font, sym, x2 - PAD - font.width(sym), y1 + (HDR - font.lineHeight) / 2, T_DARK, false);
+        g.drawString(font, sym, x2 - PAD - font.width(sym), y1 + (HDR - font.lineHeight) / 2, T_DARK, true);
         g.fill(x1 + PAD, y1 + HDR - 1, x2 - PAD, y1 + HDR, FILL);   // sky underline
 
         if (p.open) {
@@ -97,7 +98,6 @@ final class LayoutGlass implements GuiLayout {
             else                    drawModList(g, p, mx, my, font);
             Aurora.sheen(g, x1, y1, x2, y2);
         }
-        Aurora.frostBorder(g, x1, y1, x2, y2);
     }
 
     private void drawModList(GuiGraphics g, Panel p, int mx, int my, Font font) {
@@ -111,7 +111,7 @@ final class LayoutGlass implements GuiLayout {
             if (on)         g.fill(p.x, yo + 2, p.x + 2, yo + ROW_H - 2, ACC);   // accent left bar
 
             int tc = on ? ACC : (m.toggleable ? T_DARK : T_DIM);
-            g.drawString(font, m.name, p.x + PAD, yo + (ROW_H - font.lineHeight) / 2, tc, false);
+            g.drawString(font, m.name, p.x + PAD, yo + (ROW_H - font.lineHeight) / 2, tc, true);
 
             if (m.toggleable)
                 pill(g, p.x + PANEL_W - PAD - 18, yo + ROW_H / 2, on, knobProg(m.name, on));
@@ -129,7 +129,7 @@ final class LayoutGlass implements GuiLayout {
 
         // « name row (left-click toggles, right-click collapses)
         if (on) g.fill(p.x + 1, yo, p.x + PANEL_W - 1, yo + ROW_H, 0x3300A0E0);
-        g.drawString(font, "‹ " + m.name, p.x + PAD, yo + (ROW_H - font.lineHeight) / 2, on ? ACC : T_DARK, false);
+        g.drawString(font, "‹ " + m.name, p.x + PAD, yo + (ROW_H - font.lineHeight) / 2, on ? ACC : T_DARK, true);
         if (m.toggleable) pill(g, p.x + PANEL_W - PAD - 18, yo + ROW_H / 2, on, knobProg(m.name, on));
         yo += ROW_H;
 
