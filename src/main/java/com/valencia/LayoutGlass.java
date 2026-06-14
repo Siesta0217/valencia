@@ -27,8 +27,13 @@ final class LayoutGlass implements GuiLayout {
     private static final int MAX_SET_H = 168;  // expanded-settings cap before scroll
     private static final int S_SLIDER  = 22, S_BOOL = 16, S_BIND = 16;
 
-    private static final int SKY  = Aurora.SKY;
-    private static final int SKYA = 0xFF000000 | SKY;
+    // Bright-glass palette: dark text reads on the light frosted panel; sky for
+    // accents/fills. (The panel itself is drawn by Aurora.frostPanel.)
+    private static final int SKY     = Aurora.SKY;
+    private static final int T_DARK  = 0xFF141A24;   // primary text (near-black navy)
+    private static final int T_DIM   = 0xFF49525F;   // secondary text
+    private static final int ACC     = 0xFF1577C2;   // accent bar / enabled name (deep sky, readable on light)
+    private static final int FILL    = 0xFF000000 | SKY;   // pill / slider fill
 
     private final ClickGuiScreen gui;
 
@@ -77,23 +82,22 @@ final class LayoutGlass implements GuiLayout {
         int ph = panelH(p);
         int x1 = p.x, y1 = p.y, x2 = p.x + PANEL_W, y2 = p.y + ph;
 
-        Aurora.frostPanel(g, x1, y1, x2, y2);                       // translucent frost over the blurred world
-        g.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, 0x14000000 | SKY);   // faint sky tint
+        Aurora.frostPanel(g, x1, y1, x2, y2);                       // bright frost over the blurred world
 
         // ── header ──
         boolean hoverHdr = mx >= x1 && mx < x2 && my >= y1 && my < y1 + HDR;
         if (hoverHdr) g.fill(x1 + 1, y1 + 1, x2 - 1, y1 + HDR, 0x22FFFFFF);
-        g.drawString(font, p.cat.label, x1 + PAD, y1 + (HDR - font.lineHeight) / 2, 0xFFFFFFFF, true);
+        g.drawString(font, p.cat.label, x1 + PAD, y1 + (HDR - font.lineHeight) / 2, T_DARK, false);
         String sym = p.open ? "–" : "+";
-        g.drawString(font, sym, x2 - PAD - font.width(sym), y1 + (HDR - font.lineHeight) / 2, 0xFFFFFFFF, false);
-        Aurora.fill(g, x1 + PAD, y1 + HDR - 1, x2 - PAD, y1 + HDR, 0xE6, 0.4f);   // aurora-sky underline
+        g.drawString(font, sym, x2 - PAD - font.width(sym), y1 + (HDR - font.lineHeight) / 2, T_DARK, false);
+        g.fill(x1 + PAD, y1 + HDR - 1, x2 - PAD, y1 + HDR, FILL);   // sky underline
 
         if (p.open) {
             if (p.expanded != null) drawExpanded(g, p, mx, my, font);
             else                    drawModList(g, p, mx, my, font);
             Aurora.sheen(g, x1, y1, x2, y2);
         }
-        Aurora.glassBorder(g, x1, y1, x2, y2, SKY);
+        Aurora.frostBorder(g, x1, y1, x2, y2);
     }
 
     private void drawModList(GuiGraphics g, Panel p, int mx, int my, Font font) {
@@ -102,17 +106,17 @@ final class LayoutGlass implements GuiLayout {
             boolean on = m.enabled.getAsBoolean();
             boolean hover = mx >= p.x && mx < p.x + PANEL_W && my >= yo && my < yo + ROW_H;
 
-            if (on)         g.fill(p.x + 1, yo, p.x + PANEL_W - 1, yo + ROW_H, 0x26000000 | SKY);
-            else if (hover) g.fill(p.x + 1, yo, p.x + PANEL_W - 1, yo + ROW_H, 0x1FFFFFFF);
-            if (on)         g.fill(p.x, yo + 2, p.x + 2, yo + ROW_H - 2, SKYA);   // accent left bar
+            if (on)         g.fill(p.x + 1, yo, p.x + PANEL_W - 1, yo + ROW_H, 0x3300A0E0);   // light sky wash
+            else if (hover) g.fill(p.x + 1, yo, p.x + PANEL_W - 1, yo + ROW_H, 0x18000000);   // subtle darken
+            if (on)         g.fill(p.x, yo + 2, p.x + 2, yo + ROW_H - 2, ACC);   // accent left bar
 
-            int tc = on ? 0xFFFFFFFF : (m.toggleable ? 0xFFC2D4E4 : 0xFF8A93A3);
-            g.drawString(font, m.name, p.x + PAD, yo + (ROW_H - font.lineHeight) / 2, tc, on);
+            int tc = on ? ACC : (m.toggleable ? T_DARK : T_DIM);
+            g.drawString(font, m.name, p.x + PAD, yo + (ROW_H - font.lineHeight) / 2, tc, false);
 
             if (m.toggleable)
                 pill(g, p.x + PANEL_W - PAD - 18, yo + ROW_H / 2, on, knobProg(m.name, on));
             else if (!m.settings.isEmpty())
-                g.drawString(font, "›", p.x + PANEL_W - PAD - 4, yo + (ROW_H - font.lineHeight) / 2, 0xFF9BB0C4, false);
+                g.drawString(font, "›", p.x + PANEL_W - PAD - 4, yo + (ROW_H - font.lineHeight) / 2, T_DIM, false);
 
             yo += ROW_H;
         }
@@ -124,8 +128,8 @@ final class LayoutGlass implements GuiLayout {
         boolean on = m.enabled.getAsBoolean();
 
         // « name row (left-click toggles, right-click collapses)
-        if (on) g.fill(p.x + 1, yo, p.x + PANEL_W - 1, yo + ROW_H, 0x33000000 | SKY);
-        g.drawString(font, "‹ " + m.name, p.x + PAD, yo + (ROW_H - font.lineHeight) / 2, on ? 0xFFFFFFFF : 0xFFC2D4E4, true);
+        if (on) g.fill(p.x + 1, yo, p.x + PANEL_W - 1, yo + ROW_H, 0x3300A0E0);
+        g.drawString(font, "‹ " + m.name, p.x + PAD, yo + (ROW_H - font.lineHeight) / 2, on ? ACC : T_DARK, false);
         if (m.toggleable) pill(g, p.x + PANEL_W - PAD - 18, yo + ROW_H / 2, on, knobProg(m.name, on));
         yo += ROW_H;
 
@@ -153,45 +157,45 @@ final class LayoutGlass implements GuiLayout {
         if (total > MAX_SET_H) {
             int barH = Math.max(10, visH * visH / total);
             int barY = settStart + (int)((visH - barH) * ((float) p.scrollOff / maxScroll));
-            g.fill(p.x + PANEL_W - 2, barY, p.x + PANEL_W - 1, barY + barH, 0x99000000 | SKY);
+            g.fill(p.x + PANEL_W - 2, barY, p.x + PANEL_W - 1, barY + barH, FILL);
         }
     }
 
     // ── Widgets (sky-blue, full size) ────────────────────────────────────────
     private void pill(GuiGraphics g, int x, int cy, boolean on, float prog) {
         int w = 18, h = 10, y = cy - h / 2;
-        GuiDraw.roundRect(g, x, y, x + w, y + h, on ? 0xFF14181F : 0xFF2A2F3A);
-        if (on) Aurora.fill(g, x + 1, y + 1, x + w - 1, y + h - 1, 0xE6, 0.4f);
+        GuiDraw.roundRect(g, x, y, x + w, y + h, on ? FILL : 0x40000000);   // sky on / dark groove off
         int kd = h - 4, kx = x + 2 + (int)((w - 4 - kd) * prog);
-        GuiDraw.roundRect(g, kx, y + 2, kx + kd, y + 2 + kd, 0xFFFFFFFF);
+        GuiDraw.roundRect(g, kx, y + 2, kx + kd, y + 2 + kd, 0xFFFFFFFF);    // white knob
     }
 
     private void drawSlider(GuiGraphics g, SliderS sl, int x, int y, int w, Font font) {
         double val = sl.get().getAsDouble();
-        g.drawString(font, sl.label(), x, y, 0xFFC2D4E4, false);
+        g.drawString(font, sl.label(), x, y, T_DIM, false);
         String vs = GuiDraw.fmtVal(val);
-        g.drawString(font, vs, x + w - font.width(vs), y, 0xFFFFFFFF, false);
+        g.drawString(font, vs, x + w - font.width(vs), y, T_DARK, false);
         int barY = y + 12, barH = 4;
         double pct = Math.max(0, Math.min(1, (val - sl.min()) / (sl.max() - sl.min())));
         int filled = (int)(w * pct);
-        GuiDraw.roundRect(g, x, barY, x + w, barY + barH, 0xFF20303E);
-        if (filled > 0) Aurora.fill(g, x, barY, x + filled, barY + barH, 0xFF, 0.3f);
+        GuiDraw.roundRect(g, x, barY, x + w, barY + barH, 0x33000000);       // dark groove
+        if (filled > 0) GuiDraw.roundRect(g, x, barY, x + filled, barY + barH, FILL);
         int tx = x + filled, tr = 4, tcy = barY + barH / 2;
+        GuiDraw.roundRect(g, tx - tr - 1, tcy - tr - 1, tx + tr + 1, tcy + tr + 1, 0x55000000);  // thumb ring
         GuiDraw.roundRect(g, tx - tr, tcy - tr, tx + tr, tcy + tr, 0xFFFFFFFF);
     }
 
     private void drawBool(GuiGraphics g, BoolS bs, int x, int y, int w, Font font, ModEntry owner) {
         boolean on = bs.get().getAsBoolean();
-        g.drawString(font, bs.label(), x, y + (S_BOOL - font.lineHeight) / 2, 0xFFC2D4E4, false);
+        g.drawString(font, bs.label(), x, y + (S_BOOL - font.lineHeight) / 2, T_DIM, false);
         pill(g, x + w - 18, y + S_BOOL / 2, on, knobProg(owner.name + ":" + bs.label(), on));
     }
 
     private void drawBind(GuiGraphics g, KeyS ks, int x, int y, int w, Font font, boolean binding) {
-        g.drawString(font, "Key", x, y + (S_BIND - font.lineHeight) / 2, 0xFFC2D4E4, false);
+        g.drawString(font, "Key", x, y + (S_BIND - font.lineHeight) / 2, T_DIM, false);
         String v = binding ? "..." : ModConfig.keyName(ks.get().getAsInt());
         int cw = font.width(v) + 8, cx = x + w - cw, ccy = y + S_BIND / 2;
-        GuiDraw.roundRect(g, cx, ccy - 6, x + w, ccy + 6, 0x33FFFFFF);
-        g.drawString(font, v, cx + 4, ccy - font.lineHeight / 2, binding ? 0xFFFFD050 : 0xFFFFFFFF, false);
+        GuiDraw.roundRect(g, cx, ccy - 6, x + w, ccy + 6, 0x22000000);
+        g.drawString(font, v, cx + 4, ccy - font.lineHeight / 2, binding ? 0xFFC8860B : T_DARK, false);
     }
 
     private float knobProg(String key, boolean on) {

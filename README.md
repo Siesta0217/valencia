@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.35** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.36** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.35** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.35.jar
+# JAR → build/libs/valencia-1.7.36.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.36 — Glass 改成「亮、近乎透明」的 iOS 霜面玻璃
+- 依回饋改方向：要 iOS 26 那種**亮、近乎透明**的玻璃,不是深色
+- `Aurora.frostPanel` 翻成**亮白霜面**(~32% 白霜,近乎透明,讓模糊的世界透上來)+ 亮高光頂邊；新增 `frostBorder` 亮玻璃斜邊框；圓角加大到 3px
+- `LayoutGlass` 整套翻成**深色字配色**(亮玻璃上白字會糊):標題/模組名深色,啟用列淡天藍底 + 深天藍左條與字,pill/滑桿走天藍填色 + 深色凹槽 + 白滑塊
+- 仍靠 1.7.35 的真背景模糊；只有 Layout 4 啟用
 
 ### v1.7.35 — Glass 版面用「真背景模糊」做霜面玻璃
 - 釐清誤解：之前的「液態玻璃」缺的不是亮度是**背景模糊**——只堆半透明深色塊不會有玻璃感

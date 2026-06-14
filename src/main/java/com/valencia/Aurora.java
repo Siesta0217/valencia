@@ -90,16 +90,34 @@ public final class Aurora {
         g.fill(x1 + 2, y2 - 3, x2 - 2, y2 - 1, 0x28000000);
     }
 
-    /** Frosted-glass panel for use OVER a blurred backdrop (LayoutGlass calls
-     *  {@code Screen.renderBlurredBackground} first). Far more translucent than
-     *  {@link #glassPanel} so the blurred world reads through it as real frosted
-     *  glass, with a bright specular top edge and a soft bottom shade. */
+    /** Bright frosted-glass panel for use OVER a blurred backdrop (LayoutGlass
+     *  calls {@code Screen.renderBlurredBackground} first). A light, near-clear
+     *  white veil so the blurred world glows through — the iOS-style bright
+     *  liquid glass, not a dark tint. 3px rounded with a bright specular top. */
     public static void frostPanel(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        roundRect(g, x1, y1, x2, y2, 0x6E141A24);          // ~43% dark veil — blur shows through
-        g.fill(x1 + 2, y1 + 1, x2 - 2, y1 + 2, 0x66FFFFFF);   // bright specular top line
-        g.fill(x1 + 2, y1 + 2, x2 - 2, y1 + 4, 0x28FFFFFF);
-        g.fill(x1 + 2, y1 + 4, x2 - 2, y1 + 8, 0x12FFFFFF);   // highlight falloff
-        g.fill(x1 + 2, y2 - 3, x2 - 2, y2 - 1, 0x33000000);   // bottom inner shade
+        int veil = 0x52FFFFFF;   // ~32% white — bright, near-transparent
+        if (x2 - x1 < 6 || y2 - y1 < 6) { g.fill(x1, y1, x2, y2, veil); return; }
+        g.fill(x1 + 3, y1,     x2 - 3, y1 + 1, veil);
+        g.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 3, veil);
+        g.fill(x1,     y1 + 3, x2,     y2 - 3, veil);
+        g.fill(x1 + 1, y2 - 3, x2 - 1, y2 - 1, veil);
+        g.fill(x1 + 3, y2 - 1, x2 - 3, y2,     veil);
+        g.fill(x1 + 3, y1 + 1, x2 - 3, y1 + 2, 0x80FFFFFF);   // bright specular top
+        g.fill(x1 + 3, y1 + 2, x2 - 3, y1 + 4, 0x30FFFFFF);   // falloff
+        g.fill(x1 + 3, y2 - 2, x2 - 3, y2 - 1, 0x33FFFFFF);   // light bottom edge
+    }
+
+    /** Beveled bright-glass rim for {@link #frostPanel}: bright top/left,
+     *  softer bottom/right, matching the 3px rounding. */
+    public static void frostBorder(GuiGraphics g, int x1, int y1, int x2, int y2) {
+        g.fill(x1 + 3, y1,     x2 - 3, y1 + 1, 0x90FFFFFF);   // top
+        g.fill(x1,     y1 + 3, x1 + 1, y2 - 3, 0x70FFFFFF);   // left
+        g.fill(x1 + 3, y2 - 1, x2 - 3, y2,     0x44FFFFFF);   // bottom
+        g.fill(x2 - 1, y1 + 3, x2,     y2 - 3, 0x44FFFFFF);   // right
+        g.fill(x1 + 1, y1 + 1, x1 + 3, y1 + 2, 0x70FFFFFF);   // corner steps
+        g.fill(x2 - 3, y1 + 1, x2 - 1, y1 + 2, 0x70FFFFFF);
+        g.fill(x1 + 1, y2 - 2, x1 + 3, y2 - 1, 0x44FFFFFF);
+        g.fill(x2 - 3, y2 - 2, x2 - 1, y2 - 1, 0x44FFFFFF);
     }
 
     /** Slow light band sweeping the surface — the "liquid" reflection. Drawn
