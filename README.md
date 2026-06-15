@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.38** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.39** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.38** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.38.jar
+# JAR → build/libs/valencia-1.7.39.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.39 — FastBreak（單塊瞬挖）
+- 新增 **FastBreak**(Player,預設鍵 `I`):挖你正在看的單一方塊時,客戶端每 tick 把破壞進度設滿 → 約 1 tick 破掉
+- 實作:`FastBreakMixin` @Shadow `MultiPlayerGameMode.destroyProgress`,在 `continueDestroyBlock` HEAD 設 1.0
+- **前提**:伺服器會自己驗算破壞時間。單機 / 無 anticheat 伺服器真的秒;vanilla / 有 anticheat 的會拒收 → 方塊長回來(ghost),屬無害但無效
 
 ### v1.7.38 — 修 CritHit 完全沒作用
 - 根因：CritMixin 注入在 `Player.attack` HEAD,但 vanilla 的 `MultiPlayerGameMode.attack` 是**先送攻擊封包、才呼叫 `player.attack()`**——假跳位置封包永遠比攻擊封包晚送,伺服器判暴擊時還沒收到,等於沒效

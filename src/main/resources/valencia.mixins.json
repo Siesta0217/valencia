@@ -13,6 +13,7 @@
     "NoSlowMixin",
     "BHopMixin",
     "FlyMixin",
+    "FastBreakMixin",
     "FreecamCameraMixin",
     "ClientInputMixin",
     "KillAuraMixin",

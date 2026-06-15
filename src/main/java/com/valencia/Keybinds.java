@@ -40,7 +40,8 @@ public final class Keybinds {
         new Toggle(() -> cfg().nameTagKey,   NameTagMod::isEnabled,   NameTagMod::toggle,      "NameTag"),
         new Toggle(() -> cfg().autoTotemKey, AutoTotemMod::isEnabled, AutoTotemMod::toggle,    "AutoTotem"),
         new Toggle(() -> cfg().flyKey,       FlyMod::isEnabled,       FlyMod::toggle,          "Fly"),
-        new Toggle(() -> cfg().freecamKey,   FreecamMod::isEnabled,   FreecamMod::toggle,      "Freecam")
+        new Toggle(() -> cfg().freecamKey,   FreecamMod::isEnabled,   FreecamMod::toggle,      "Freecam"),
+        new Toggle(() -> cfg().fastBreakKey, FastBreakMod::isEnabled, FastBreakMod::toggle,    "FastBreak")
     );
 
     /** Minimal (label, enabled) pair exposed for HUDs such as the ArrayList. */
@@ -114,6 +115,7 @@ public final class Keybinds {
         if (ElytraGotoMod.isEnabled()) ElytraGotoMod.toggle();
         if (AutoFishMod.isEnabled())   AutoFishMod.toggle();
         if (NoCrashMod.isEnabled())    NoCrashMod.toggle();
+        if (FastBreakMod.isEnabled())  FastBreakMod.toggle();
         saveEnabled();
         msg(mc, "§c[Panic] all modules OFF");
     }
@@ -137,6 +139,7 @@ public final class Keybinds {
         cfg.nameTagEnabled    = NameTagMod.isEnabled();
         cfg.autoTotemEnabled  = AutoTotemMod.isEnabled();
         cfg.flyEnabled        = FlyMod.isEnabled();
+        cfg.fastBreakEnabled  = FastBreakMod.isEnabled();
         cfg.save();
     }
 

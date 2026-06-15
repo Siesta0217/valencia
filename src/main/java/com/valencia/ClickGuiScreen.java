@@ -186,6 +186,7 @@ public class ClickGuiScreen extends Screen {
         cfg.autoTotemEnabled = AutoTotemMod.isEnabled();
         cfg.arrayListEnabled = ArrayListMod.isEnabled();
         cfg.flyEnabled       = FlyMod.isEnabled();
+        cfg.fastBreakEnabled = FastBreakMod.isEnabled();
         cfg.save();
     }
 

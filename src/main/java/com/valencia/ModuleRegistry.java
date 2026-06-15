@@ -162,6 +162,9 @@ final class ModuleRegistry {
             new SliderS("Max Spd",  () -> (double)cfg.noCrashMaxSpeed,  v -> { cfg.noCrashMaxSpeed = (float)v;  NoCrashMod.maxSpeed = (float)v;  cfg.save(); }, 0.1, 1.0)
         )));
 
+        add(Cat.PLAYER, new ModEntry("FastBreak", FastBreakMod::isEnabled, FastBreakMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.fastBreakKey, v -> { cfg.fastBreakKey = v; cfg.save(); }))));
+
         // ── Render ──────────────────────────────────────────────────────────
         add(Cat.RENDER, new ModEntry("XRay", XRayMod::isEnabled, XRayMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.xrayKey, v -> { cfg.xrayKey = v; cfg.save(); }))));

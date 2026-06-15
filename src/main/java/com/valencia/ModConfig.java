@@ -31,7 +31,11 @@ public class ModConfig {
     public int nameTagKey    = GLFW.GLFW_KEY_Y;
     public int autoTotemKey  = GLFW.GLFW_KEY_O;
     public int flyKey        = GLFW.GLFW_KEY_V;
+    public int fastBreakKey  = GLFW.GLFW_KEY_I;
     public int panicKey      = GLFW.GLFW_KEY_DELETE;
+
+    // FastBreak (client-side instant single-block break; server-validated)
+    public boolean fastBreakEnabled = false;
 
     // Fly (motion-based, server-usable)
     public boolean flyEnabled = false;
