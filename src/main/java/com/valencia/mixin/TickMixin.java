@@ -2,11 +2,14 @@ package com.valencia.mixin;
 
 import com.valencia.AutoFishMod;
 import com.valencia.AutoTotemMod;
+import com.valencia.AutoToolMod;
+import com.valencia.AutoWalkMod;
 import com.valencia.ElytraGotoMod;
 import com.valencia.FastPlaceMod;
 import com.valencia.FreecamMod;
 import com.valencia.Keybinds;
 import com.valencia.NoCrashMod;
+import com.valencia.NukerMod;
 import com.valencia.ScaffoldMod;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -38,5 +41,8 @@ public abstract class TickMixin {
         NoCrashMod.tick();
         AutoTotemMod.tick();
         FreecamMod.tick();
+        AutoToolMod.tick();
+        NukerMod.tick();
+        AutoWalkMod.tick();
     }
 }

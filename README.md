@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.39** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.40** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.39** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.39.jar
+# JAR → build/libs/valencia-1.7.40.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.40 — 挖礦自動化:AutoTool / Nuker / AutoWalk
+- **AutoTool**(Player,鍵 `L`):挖方塊時自動切到快捷欄裡破壞最快的工具,並送 `SetCarriedItem` 讓伺服器同步 → vanilla 真的變快。`Sw Back` 挖完切回原槽
+- **Nuker**(Player,鍵 `M`):自動破壞 reach 內所有方塊(最近的先,逐塊走 vanilla 破壞流程、自動切工具)。`Range` 滑桿 2–5。vanilla 每塊照合法速度但免手動;很明顯,有 anticheat 的伺服器自行斟酌
+- **AutoWalk**(Movement,鍵 `.`):自動按住前進(走 `Options.keyUp`,自動尊重開介面/Freecam 凍結)
+- 三個都進 Keybinds 中央表(ArrayList 會顯示)、可持久化、Panic 會一起關
 
 ### v1.7.39 — FastBreak（單塊瞬挖）
 - 新增 **FastBreak**(Player,預設鍵 `I`):挖你正在看的單一方塊時,客戶端每 tick 把破壞進度設滿 → 約 1 tick 破掉

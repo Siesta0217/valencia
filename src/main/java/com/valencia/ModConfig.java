@@ -32,10 +32,20 @@ public class ModConfig {
     public int autoTotemKey  = GLFW.GLFW_KEY_O;
     public int flyKey        = GLFW.GLFW_KEY_V;
     public int fastBreakKey  = GLFW.GLFW_KEY_I;
+    public int autoToolKey   = GLFW.GLFW_KEY_L;
+    public int nukerKey      = GLFW.GLFW_KEY_M;
+    public int autoWalkKey   = GLFW.GLFW_KEY_PERIOD;
     public int panicKey      = GLFW.GLFW_KEY_DELETE;
 
     // FastBreak (client-side instant single-block break; server-validated)
     public boolean fastBreakEnabled = false;
+
+    // Mining automation
+    public boolean autoToolEnabled  = false;
+    public boolean autoToolSwitchBack = true;
+    public boolean nukerEnabled     = false;
+    public float   nukerRange       = 4.5f;
+    public boolean autoWalkEnabled  = false;
 
     // Fly (motion-based, server-usable)
     public boolean flyEnabled = false;

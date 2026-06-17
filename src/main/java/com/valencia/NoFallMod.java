@@ -141,6 +141,12 @@ public class NoFallMod implements ClientModInitializer {
 
         if (cfg.fastBreakEnabled != FastBreakMod.isEnabled()) FastBreakMod.toggle();
 
+        if (cfg.autoToolEnabled != AutoToolMod.isEnabled()) AutoToolMod.toggle();
+        AutoToolMod.switchBack = cfg.autoToolSwitchBack;
+        if (cfg.nukerEnabled != NukerMod.isEnabled()) NukerMod.toggle();
+        NukerMod.range = cfg.nukerRange;
+        if (cfg.autoWalkEnabled != AutoWalkMod.isEnabled()) AutoWalkMod.toggle();
+
         // Freecam: tuning only — enabled state is intentionally not persisted
         // (don't want to boot straight into a detached camera).
         FreecamMod.speed = cfg.freecamSpeed;

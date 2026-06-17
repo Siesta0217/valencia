@@ -187,6 +187,9 @@ public class ClickGuiScreen extends Screen {
         cfg.arrayListEnabled = ArrayListMod.isEnabled();
         cfg.flyEnabled       = FlyMod.isEnabled();
         cfg.fastBreakEnabled = FastBreakMod.isEnabled();
+        cfg.autoToolEnabled  = AutoToolMod.isEnabled();
+        cfg.nukerEnabled     = NukerMod.isEnabled();
+        cfg.autoWalkEnabled  = AutoWalkMod.isEnabled();
         cfg.save();
     }
 

@@ -41,7 +41,10 @@ public final class Keybinds {
         new Toggle(() -> cfg().autoTotemKey, AutoTotemMod::isEnabled, AutoTotemMod::toggle,    "AutoTotem"),
         new Toggle(() -> cfg().flyKey,       FlyMod::isEnabled,       FlyMod::toggle,          "Fly"),
         new Toggle(() -> cfg().freecamKey,   FreecamMod::isEnabled,   FreecamMod::toggle,      "Freecam"),
-        new Toggle(() -> cfg().fastBreakKey, FastBreakMod::isEnabled, FastBreakMod::toggle,    "FastBreak")
+        new Toggle(() -> cfg().fastBreakKey, FastBreakMod::isEnabled, FastBreakMod::toggle,    "FastBreak"),
+        new Toggle(() -> cfg().autoToolKey,  AutoToolMod::isEnabled,  AutoToolMod::toggle,     "AutoTool"),
+        new Toggle(() -> cfg().nukerKey,     NukerMod::isEnabled,     NukerMod::toggle,        "Nuker"),
+        new Toggle(() -> cfg().autoWalkKey,  AutoWalkMod::isEnabled,  AutoWalkMod::toggle,     "AutoWalk")
     );
 
     /** Minimal (label, enabled) pair exposed for HUDs such as the ArrayList. */
@@ -116,6 +119,9 @@ public final class Keybinds {
         if (AutoFishMod.isEnabled())   AutoFishMod.toggle();
         if (NoCrashMod.isEnabled())    NoCrashMod.toggle();
         if (FastBreakMod.isEnabled())  FastBreakMod.toggle();
+        if (AutoToolMod.isEnabled())   AutoToolMod.toggle();
+        if (NukerMod.isEnabled())      NukerMod.toggle();
+        if (AutoWalkMod.isEnabled())   AutoWalkMod.toggle();
         saveEnabled();
         msg(mc, "§c[Panic] all modules OFF");
     }
@@ -140,6 +146,9 @@ public final class Keybinds {
         cfg.autoTotemEnabled  = AutoTotemMod.isEnabled();
         cfg.flyEnabled        = FlyMod.isEnabled();
         cfg.fastBreakEnabled  = FastBreakMod.isEnabled();
+        cfg.autoToolEnabled   = AutoToolMod.isEnabled();
+        cfg.nukerEnabled      = NukerMod.isEnabled();
+        cfg.autoWalkEnabled   = AutoWalkMod.isEnabled();
         cfg.save();
     }
 

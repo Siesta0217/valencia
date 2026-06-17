@@ -133,6 +133,9 @@ final class ModuleRegistry {
             new KeyS("Key", () -> cfg.flyKey, v -> { cfg.flyKey = v; cfg.save(); })
         )));
 
+        add(Cat.MOVEMENT, new ModEntry("AutoWalk", AutoWalkMod::isEnabled, AutoWalkMod::toggle, true,
+            List.of(new KeyS("Key", () -> cfg.autoWalkKey, v -> { cfg.autoWalkKey = v; cfg.save(); }))));
+
         // ── Player ──────────────────────────────────────────────────────────
         add(Cat.PLAYER, new ModEntry("Scaffold", ScaffoldMod::isEnabled, ScaffoldMod::toggle, true, List.of(
             new BoolS("Tower",     () -> cfg.scaffoldTower,      () -> { cfg.scaffoldTower = !cfg.scaffoldTower;           ScaffoldMod.tower = cfg.scaffoldTower;           cfg.save(); }),
@@ -164,6 +167,16 @@ final class ModuleRegistry {
 
         add(Cat.PLAYER, new ModEntry("FastBreak", FastBreakMod::isEnabled, FastBreakMod::toggle, true,
             List.of(new KeyS("Key", () -> cfg.fastBreakKey, v -> { cfg.fastBreakKey = v; cfg.save(); }))));
+
+        add(Cat.PLAYER, new ModEntry("AutoTool", AutoToolMod::isEnabled, AutoToolMod::toggle, true, List.of(
+            new BoolS("Sw Back", () -> cfg.autoToolSwitchBack, () -> { cfg.autoToolSwitchBack = !cfg.autoToolSwitchBack; AutoToolMod.switchBack = cfg.autoToolSwitchBack; cfg.save(); }),
+            new KeyS("Key", () -> cfg.autoToolKey, v -> { cfg.autoToolKey = v; cfg.save(); })
+        )));
+
+        add(Cat.PLAYER, new ModEntry("Nuker", NukerMod::isEnabled, NukerMod::toggle, true, List.of(
+            new SliderS("Range", () -> (double)cfg.nukerRange, v -> { cfg.nukerRange = (float)v; NukerMod.range = (float)v; cfg.save(); }, 2.0, 5.0),
+            new KeyS("Key", () -> cfg.nukerKey, v -> { cfg.nukerKey = v; cfg.save(); })
+        )));
 
         // ── Render ──────────────────────────────────────────────────────────
         add(Cat.RENDER, new ModEntry("XRay", XRayMod::isEnabled, XRayMod::toggle, true,
