@@ -11,19 +11,23 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * While Freecam is active, override the camera position with the freecam's
- * world position. Rotation is left as vanilla set it (from the player entity),
- * so the mouse still aims the freecam. Injected at TAIL so it replaces the
- * final position vanilla computed.
+ * While Freecam is active, override BOTH the camera position and rotation with
+ * the freecam's own values (driven by mouse-look via FreecamTurnMixin). The
+ * body keeps its frozen rotation, so nothing leaks to the server. Injected at
+ * TAIL so it replaces the final transform vanilla computed.
  */
 @Mixin(Camera.class)
 public abstract class FreecamCameraMixin {
 
     @Shadow protected abstract void setPosition(double x, double y, double z);
+    @Shadow protected abstract void setRotation(float yRot, float xRot);
 
     @Inject(method = "setup", at = @At("TAIL"))
     private void freecam$override(Level level, Entity entity, boolean detached,
                                   boolean reverse, float partial, CallbackInfo ci) {
-        if (FreecamMod.isActive()) setPosition(FreecamMod.x, FreecamMod.y, FreecamMod.z);
+        if (FreecamMod.isActive()) {
+            setRotation(FreecamMod.yaw, FreecamMod.pitch);
+            setPosition(FreecamMod.x, FreecamMod.y, FreecamMod.z);
+        }
     }
 }

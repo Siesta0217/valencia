@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.40** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.41** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.40** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.40.jar
+# JAR → build/libs/valencia-1.7.41.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,22 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.41 — 新模組審查修正 + Goto 優化
+**Freecam 旋轉解耦（真正隱形偵察）**
+- 之前滑鼠瞄準 freecam 會直接轉動真實身體 → 旋轉封包外洩，別人看得到你原地轉頭。現在 freecam 有自己的 yaw/pitch：新增 `FreecamTurnMixin` 攔截 `Entity.turn`、把滑鼠輸入導向 freecam（鏡頭 mixin 同時覆寫位置+旋轉）。身體位置與旋轉完全凍結，伺服器端看到的是站著不動的玩家。
+
+**Nuker**
+- 加「曝露於空氣」檢查:只破壞至少一面接觸 air/fluid/非固體的方塊，跳過完全埋住、根本搆不到的方塊(省下被伺服器拒收的破壞,也少一個 anti-cheat 破綻)。
+- 換工具後會還原原本的手持槽(比照 AutoTool)。
+- 揮手改成「只在開始破壞新方塊時」,不再每 tick 揮 → 少約 20 swing 封包/秒。
+
+**AutoTool**
+- 選工具改用「有效挖掘速度」(基礎速度 + Efficiency 附魔 eff²+1),所以效率 V 鐵鎬會正確勝過無附魔鑽石鎬,而不是只看基礎速度。
+
+**ElytraGoto (`.nf goto`)**
+- 移除 `setHotbarSlot` 的反射(`Inventory.setSelectedSlot` 已驗證是 public)→ remap-safe,對日後 MC26 移植更穩。
+- 狀態列修掉寫死的過時 `[Goto v1.6.16]` 版本號;改顯示對目標的高度差 ΔY(±),方便判斷降落。
 
 ### v1.7.40 — 挖礦自動化:AutoTool / Nuker / AutoWalk
 - **AutoTool**(Player,鍵 `L`):挖方塊時自動切到快捷欄裡破壞最快的工具,並送 `SetCarriedItem` 讓伺服器同步 → vanilla 真的變快。`Sw Back` 挖完切回原槽

@@ -23,11 +23,12 @@ public final class NukerMod {
     public static float range = 4.5f;   // block reach (clamped to 5)
 
     private static BlockPos current;    // block currently being dug
+    private static int prevSlot = -1;   // hotbar slot to restore when we stop
 
     private NukerMod() {}
 
     public static boolean isEnabled() { return enabled; }
-    public static void toggle() { enabled = !enabled; if (!enabled) current = null; }
+    public static void toggle() { enabled = !enabled; if (!enabled) { current = null; restoreSlot(); } }
 
     public static boolean isActive() {
         if (!enabled) return false;
@@ -58,11 +59,13 @@ public final class NukerMod {
                     if (st.isAir() || !st.getFluidState().isEmpty()) continue;
                     if (st.getDestroySpeed(level, m) < 0) continue;   // bedrock / unbreakable
                     double d2 = eye.distanceToSqr(m.getX() + 0.5, m.getY() + 0.5, m.getZ() + 0.5);
-                    if (d2 <= r2 && d2 < bestDist) { bestDist = d2; best = m.immutable(); }
+                    // exposed() last: only evaluated when this block would become
+                    // the new nearest, so it runs a bounded number of times.
+                    if (d2 <= r2 && d2 < bestDist && exposed(level, m)) { bestDist = d2; best = m.immutable(); }
                 }
             }
         }
-        if (best == null) { current = null; return; }
+        if (best == null) { current = null; restoreSlot(); return; }
 
         equipBest(mc, p, level.getBlockState(best));
 
@@ -74,10 +77,33 @@ public final class NukerMod {
         if (!best.equals(current)) {
             current = best;
             mc.gameMode.startDestroyBlock(best, face);
+            // Swing only when starting a new block, not every tick — the dig
+            // continues without re-swinging, so this cuts ~20 swing packets/sec.
+            p.swing(InteractionHand.MAIN_HAND);
         } else {
             mc.gameMode.continueDestroyBlock(best, face);
         }
-        p.swing(InteractionHand.MAIN_HAND);
+    }
+
+    /** True if at least one face of {@code pos} touches air / fluid / a
+     *  non-solid block — i.e. the block is actually reachable, not sealed
+     *  inside terrain. Skipping enclosed blocks avoids wasted (server-rejected)
+     *  breaks and the most anti-cheat-obvious behavior. */
+    private static boolean exposed(Level level, BlockPos pos) {
+        for (Direction d : Direction.values()) {
+            BlockPos np = pos.relative(d);
+            BlockState n = level.getBlockState(np);
+            if (n.isAir() || !n.getFluidState().isEmpty()) return true;
+            if (n.getCollisionShape(level, np).isEmpty()) return true;
+        }
+        return false;
+    }
+
+    private static void restoreSlot() {
+        if (prevSlot == -1) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) AutoToolMod.select(mc, mc.player, prevSlot);
+        prevSlot = -1;
     }
 
     /** Auto-equip the fastest tool for {@code st} (server-synced). */
@@ -85,6 +111,9 @@ public final class NukerMod {
         Inventory inv = p.getInventory();
         int cur = inv.getSelectedSlot();
         int best = AutoToolMod.bestSlot(inv, st, cur);
-        if (best != cur) AutoToolMod.select(mc, p, best);
+        if (best != cur) {
+            if (prevSlot == -1) prevSlot = cur;
+            AutoToolMod.select(mc, p, best);
+        }
     }
 }

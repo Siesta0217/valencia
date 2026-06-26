@@ -15,6 +15,7 @@
     "FlyMixin",
     "FastBreakMixin",
     "FreecamCameraMixin",
+    "FreecamTurnMixin",
     "ClientInputMixin",
     "KillAuraMixin",
     "GlowMixin",

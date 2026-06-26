@@ -499,7 +499,9 @@ public class ElytraGotoMod {
             if (stack.is(Items.FIREWORK_ROCKET)) { rocketSlot = i; break; }
         }
         if (rocketSlot >= 0) {
-            if (!setHotbarSlot(p, rocketSlot)) return false;
+            // setSelectedSlot is public in this build (verified via javap) — no
+            // reflection needed, and it stays correct across remaps.
+            p.getInventory().setSelectedSlot(rocketSlot);
             try {
                 if (p.connection != null) {
                     p.connection.send(new ServerboundSetCarriedItemPacket(rocketSlot));
@@ -508,34 +510,6 @@ public class ElytraGotoMod {
             return useItemSafe(mc, p, InteractionHand.MAIN_HAND);
         }
         return false;  // no rocket anywhere in hotbar
-    }
-
-    /** Set the selected hotbar slot — tries the modern method first, falls
-     *  back to writing the private {@code selected} field via reflection
-     *  (different MC builds expose this differently). */
-    private static boolean setHotbarSlot(LocalPlayer p, int slot) {
-        Object inv = p.getInventory();
-        // Try common setter names first
-        for (String name : new String[]{"setSelectedHotbarSlot", "setSelectedSlot"}) {
-            try {
-                java.lang.reflect.Method m = inv.getClass().getMethod(name, int.class);
-                m.invoke(inv, slot);
-                return true;
-            } catch (NoSuchMethodException e) {
-                // try next
-            } catch (Throwable t) {
-                return false;
-            }
-        }
-        // Fall back to setting the field directly via reflection
-        try {
-            java.lang.reflect.Field f = inv.getClass().getDeclaredField("selected");
-            f.setAccessible(true);
-            f.setInt(inv, slot);
-            return true;
-        } catch (Throwable ignored) {
-            return false;
-        }
     }
 
     /** Fire the item in {@code hand} via the vanilla useItem path, but force
@@ -610,8 +584,11 @@ public class ElytraGotoMod {
             ammo = String.format("§7煙火 §f%d §8(消耗§f%d§8/嘗試§f%d§8)",
                 rockets, consumed, firesAttempted);
         }
+        // ΔY tells the user if the target is above (+) or below (−) them — handy
+        // for judging the descent on approach.
+        int dyTarget = (int) Math.round(targetY - p.getY());
         p.displayClientMessage(Component.literal(
-            String.format("§b[Goto v1.6.16] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d  §8| %s",
-                dist, etaSec, (int) p.getY(), ammo)), true);
+            String.format("§b[Goto] §f%.0fm  §7ETA §f%.0fs  §8| §7Y §f%d§7(%+d)  §8| %s",
+                dist, etaSec, (int) p.getY(), dyTarget, ammo)), true);
     }
 }

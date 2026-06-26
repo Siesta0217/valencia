@@ -2,16 +2,22 @@ package com.valencia;
 
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 
 /**
  * Freecam — detach the camera from the body and fly it around, through walls,
- * to scout. Entirely client-side: the body stays frozen where you left it and
- * no extra packets are sent, so it's undetectable by any server/anti-cheat.
+ * to scout. Entirely client-side and fully decoupled: the body keeps the exact
+ * position AND rotation it had when you toggled on, and no movement/rotation
+ * packets change, so the server sees a player standing perfectly still — there
+ * is nothing to detect.
  *
  * Pieces:
- *  - {@link com.valencia.mixin.FreecamCameraMixin} overrides the camera position
- *    (rotation stays the player's, so the mouse still aims the freecam).
+ *  - {@link com.valencia.mixin.FreecamCameraMixin} overrides BOTH the camera
+ *    position and rotation with the freecam's own values.
+ *  - {@link com.valencia.mixin.FreecamTurnMixin} redirects the player's mouse-
+ *    look into the freecam's yaw/pitch instead of the body's, so aiming the
+ *    freecam never rotates (or leaks rotation packets for) the real body.
  *  - {@link com.valencia.mixin.ClientInputMixin} zeroes movement input while
  *    active, so WASD drives only the freecam and the body doesn't walk off.
  *  - {@link #tick()} (from TickMixin) flies the camera from raw key state.
@@ -25,6 +31,7 @@ public final class FreecamMod {
     public static float speed = 1.0f;        // blocks per tick
 
     public static double x, y, z;            // camera world position
+    public static float  yaw, pitch;         // camera rotation (decoupled from body)
     private static CameraType prevView;      // restored on disable
 
     private FreecamMod() {}
@@ -45,6 +52,8 @@ public final class FreecamMod {
                 x = mc.player.getX();
                 y = mc.player.getEyeY();
                 z = mc.player.getZ();
+                yaw = mc.player.getYRot();
+                pitch = mc.player.getXRot();
             }
             if (mc.options != null) {
                 prevView = mc.options.getCameraType();
@@ -67,7 +76,8 @@ public final class FreecamMod {
         boolean a  = down(h, GLFW.GLFW_KEY_A),     d  = down(h, GLFW.GLFW_KEY_D);
         boolean up = down(h, GLFW.GLFW_KEY_SPACE), dn = down(h, GLFW.GLFW_KEY_LEFT_SHIFT);
 
-        float yr = (float) Math.toRadians(mc.player.getYRot());
+        // Movement is relative to the freecam's own yaw, not the body's.
+        float yr = (float) Math.toRadians(yaw);
         double sinY = Math.sin(yr), cosY = Math.cos(yr);
         double mx = 0, mz = 0;
         if (w) { mx -= sinY; mz += cosY; }
@@ -79,6 +89,15 @@ public final class FreecamMod {
         if (len > 0.001) { x += mx / len * speed; z += mz / len * speed; }
         if (up) y += speed;
         if (dn) y -= speed;
+    }
+
+    /** Apply a raw mouse-look delta to the freecam's own rotation. Mirrors
+     *  vanilla {@code Entity.turn} (×0.15, pitch clamped) so look sensitivity
+     *  feels identical — but it never touches the body. Called from
+     *  {@link com.valencia.mixin.FreecamTurnMixin}. */
+    public static void applyTurn(double yawDelta, double pitchDelta) {
+        yaw += (float) (yawDelta * 0.15);
+        pitch = Mth.clamp(pitch + (float) (pitchDelta * 0.15), -90f, 90f);
     }
 
     private static boolean down(long h, int key) {
