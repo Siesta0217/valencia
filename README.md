@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.42** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.43** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.42** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.42.jar
+# JAR → build/libs/valencia-1.7.43.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.43 — registry 接管 Panic 與持久化(Phase A 3-4)
+- `Keybinds.panic()` 22 筆手抄 → `Modules.panic()`(registry 的 `panicable` 策展集:玩法模組全關、XRay/NameTag/ESP 等視覺模組保留——語意跟舊清單一致)。
+- `Keybinds.saveEnabled()` 20 筆手抄 → `Modules.saveEnabled()`。**小幅行為變更(修一致性)**:現在連無按鍵模組(AutoFish/NoCrash/Hitbox/ESP/DimCoord/TargetHUD/ArrayList)的 enabled 也會在每次按鍵切換時一併寫入 config。這些值 GUI 改動時本來就即時存檔,所以值不會變,只是持久化更完整、不再依賴「哪條路徑改的」。
 
 ### v1.7.42 — 中央模組 registry(架構 Phase A 0-2)
 - 新增 `Modules.java`:29 個模組的單一真實來源(`ModuleDef` record:label/分類/enabled/toggle/keybind/持久化欄位/panicable)。從此加模組只改一處,不用手動同步 4~5 份清單。

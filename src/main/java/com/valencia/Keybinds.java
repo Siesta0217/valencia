@@ -68,58 +68,18 @@ public final class Keybinds {
         prevPanic = panicDown;
     }
 
-    /** Panic: kill every gameplay-affecting module in one keypress (go legit). */
+    /** Panic: kill every gameplay-affecting module in one keypress (go legit).
+     *  The roster (incl. keyless ElytraGoto/AutoFish/NoCrash, excl. visual
+     *  XRay/NameTag/ESP) is the registry's curated {@code panicable} set. */
     private static void panic(Minecraft mc) {
-        if (NoFallMod.isEnabled())     NoFallMod.toggleManual();
-        if (KillAuraMod.isEnabled())   KillAuraMod.toggle();
-        if (MaceAuraMod.isEnabled())   MaceAuraMod.toggle();
-        if (SpearAuraMod.isEnabled())  SpearAuraMod.toggle();
-        if (CritMod.isEnabled())       CritMod.toggle();
-        if (ScaffoldMod.isEnabled())   ScaffoldMod.toggle();
-        if (TimerMod.isEnabled())      TimerMod.toggle();
-        if (BHopMod.isEnabled())       BHopMod.toggle();
-        if (StepMod.isEnabled())       StepMod.toggle();
-        if (VelocityMod.isEnabled())   VelocityMod.toggle();
-        if (FastPlaceMod.isEnabled())  FastPlaceMod.toggle();
-        if (NoSlowMod.isEnabled())     NoSlowMod.toggle();
-        if (AutoTotemMod.isEnabled())  AutoTotemMod.toggle();
-        if (FlyMod.isEnabled())        FlyMod.toggle();
-        if (FreecamMod.isEnabled())    FreecamMod.toggle();
-        if (ElytraGotoMod.isEnabled()) ElytraGotoMod.toggle();
-        if (AutoFishMod.isEnabled())   AutoFishMod.toggle();
-        if (NoCrashMod.isEnabled())    NoCrashMod.toggle();
-        if (FastBreakMod.isEnabled())  FastBreakMod.toggle();
-        if (AutoToolMod.isEnabled())   AutoToolMod.toggle();
-        if (NukerMod.isEnabled())      NukerMod.toggle();
-        if (AutoWalkMod.isEnabled())   AutoWalkMod.toggle();
+        Modules.panic();
         saveEnabled();
         msg(mc, "§c[Panic] all modules OFF");
     }
 
-    /** Persist the enabled state of every key-toggleable module. */
+    /** Persist the enabled state of every persisted module (registry-driven). */
     private static void saveEnabled() {
-        ModConfig cfg = ModConfig.get();
-        cfg.nofallEnabled     = NoFallMod.isEnabled();
-        cfg.xrayEnabled       = XRayMod.isEnabled();
-        cfg.maceAuraEnabled   = MaceAuraMod.isEnabled();
-        cfg.noSlowEnabled     = NoSlowMod.isEnabled();
-        cfg.bhopEnabled       = BHopMod.isEnabled();
-        cfg.stepEnabled       = StepMod.isEnabled();
-        cfg.killAuraEnabled   = KillAuraMod.isEnabled();
-        cfg.velocityEnabled   = VelocityMod.isEnabled();
-        cfg.fastPlaceEnabled  = FastPlaceMod.isEnabled();
-        cfg.critEnabled       = CritMod.isEnabled();
-        cfg.scaffoldEnabled   = ScaffoldMod.isEnabled();
-        cfg.timerEnabled      = TimerMod.isEnabled();
-        cfg.spearAuraEnabled  = SpearAuraMod.isEnabled();
-        cfg.nameTagEnabled    = NameTagMod.isEnabled();
-        cfg.autoTotemEnabled  = AutoTotemMod.isEnabled();
-        cfg.flyEnabled        = FlyMod.isEnabled();
-        cfg.fastBreakEnabled  = FastBreakMod.isEnabled();
-        cfg.autoToolEnabled   = AutoToolMod.isEnabled();
-        cfg.nukerEnabled      = NukerMod.isEnabled();
-        cfg.autoWalkEnabled   = AutoWalkMod.isEnabled();
-        cfg.save();
+        Modules.saveEnabled();
     }
 
     private static boolean down(long handle, int key) {
