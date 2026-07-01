@@ -1,0 +1,41 @@
+# CI build — the one environment where the toolchain is safe.
+#
+# Locally this repo is stuck: JDK 25 + Gradle 8.12 cannot recompile the
+# .gradle scripts (Groovy-ASM "Unsupported class file major version 69"),
+# so build.gradle / settings.gradle / the wrapper must never be touched on
+# the dev machine. CI runs JDK 21 + the same Gradle 8.12 wrapper, which has
+# no such problem — giving us a clean, reproducible build without touching
+# the fragile local setup.
+#
+# assemble only — the test task is broken in this project by design (see
+# README); `build` must never be used.
+name: build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Build (assemble, never `build`)
+        run: |
+          chmod +x gradlew
+          ./gradlew assemble --no-daemon
+
+      - name: Upload mod jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: valencia-jar
+          path: build/libs/valencia-*.jar
+          if-no-files-found: error

@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.44** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.45** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.44** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.44.jar
+# JAR → build/libs/valencia-1.7.45.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,10 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.45 — CI + 移植查核表(跨切軌道 + Phase B3)
+- **GitHub Actions CI**:push 到 main 自動用 **JDK 21** 跑 `assemble`(本機 JDK 25 不能碰 toolchain 的問題在 CI 不存在),JAR 上傳為 artifact。發佈命脈從此有乾淨可重現的備援。
+- **`PORTING.md`**:完整移植查核表——26 個 mixin 注入點(標出 sendPosition×4、packet redirect×2 等高風險集中點)、十幾條已 javap 驗證的 API 簽名雷區、四步移植流程。等 26.2 mappings 到位就照表操課。
 
 ### v1.7.44 — registry 接管啟動還原 + 自檢上線(Phase A 5-6b,Phase A 完工)
 - `NoFallMod.onInitializeClient()` 的 27 行 enable 還原 → 一句 `Modules.restoreEnabled()`(一律走 toggle(),Freecam/ElytraGoto 依設計跳過)。~120 行 tuning 賦值原封不動。
