@@ -6,7 +6,6 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntSupplier;
 
 /**
  * Central keybind poller — edge-detects every configured toggle key once per
@@ -19,46 +18,17 @@ import java.util.function.IntSupplier;
  */
 public final class Keybinds {
 
-    private record Toggle(IntSupplier key, BooleanSupplier enabled, Runnable toggle, String label) {}
-
-    private static ModConfig cfg() { return ModConfig.get(); }
-
-    private static final List<Toggle> TOGGLES = List.of(
-        new Toggle(() -> cfg().nofallKey,    NoFallMod::isEnabled,    NoFallMod::toggleManual, "NoFall"),
-        new Toggle(() -> cfg().xrayKey,      XRayMod::isEnabled,      XRayMod::toggle,         "XRay"),
-        new Toggle(() -> cfg().maceAuraKey,  MaceAuraMod::isEnabled,  MaceAuraMod::toggle,     "MaceAura"),
-        new Toggle(() -> cfg().noSlowKey,    NoSlowMod::isEnabled,    NoSlowMod::toggle,       "NoSlow"),
-        new Toggle(() -> cfg().bhopKey,      BHopMod::isEnabled,      BHopMod::toggle,         "BHop"),
-        new Toggle(() -> cfg().stepKey,      StepMod::isEnabled,      StepMod::toggle,         "Step"),
-        new Toggle(() -> cfg().killAuraKey,  KillAuraMod::isEnabled,  KillAuraMod::toggle,     "KillAura"),
-        new Toggle(() -> cfg().velocityKey,  VelocityMod::isEnabled,  VelocityMod::toggle,     "Velocity"),
-        new Toggle(() -> cfg().fastPlaceKey, FastPlaceMod::isEnabled, FastPlaceMod::toggle,    "FastPlace"),
-        new Toggle(() -> cfg().critKey,      CritMod::isEnabled,      CritMod::toggle,         "CritHit"),
-        new Toggle(() -> cfg().scaffoldKey,  ScaffoldMod::isEnabled,  ScaffoldMod::toggle,     "Scaffold"),
-        new Toggle(() -> cfg().timerKey,     TimerMod::isEnabled,     TimerMod::toggle,        "Timer"),
-        new Toggle(() -> cfg().spearAuraKey, SpearAuraMod::isEnabled, SpearAuraMod::toggle,    "SpearAura"),
-        new Toggle(() -> cfg().nameTagKey,   NameTagMod::isEnabled,   NameTagMod::toggle,      "NameTag"),
-        new Toggle(() -> cfg().autoTotemKey, AutoTotemMod::isEnabled, AutoTotemMod::toggle,    "AutoTotem"),
-        new Toggle(() -> cfg().flyKey,       FlyMod::isEnabled,       FlyMod::toggle,          "Fly"),
-        new Toggle(() -> cfg().freecamKey,   FreecamMod::isEnabled,   FreecamMod::toggle,      "Freecam"),
-        new Toggle(() -> cfg().fastBreakKey, FastBreakMod::isEnabled, FastBreakMod::toggle,    "FastBreak"),
-        new Toggle(() -> cfg().autoToolKey,  AutoToolMod::isEnabled,  AutoToolMod::toggle,     "AutoTool"),
-        new Toggle(() -> cfg().nukerKey,     NukerMod::isEnabled,     NukerMod::toggle,        "Nuker"),
-        new Toggle(() -> cfg().autoWalkKey,  AutoWalkMod::isEnabled,  AutoWalkMod::toggle,     "AutoWalk")
-    );
-
     /** Minimal (label, enabled) pair exposed for HUDs such as the ArrayList. */
     public record ModuleEntry(String label, BooleanSupplier enabled) {}
 
     /**
-     * Every key-toggleable module as (label, enabled). The ArrayList HUD reads
-     * this instead of hand-copying the roster, so adding a row to {@link #TOGGLES}
-     * automatically surfaces it there too — no parallel list to keep in sync.
+     * Every key-toggleable module as (label, enabled) — derived straight from
+     * {@link Modules#KEYED}, so this can never drift from the real roster.
      */
     public static final List<ModuleEntry> TOGGLE_ENTRIES =
-        TOGGLES.stream().map(t -> new ModuleEntry(t.label(), t.enabled())).toList();
+        Modules.KEYED.stream().map(d -> new ModuleEntry(d.label(), d.enabled())).toList();
 
-    private static final boolean[] prevToggle = new boolean[TOGGLES.size()];
+    private static final boolean[] prevToggle = new boolean[Modules.KEYED.size()];
     private static boolean prevGui   = false;
     private static boolean prevPanic = false;
 
@@ -74,9 +44,9 @@ public final class Keybinds {
         boolean panicDown = down(handle, cfg.panicKey);
 
         if (mc.screen == null) {
-            for (int i = 0; i < TOGGLES.size(); i++) {
-                Toggle t = TOGGLES.get(i);
-                boolean d = down(handle, t.key().getAsInt());
+            for (int i = 0; i < Modules.KEYED.size(); i++) {
+                Modules.ModuleDef t = Modules.KEYED.get(i);
+                boolean d = down(handle, t.keyGet().getAsInt());
                 if (d && !prevToggle[i]) {
                     t.toggle().run();
                     saveEnabled();
@@ -89,8 +59,8 @@ public final class Keybinds {
         } else {
             // Keep prev states fresh while a screen is open so closing it and
             // releasing the key doesn't fire a stale edge.
-            for (int i = 0; i < TOGGLES.size(); i++)
-                prevToggle[i] = down(handle, TOGGLES.get(i).key().getAsInt());
+            for (int i = 0; i < Modules.KEYED.size(); i++)
+                prevToggle[i] = down(handle, Modules.KEYED.get(i).keyGet().getAsInt());
             if (mc.screen instanceof ClickGuiScreen && guiDown && !prevGui) mc.setScreen(null);
         }
 

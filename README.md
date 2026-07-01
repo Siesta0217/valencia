@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.41** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.42** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.41** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.41.jar
+# JAR → build/libs/valencia-1.7.42.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.42 — 中央模組 registry(架構 Phase A 0-2)
+- 新增 `Modules.java`:29 個模組的單一真實來源(`ModuleDef` record:label/分類/enabled/toggle/keybind/持久化欄位/panicable)。從此加模組只改一處,不用手動同步 4~5 份清單。
+- `Keybinds` 改為 registry 的衍生視圖:`TOGGLE_ENTRIES` 由 `Modules.KEYED` 生成、按鍵輪詢直接迭代 registry,刪掉 21 筆手抄 `TOGGLES` 表。順序/行為位元級不變。
+- 內建 `Modules.verify()` 啟動自檢(下一版接上):反射掃 `ModConfig` 的 `*Enabled` 欄位跟 registry 綁定互相比對,新模組漏綁會直接在 log 現形——編譯器抓不到的,它抓。
 
 ### v1.7.41 — 新模組審查修正 + Goto 優化
 **Freecam 旋轉解耦（真正隱形偵察）**
