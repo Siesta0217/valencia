@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.43** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.44** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.43** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.43.jar
+# JAR → build/libs/valencia-1.7.44.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.44 — registry 接管啟動還原 + 自檢上線(Phase A 5-6b,Phase A 完工)
+- `NoFallMod.onInitializeClient()` 的 27 行 enable 還原 → 一句 `Modules.restoreEnabled()`(一律走 toggle(),Freecam/ElytraGoto 依設計跳過)。~120 行 tuning 賦值原封不動。
+- `Modules.verify()` 啟動自檢上線:反射比對 ModConfig 的 27 個 `*Enabled` 欄位與 registry 綁定,漏綁/懸空立即 log(已驗證 27/27 零差集)。
+- `ArrayListMod.EXTRAS` 手抄 5 筆 → registry `surfaceInArrayList` 旗標衍生。
+- **至此 Phase A 完工**:模組 roster 只剩一份(`Modules.ALL`),Keybinds/panic/持久化/啟動還原/ArrayList 全是衍生視圖。
 
 ### v1.7.43 — registry 接管 Panic 與持久化(Phase A 3-4)
 - `Keybinds.panic()` 22 筆手抄 → `Modules.panic()`(registry 的 `panicable` 策展集:玩法模組全關、XRay/NameTag/ESP 等視覺模組保留——語意跟舊清單一致)。

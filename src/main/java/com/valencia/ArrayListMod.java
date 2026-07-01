@@ -25,17 +25,15 @@ public final class ArrayListMod {
     /** Dark backplate behind each row. */
     public static boolean background = true;
 
-    // Surfaceable modules that have no keybind, so they aren't in
-    // Keybinds.TOGGLE_ENTRIES. Everything key-toggleable is pulled straight from
-    // Keybinds, so this HUD can never drift from the real module roster.
-    // Pure-HUD readouts (TargetHUD) and the ArrayList itself are excluded.
-    private static final List<Keybinds.ModuleEntry> EXTRAS = List.of(
-        new Keybinds.ModuleEntry("Hitbox",     HitboxMod::isEnabled),
-        new Keybinds.ModuleEntry("NoCrash",    NoCrashMod::isEnabled),
-        new Keybinds.ModuleEntry("AutoFish",   AutoFishMod::isEnabled),
-        new Keybinds.ModuleEntry("ElytraGoto", ElytraGotoMod::isEnabled),
-        new Keybinds.ModuleEntry("ESP",        ESPMod::isEnabled)
-    );
+    // Keyless modules the HUD still surfaces — derived from the registry's
+    // surfaceInArrayList flag (Hitbox/NoCrash/AutoFish/ElytraGoto/ESP), so
+    // this list can never drift from the real roster. Pure-HUD readouts
+    // (TargetHUD/DimCoord) and the ArrayList itself stay excluded.
+    private static final List<Keybinds.ModuleEntry> EXTRAS =
+        Modules.ALL.stream()
+            .filter(Modules.ModuleDef::surfaceInArrayList)
+            .map(d -> new Keybinds.ModuleEntry(d.label(), d.enabled()))
+            .toList();
 
     private ArrayListMod() {}
 

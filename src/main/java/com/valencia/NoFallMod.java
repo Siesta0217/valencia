@@ -18,24 +18,12 @@ public class NoFallMod implements ClientModInitializer {
     public void onInitializeClient() {
         ModConfig cfg = ModConfig.get();
 
-        // Restore module enabled states from last session
-        enabled                   = cfg.nofallEnabled;
-        mode                      = cfg.nofallMode;
-        noFlightKick              = cfg.nofallNoFlightKick;
-        if (cfg.xrayEnabled     != XRayMod.isEnabled())     XRayMod.toggle();
-        if (cfg.maceAuraEnabled != MaceAuraMod.isEnabled()) MaceAuraMod.toggle();
-        if (cfg.noSlowEnabled   != NoSlowMod.isEnabled())   NoSlowMod.toggle();
-        if (cfg.bhopEnabled     != BHopMod.isEnabled())     BHopMod.toggle();
-        if (cfg.stepEnabled     != StepMod.isEnabled())     StepMod.toggle();
-        if (cfg.killAuraEnabled   != KillAuraMod.isEnabled())   KillAuraMod.toggle();
-        if (cfg.velocityEnabled   != VelocityMod.isEnabled())   VelocityMod.toggle();
-        if (cfg.fastPlaceEnabled  != FastPlaceMod.isEnabled())  FastPlaceMod.toggle();
-        if (cfg.critEnabled       != CritMod.isEnabled())       CritMod.toggle();
-        if (cfg.scaffoldEnabled   != ScaffoldMod.isEnabled())   ScaffoldMod.toggle();
-        if (cfg.timerEnabled      != TimerMod.isEnabled())      TimerMod.toggle();
-        if (cfg.spearAuraEnabled  != SpearAuraMod.isEnabled())  SpearAuraMod.toggle();
-        if (cfg.noCrashEnabled    != NoCrashMod.isEnabled())    NoCrashMod.toggle();
-        if (cfg.hitboxEnabled     != HitboxMod.isEnabled())     HitboxMod.toggle();
+        // Restore every persisted module's enabled state from last session —
+        // registry-driven (always via toggle(), Freecam/ElytraGoto skipped by
+        // design). The per-module tuning assignments below stay hand-written.
+        Modules.restoreEnabled();
+        mode         = cfg.nofallMode;
+        noFlightKick = cfg.nofallNoFlightKick;
 
         NoCrashMod.lookahead = cfg.noCrashLookAhead;
         NoCrashMod.maxSpeed  = cfg.noCrashMaxSpeed;
@@ -111,11 +99,8 @@ public class NoFallMod implements ClientModInitializer {
         BHopMod.kbBoost          = cfg.bhopKBBoost;
         TimerMod.speed           = cfg.timerSpeed;
         ElytraGotoMod.safeHpThreshold = cfg.elytraSafeHp;
-        if (cfg.netherCoordEnabled != NetherCoordMod.isEnabled()) NetherCoordMod.toggle();
-        if (cfg.autoFishEnabled    != AutoFishMod.isEnabled())    AutoFishMod.toggle();
         AutoFishMod.biteVy       = cfg.autoFishBiteVy;
         AutoFishMod.recastDelay  = cfg.autoFishRecast;
-        if (cfg.espEnabled         != ESPMod.isEnabled())         ESPMod.toggle();
         ESPMod.players  = cfg.espPlayers;
         ESPMod.hostile  = cfg.espHostile;
         ESPMod.animals  = cfg.espAnimals;
@@ -131,31 +116,19 @@ public class NoFallMod implements ClientModInitializer {
         ESPMod.green         = cfg.espGreen;
         ESPMod.blue          = cfg.espBlue;
 
-        if (cfg.targetHudEnabled != TargetHudMod.isEnabled()) TargetHudMod.toggle();
-
-        if (cfg.autoTotemEnabled != AutoTotemMod.isEnabled()) AutoTotemMod.toggle();
-
-        if (cfg.flyEnabled != FlyMod.isEnabled()) FlyMod.toggle();
         FlyMod.hSpeed = cfg.flyHSpeed;
         FlyMod.vSpeed = cfg.flyVSpeed;
 
-        if (cfg.fastBreakEnabled != FastBreakMod.isEnabled()) FastBreakMod.toggle();
-
-        if (cfg.autoToolEnabled != AutoToolMod.isEnabled()) AutoToolMod.toggle();
         AutoToolMod.switchBack = cfg.autoToolSwitchBack;
-        if (cfg.nukerEnabled != NukerMod.isEnabled()) NukerMod.toggle();
         NukerMod.range = cfg.nukerRange;
-        if (cfg.autoWalkEnabled != AutoWalkMod.isEnabled()) AutoWalkMod.toggle();
 
         // Freecam: tuning only — enabled state is intentionally not persisted
         // (don't want to boot straight into a detached camera).
         FreecamMod.speed = cfg.freecamSpeed;
 
-        if (cfg.arrayListEnabled != ArrayListMod.isEnabled()) ArrayListMod.toggle();
         ArrayListMod.rainbow    = cfg.arrayListRainbow;
         ArrayListMod.background  = cfg.arrayListBackground;
 
-        if (cfg.nameTagEnabled != NameTagMod.isEnabled()) NameTagMod.toggle();
         NameTagMod.players        = cfg.nameTagPlayers;
         NameTagMod.hostile        = cfg.nameTagHostile;
         NameTagMod.animals        = cfg.nameTagAnimals;
@@ -170,5 +143,9 @@ public class NoFallMod implements ClientModInitializer {
         NameTagMod.colorR         = cfg.nameTagR;
         NameTagMod.colorG         = cfg.nameTagG;
         NameTagMod.colorB         = cfg.nameTagB;
+
+        // Registry self-check: a module whose ModConfig *Enabled field isn't
+        // bound to a ModuleDef (or vice versa) gets logged here at startup.
+        Modules.verify();
     }
 }
