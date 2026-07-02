@@ -159,6 +159,11 @@ final class ModuleRegistry {
             new SliderS("Safe HP", () -> (double)cfg.elytraSafeHp, v -> { cfg.elytraSafeHp = (float)v; ElytraGotoMod.safeHpThreshold = (float)v; cfg.save(); }, 2, 20)
         )));
 
+        add(Cat.PLAYER, new ModEntry("AutoEat",
+            AutoEatMod::isEnabled, () -> { AutoEatMod.toggle(); cfg.autoEatEnabled = AutoEatMod.isEnabled(); cfg.save(); }, true, List.of(
+            new SliderS("Hunger", () -> (double)cfg.autoEatThreshold, v -> { cfg.autoEatThreshold = (int)v; AutoEatMod.threshold = (int)v; cfg.save(); }, 6, 19)
+        )));
+
         add(Cat.PLAYER, new ModEntry("NoCrash",
             NoCrashMod::isEnabled, () -> { NoCrashMod.toggle(); cfg.noCrashEnabled = NoCrashMod.isEnabled(); cfg.save(); }, true, List.of(
             new SliderS("Look Ahd", () -> (double)cfg.noCrashLookAhead, v -> { cfg.noCrashLookAhead = (float)v; NoCrashMod.lookahead = (float)v; cfg.save(); }, 2, 10),

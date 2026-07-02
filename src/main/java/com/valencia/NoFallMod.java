@@ -121,6 +121,7 @@ public class NoFallMod implements ClientModInitializer {
 
         AutoToolMod.switchBack = cfg.autoToolSwitchBack;
         NukerMod.range = cfg.nukerRange;
+        AutoEatMod.threshold = cfg.autoEatThreshold;
 
         // Freecam: tuning only — enabled state is intentionally not persisted
         // (don't want to boot straight into a detached camera).

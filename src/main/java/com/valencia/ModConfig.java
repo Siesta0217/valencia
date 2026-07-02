@@ -211,6 +211,10 @@ public class ModConfig {
     // TargetHUD
     public boolean targetHudEnabled = false;
 
+    // AutoEat
+    public boolean autoEatEnabled   = false;
+    public int     autoEatThreshold = 14;
+
     // Waypoints
     public boolean waypointsEnabled = true;
     /** Saved waypoint: position + the dimension it was recorded in. */

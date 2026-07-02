@@ -1,5 +1,6 @@
 package com.valencia.mixin;
 
+import com.valencia.AutoEatMod;
 import com.valencia.AutoFishMod;
 import com.valencia.AutoTotemMod;
 import com.valencia.AutoToolMod;
@@ -44,5 +45,6 @@ public abstract class TickMixin {
         AutoToolMod.tick();
         NukerMod.tick();
         AutoWalkMod.tick();
+        AutoEatMod.tick();
     }
 }

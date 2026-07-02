@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.47** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.48** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.47** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.47.jar
+# JAR → build/libs/valencia-1.7.48.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,11 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.48 — AutoEat
+- **新模組 AutoEat**(Player 類):飢餓值 ≤ 門檻(預設 14,GUI 滑桿 6–19)自動換到快捷欄最佳食物、按住右鍵吃到飽、還原原槽。全程走 vanilla 輸入系統(真實換槽 + keyUse),伺服器看到的就是正常吃東西。
+- 食物挑選:FOOD component 中 nutrition 最高者;跳過有害食物(腐肉/蜘蛛眼/毒馬鈴薯/河豚/生雞肉)。創造模式/開著介面時不動作。
+- 掛 Panic(自動化類),ArrayList HUD 會顯示;registry 一行接好還原/持久化/自檢。
 
 ### v1.7.47 — Waypoints(存點 + goto 直飛)
 - **新模組 Waypoints**(Render 類,預設開):`.nf wp add <name>` 存目前位置+維度、`.nf wp del <name>` 刪、`.nf wp list` 列清單(含距離)。
