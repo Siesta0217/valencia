@@ -217,7 +217,7 @@ public class ScaffoldMod {
     private static void sendCarried(Minecraft mc, int slot) {
         if (mc.getConnection() == null) return;
         try { mc.getConnection().send(new ServerboundSetCarriedItemPacket(slot)); }
-        catch (Exception ignored) {}
+        catch (Exception e) { Log.once("scaffold carried-item packet", e); }
     }
 
     private static void restoreSlot(Minecraft mc) {
@@ -239,7 +239,7 @@ public class ScaffoldMod {
             mc.getConnection().send(new ServerboundMovePlayerPacket.Rot(
                 yaw, pitch, p.onGround(), p.horizontalCollision
             ));
-        } catch (Exception ignored) {}
+        } catch (Exception e) { Log.once("scaffold rotation packet", e); }
     }
 
     private static void restoreRotation(Minecraft mc, LocalPlayer p) {
@@ -248,7 +248,7 @@ public class ScaffoldMod {
             mc.getConnection().send(new ServerboundMovePlayerPacket.Rot(
                 p.getYRot(), p.getXRot(), p.onGround(), p.horizontalCollision
             ));
-        } catch (Exception ignored) {}
+        } catch (Exception e) { Log.once("scaffold rotation packet", e); }
     }
 
     /** Find a solid neighbor of targetPos to use as the reference block. */

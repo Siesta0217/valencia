@@ -34,6 +34,11 @@ public final class AutoEatMod {
 
     public static boolean isEnabled() { return enabled; }
 
+    /** True while holding use to eat — slot-switching modules (AutoTool /
+     *  Nuker) yield during this window so they don't swap the food away
+     *  mid-bite and deadlock the eating state machine. */
+    public static boolean isEating() { return eating; }
+
     public static void toggle() {
         enabled = !enabled;
         if (!enabled) release(Minecraft.getInstance());

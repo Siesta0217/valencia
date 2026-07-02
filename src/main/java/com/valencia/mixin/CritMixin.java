@@ -51,6 +51,6 @@ public abstract class CritMixin {
             p.connection.send(new ServerboundMovePlayerPacket.Pos(x, y + 0.0625, z, false, hc));
             p.connection.send(new ServerboundMovePlayerPacket.Pos(x, y + 1.0E-5,  z, false, hc));
             p.connection.send(new ServerboundMovePlayerPacket.Pos(x, y,            z, false, hc));
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) { com.valencia.Log.once("crit mini-hop packet", t); }
     }
 }

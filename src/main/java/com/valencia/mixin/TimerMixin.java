@@ -40,7 +40,8 @@ public abstract class TimerMixin {
                 if (player == null) break;
                 player.tick();
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            com.valencia.Log.once("timer extra tick", t);
         } finally {
             timer$recursing = false;
         }

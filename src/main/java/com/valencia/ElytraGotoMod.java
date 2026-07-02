@@ -92,7 +92,15 @@ public class ElytraGotoMod {
     private static int autoJumpTries = 0;
 
     public static boolean isEnabled() { return enabled; }
-    public static void toggle()       { enabled = !enabled; }
+
+    /** Toggling OFF must run the full stop() cleanup: a bare flag flip leaves
+     *  the auto-takeoff jump key held forever (tick() early-returns on
+     *  !isActive(), so the 2-tick release countdown never runs) and lets a
+     *  managed landing keep steering after Panic. */
+    public static void toggle() {
+        if (enabled) stop();
+        else enabled = true;
+    }
 
     public static boolean isActive() {
         if (!enabled || !hasTarget) return false;
@@ -323,7 +331,7 @@ public class ElytraGotoMod {
                     p.connection.send(new ServerboundPlayerCommandPacket(
                         p, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable t) { Log.once("goto redeploy packet", t); }
             redeployTriggers++;
         }
 
@@ -596,7 +604,7 @@ public class ElytraGotoMod {
                 if (p.connection != null) {
                     p.connection.send(new ServerboundSetCarriedItemPacket(rocketSlot));
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable t) { Log.once("goto carried-item packet", t); }
             boolean fired = useItemSafe(mc, p, InteractionHand.MAIN_HAND);
             // Restore the player's original slot right away (swap → use →
             // swap back, same packet order Scaffold's fakeHand uses) so a
@@ -606,7 +614,7 @@ public class ElytraGotoMod {
                 if (p.connection != null) {
                     p.connection.send(new ServerboundSetCarriedItemPacket(prevSlot));
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable t) { Log.once("goto carried-item packet", t); }
             return fired;
         }
         return false;  // no rocket anywhere in hotbar
@@ -627,6 +635,7 @@ public class ElytraGotoMod {
             mc.gameMode.useItem(p, hand);
             return true;
         } catch (Throwable t) {
+            Log.once("goto useItem", t);
             return false;
         } finally {
             mc.hitResult = savedHit;

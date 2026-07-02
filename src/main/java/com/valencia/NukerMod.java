@@ -39,6 +39,9 @@ public final class NukerMod {
     public static void tick() {
         Minecraft mc = Minecraft.getInstance();
         if (!isActive() || mc.screen != null) return;
+        // Yield while AutoEat is mid-bite — swapping to a tool would take the
+        // food out of hand and stall the eat. Resume digging when it's done.
+        if (AutoEatMod.isEating()) return;
         LocalPlayer p = mc.player;
         Level level = mc.level;
 

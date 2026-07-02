@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.50** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.51** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.50** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.50.jar
+# JAR → build/libs/valencia-1.7.51.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,17 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.51 — 靜態複審修正 + silent-catch 稽核(B4)
+**兩個複審抓到的真 bug:**
+- **Panic/GUI 關 ElytraGoto 會永久卡住跳躍鍵**:`toggle()` 原是裸翻轉;若自動起飛正持著跳躍鍵(2 tick 倒數),停用後 tick 早退、倒數永不執行 → 角色瘋狂跳。toggle 停用現在走完整 `stop()` 清理(降落中 panic 也會確實棄控)。
+- **AutoEat 與 Nuker/AutoTool 搶手持槽**:進食中挖掘模組每 tick 換走食物槽 → 吃不進、進食狀態卡死。AutoEat 曝露 `isEating()`,兩個挖掘模組進食期間讓路,吃完自動恢復。
+
+**B4 silent-catch 稽核完成**(roadmap 移植準備項):
+- 新增 `Log.once(key, t)` 一次性錯誤紀錄(泛化 AutoFish 的 loggedError 模式,同 key 只記一次不洗版)。
+- 11 處封包/狀態敏感的 `catch{}` 接上:ElytraGoto 火箭/redeploy/useItem、Scaffold 三種封包、CritHit mini-hop 封包、Timer 額外 tick、AutoTool 附魔查詢、**config 載入/儲存**(存檔失敗原本無聲吞掉——設定悄悄不持久化是最傷的一種)。
+- 合理靜默保留:GUI blur fallback、waifu 載入(已顯示於 UI)、TargetHUD 實體渲染(有 fallback)、deploy 重試(有補償路徑)。
+- 移植時的意義:MC 改版後封包簽名炸掉會在 log 現形,不再靜默失效。
 
 ### v1.7.50 — GUI 架構收斂(重寫計畫 G0)
 - **ClickGUI 重寫計畫啟動**(計畫檔 `.claude/plans/valencia-gui-hud-rewrite.md`):G0 架構收斂 → G1 layout 瘦身 → H1/H2 HUD 可拖曳編輯器 → V1/V2 TargetHUD/ArrayList 視覺重做。

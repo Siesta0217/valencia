@@ -261,7 +261,7 @@ public class ModConfig {
                     if (cfg.waypoints == null) cfg.waypoints = new java.util.LinkedHashMap<>();
                     return cfg;
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) { Log.once("config load (using defaults)", e); }
         }
         ModConfig def = new ModConfig();
         def.save();
@@ -271,7 +271,7 @@ public class ModConfig {
     public void save() {
         try (Writer w = new FileWriter(CONFIG_PATH.toFile())) {
             GSON.toJson(this, w);
-        } catch (Exception ignored) {}
+        } catch (Exception e) { Log.once("config save FAILED — settings will not persist", e); }
     }
 
     // GLFW_KEY_* reflection is expensive and was previously run per-frame for

@@ -46,6 +46,9 @@ public final class AutoToolMod {
     public static void tick() {
         Minecraft mc = Minecraft.getInstance();
         if (!isActive() || mc.screen != null) return;
+        // AutoEat is mid-bite: don't touch the hotbar at all (switching OR
+        // restoring would swap the food away and stall the eating).
+        if (AutoEatMod.isEating()) return;
 
         if (!mc.options.keyAttack.isDown()
                 || !(mc.hitResult instanceof BlockHitResult bhr)
@@ -102,6 +105,7 @@ public final class AutoToolMod {
             }
             return EnchantmentHelper.getItemEnchantmentLevel(effHolder, stack);
         } catch (Throwable t) {
+            Log.once("autotool efficiency lookup", t);
             return 0;
         }
     }
