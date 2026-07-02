@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.45** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.46** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.45** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.45.jar
+# JAR → build/libs/valencia-1.7.46.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,13 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.46 — ElytraGoto 自動駕駛升級
+- **自動起飛**:站在地上設好目標就自動跳躍+展翅,不用再自己「jump off something」。有裝備檢查(鞘翅+煙火,缺了顯示提示不亂跳),低天花板最多試 8 次防彈跳迴圈。
+- **失速保護**:大角度爬升時空速 < ~7 m/s 即將失速(然後摔進剛才在閃的地形)——自動改平飛並立刻補火箭。
+- **提前下降規劃**:目標在下方且已進入滑翔錐(12:1)就直接開始下降,不再平飛到目標正上方繞圈盤旋;高度下限在最終進場時放行(~18° 下滑道),低 Y 目標不再卡在 safeY 硬俯衝。
+- **火箭換槽還原**:從快捷欄借槽發火箭後立刻換回原槽(swap→use→swap back),降落時手上不再莫名拿著煙火。
+- **真實 ETA**:狀態列 ETA 改用當前實際空速(原本寫死 33 m/s)。
 
 ### v1.7.45 — CI + 移植查核表(跨切軌道 + Phase B3)
 - **GitHub Actions CI**:push 到 main 自動用 **JDK 21** 跑 `assemble`(本機 JDK 25 不能碰 toolchain 的問題在 CI 不存在),JAR 上傳為 artifact。發佈命脈從此有乾淨可重現的備援。

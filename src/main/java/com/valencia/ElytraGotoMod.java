@@ -7,6 +7,8 @@ import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
@@ -83,6 +85,12 @@ public class ElytraGotoMod {
     private static boolean landing = false;
     private static int landingTicks = 0;
 
+    /** Auto-takeoff: ticks left to hold the jump key (0 = released). */
+    private static int autoJumpHold = 0;
+    /** Auto-jump attempts since last grounded; capped so a low ceiling doesn't
+     *  turn into an endless bounce loop. */
+    private static int autoJumpTries = 0;
+
     public static boolean isEnabled() { return enabled; }
     public static void toggle()       { enabled = !enabled; }
 
@@ -104,6 +112,7 @@ public class ElytraGotoMod {
         rocketConfirmed = false;
         deployFailTicks = 0;
         landing = false;
+        autoJumpTries = 0;
         if (!enabled) enabled = true;
     }
 
@@ -119,6 +128,12 @@ public class ElytraGotoMod {
         airborneTicks = 0;
         landing = false;
         landingTicks = 0;
+        autoJumpTries = 0;
+        if (autoJumpHold > 0) {
+            autoJumpHold = 0;
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.options != null) mc.options.keyJump.setDown(false);
+        }
     }
 
     /**
@@ -171,6 +186,9 @@ public class ElytraGotoMod {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
+
+        // Release the auto-takeoff jump key after its short hold.
+        if (autoJumpHold > 0 && --autoJumpHold == 0) mc.options.keyJump.setDown(false);
 
         // Death / HP abort — stops further packets while dying / corpse falling
         if (!p.isAlive() || p.isDeadOrDying()) {
@@ -229,7 +247,21 @@ public class ElytraGotoMod {
             if (p.onGround()) {
                 deployFailTicks = 0;
                 airborneTicks = 0;
-                showStatus(p, horizDist, "jump");
+                // Auto-takeoff: jump for the player, but only when the flight
+                // can actually happen (elytra on back + rockets in inventory)
+                // and capped so a low ceiling doesn't bounce forever.
+                boolean geared = p.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA)
+                              && countRockets(p) > 0;
+                if (geared && autoJumpTries < 8) {
+                    if (autoJumpHold == 0) {
+                        autoJumpTries++;
+                        autoJumpHold = 2;
+                        mc.options.keyJump.setDown(true);
+                    }
+                    showStatus(p, horizDist, "takeoff");
+                } else {
+                    showStatus(p, horizDist, geared ? "jump" : "gear");
+                }
                 return;
             }
             airborneTicks++;
@@ -269,6 +301,7 @@ public class ElytraGotoMod {
         }
         deployFailTicks = 0;
         airborneTicks = 0;
+        autoJumpTries = 0;
 
         // ── From here on the player is gliding: full autopilot ──────────────
 
@@ -298,12 +331,18 @@ public class ElytraGotoMod {
         smoothSetYaw(p, targetYaw);
 
         // Target-Y-aware base pitch.
-        //   Long cruise (>200m): slight nose-up, gravity will trim altitude
+        //   Long cruise (>200m): slight nose-up, gravity will trim altitude —
+        //     UNLESS we're already inside the glide cone to a lower target,
+        //     in which case start the descent now. Cruising level and only
+        //     descending over the target meant arriving high and orbiting
+        //     down; an elytra glides ~10:1 level, so a 12:1 gate starts the
+        //     descent with margin to spare.
         //   Mid range: aim toward (target + 5° above) so we don't undershoot
         //   Close in (<15m): level out for soft touchdown
         float pitch;
         double dy = targetY - p.getY();   // + = target above, - = target below
-        if (horizDist > 200) {
+        boolean descendNow = dy < -10 && horizDist < -dy * 12;
+        if (horizDist > 200 && !descendNow) {
             pitch = -3f;
         } else if (horizDist > 15) {
             double aimRad = Math.atan2(-dy, horizDist);
@@ -314,10 +353,13 @@ public class ElytraGotoMod {
         }
 
         // Altitude floor — always active, even on short trips. Climb scales
-        // with how far below safeY the player is.
+        // with how far below safeY the player is. Released on final approach
+        // to a low target (within a ~18° descent path), otherwise the floor
+        // pins us at safeY until 20m out and forces an impossible dive.
         double safeY = isNether() ? 80 : 110;
         double yBelow = safeY - p.getY();
-        if (yBelow > 5 && horizDist > 20) {
+        boolean finalDescent = horizDist < Math.max(60, (p.getY() - targetY) * 3);
+        if (yBelow > 5 && horizDist > 20 && !finalDescent) {
             float climbPitch = (float) Math.max(-30, -8 - yBelow * 0.4);
             pitch = Math.min(pitch, climbPitch);
         }
@@ -351,6 +393,15 @@ public class ElytraGotoMod {
             } else if (ceilingDanger) {
                 pitch = Math.max(pitch, 20f);
             }
+        }
+
+        // Stall guard: a hard climb with almost no airspeed (< ~7 m/s) is an
+        // imminent elytra stall — the player would drop straight into the
+        // terrain the climb was avoiding. Level out and let a rocket fire
+        // right away to power through instead.
+        if (pitch <= -20f && speed < 0.35) {
+            pitch = -8f;
+            if (rocketCooldown > 2) rocketCooldown = 2;
         }
 
         smoothSetPitch(p, pitch);
@@ -501,13 +552,25 @@ public class ElytraGotoMod {
         if (rocketSlot >= 0) {
             // setSelectedSlot is public in this build (verified via javap) — no
             // reflection needed, and it stays correct across remaps.
-            p.getInventory().setSelectedSlot(rocketSlot);
+            Inventory inv = p.getInventory();
+            int prevSlot = inv.getSelectedSlot();
+            inv.setSelectedSlot(rocketSlot);
             try {
                 if (p.connection != null) {
                     p.connection.send(new ServerboundSetCarriedItemPacket(rocketSlot));
                 }
             } catch (Throwable ignored) {}
-            return useItemSafe(mc, p, InteractionHand.MAIN_HAND);
+            boolean fired = useItemSafe(mc, p, InteractionHand.MAIN_HAND);
+            // Restore the player's original slot right away (swap → use →
+            // swap back, same packet order Scaffold's fakeHand uses) so a
+            // mid-flight boost doesn't leave a rocket in hand on landing.
+            inv.setSelectedSlot(prevSlot);
+            try {
+                if (p.connection != null) {
+                    p.connection.send(new ServerboundSetCarriedItemPacket(prevSlot));
+                }
+            } catch (Throwable ignored) {}
+            return fired;
         }
         return false;  // no rocket anywhere in hotbar
     }
@@ -556,6 +619,16 @@ public class ElytraGotoMod {
                 String.format("§e[Goto] §7waiting — jump off something (%.0fm to target)", dist)), true);
             return;
         }
+        if ("takeoff".equals(state)) {
+            p.displayClientMessage(Component.literal(
+                String.format("§e[Goto] §7auto-takeoff… (%.0fm to target)", dist)), true);
+            return;
+        }
+        if ("gear".equals(state)) {
+            p.displayClientMessage(Component.literal(
+                "§c[Goto] 缺裝備 — 需要穿上鞘翅 + 帶煙火"), true);
+            return;
+        }
         if ("deploying".equals(state)) {
             p.displayClientMessage(Component.literal(
                 "§e[Goto] §7deploying elytra…"), true);
@@ -566,7 +639,10 @@ public class ElytraGotoMod {
                 "§c[Goto] elytra 展不開 — 檢查耐久、確認沒在水裡 / 沒 levitation 效果"), true);
             return;
         }
-        double etaSec = dist / 33.0;
+        // ETA from actual airspeed (floor 8 m/s so a momentary stall doesn't
+        // show a comical four-digit ETA), not the old fixed 33 m/s guess.
+        double airspeed = p.getDeltaMovement().horizontalDistance() * 20.0;
+        double etaSec = dist / Math.max(8.0, airspeed);
         int rockets = countRockets(p);
         int consumed = (flightStartRockets >= 0) ? (flightStartRockets - rockets) : 0;
 
