@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.49** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.50** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.49** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.49.jar
+# JAR → build/libs/valencia-1.7.50.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,13 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.50 — GUI 架構收斂(重寫計畫 G0)
+- **ClickGUI 重寫計畫啟動**(計畫檔 `.claude/plans/valencia-gui-hud-rewrite.md`):G0 架構收斂 → G1 layout 瘦身 → H1/H2 HUD 可拖曳編輯器 → V1/V2 TargetHUD/ArrayList 視覺重做。
+- `ClickGuiScreen.saveEnabled()` 28 筆手抄(Phase A 漏網的第 5 份清單,已漂移漏 Waypoints/AutoEat)→ 一句 `Modules.saveEnabled()`。
+- **`ModuleRegistry` 全面 registry 化**:31 個模組 row 的分類/開關/持久化/Key 綁定全部從 `Modules.ALL` 衍生,只剩 settings 內容手寫(aura 閉包原樣不動)。31 個 toggle 閉包 + 28 個 KeyS 行蒸發;新模組進 GUI 從此零成本。
+- `Modules.ALL` 重排為 GUI 分類順序(面板顯示順序不變;按鍵輪詢陣列是純 runtime 結構,重排無影響)。
+- 行為統一:GUI 點模組開關現在**即存**(原本有 keybind 的模組要等關 GUI 才存);值不變,持久化時機更一致。
 
 ### v1.7.49 — goto stop 降落全面強化
 - **分段俯衝**:掃描下方 32m 分三段(>24m 俯衝 30° / 10–24m 緩降 12° / <10m 拉平 flare),取代原本固定 15° 淺衝——下得快、說停之後不再飄出幾百格。

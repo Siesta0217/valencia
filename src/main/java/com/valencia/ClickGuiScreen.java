@@ -162,35 +162,9 @@ public class ClickGuiScreen extends Screen {
     }
 
     private void saveEnabled() {
-        ModConfig cfg = ModConfig.get();
-        cfg.nofallEnabled    = NoFallMod.isEnabled();
-        cfg.xrayEnabled      = XRayMod.isEnabled();
-        cfg.maceAuraEnabled  = MaceAuraMod.isEnabled();
-        cfg.noSlowEnabled    = NoSlowMod.isEnabled();
-        cfg.bhopEnabled      = BHopMod.isEnabled();
-        cfg.stepEnabled      = StepMod.isEnabled();
-        cfg.killAuraEnabled  = KillAuraMod.isEnabled();
-        cfg.velocityEnabled  = VelocityMod.isEnabled();
-        cfg.fastPlaceEnabled = FastPlaceMod.isEnabled();
-        cfg.critEnabled      = CritMod.isEnabled();
-        cfg.scaffoldEnabled  = ScaffoldMod.isEnabled();
-        cfg.timerEnabled     = TimerMod.isEnabled();
-        cfg.spearAuraEnabled = SpearAuraMod.isEnabled();
-        cfg.noCrashEnabled   = NoCrashMod.isEnabled();
-        cfg.hitboxEnabled    = HitboxMod.isEnabled();
-        cfg.espEnabled       = ESPMod.isEnabled();
-        cfg.nameTagEnabled   = NameTagMod.isEnabled();
-        cfg.netherCoordEnabled = NetherCoordMod.isEnabled();
-        cfg.targetHudEnabled = TargetHudMod.isEnabled();
-        cfg.autoFishEnabled  = AutoFishMod.isEnabled();
-        cfg.autoTotemEnabled = AutoTotemMod.isEnabled();
-        cfg.arrayListEnabled = ArrayListMod.isEnabled();
-        cfg.flyEnabled       = FlyMod.isEnabled();
-        cfg.fastBreakEnabled = FastBreakMod.isEnabled();
-        cfg.autoToolEnabled  = AutoToolMod.isEnabled();
-        cfg.nukerEnabled     = NukerMod.isEnabled();
-        cfg.autoWalkEnabled  = AutoWalkMod.isEnabled();
-        cfg.save();
+        // Registry-driven — this used to be the fifth hand-copied module list
+        // (it had already drifted: Waypoints and AutoEat were missing).
+        Modules.saveEnabled();
     }
 
     // ═════════════════════════════════════════════════════════════════════════
