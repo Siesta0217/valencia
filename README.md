@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.51** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.52** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.51** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.51.jar
+# JAR → build/libs/valencia-1.7.52.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,9 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.52 — 一鍵 release 腳本
+- 新增 `scripts/release.sh`:bump → assemble → 部署 → README 版本參照 → commit → push → GitHub release 一條龍。前置檢查(commit msg / release notes / changelog 條目缺一即中止)、assemble 失敗自動回退版號。release 流程從「模型手打六步」變成「腳本一行」,哪個模型/哪次 session 跑都一致。
 
 ### v1.7.51 — 靜態複審修正 + silent-catch 稽核(B4)
 **兩個複審抓到的真 bug:**
