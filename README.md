@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.48** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.49** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.48** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.48.jar
+# JAR → build/libs/valencia-1.7.49.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,13 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.49 — goto stop 降落全面強化
+- **分段俯衝**:掃描下方 32m 分三段(>24m 俯衝 30° / 10–24m 緩降 12° / <10m 拉平 flare),取代原本固定 15° 淺衝——下得快、說停之後不再飄出幾百格。
+- **撞牆防護**:降落中沿用巡航的 5 射線前方扇形掃描,前方有山壁先拉起掠過再繼續降——elytra 動能撞擊是會直接摔死的,原本盲降。
+- **熔岩偵測(地獄)**:含流體 vs 只算方塊的雙射線比對,判出「下方表面是熔岩」→ 保持高度續滑到實地上空才降,不再 flare 進熔岩海。
+- **安全上限 10s → 30s**:高空/深谷降不完不再中途棄控(避免又變成「停了還在滑」)。
+- 狀態列顯示離地高度與避障/熔岩提示。
 
 ### v1.7.48 — AutoEat
 - **新模組 AutoEat**(Player 類):飢餓值 ≤ 門檻(預設 14,GUI 滑桿 6–19)自動換到快捷欄最佳食物、按住右鍵吃到飽、還原原槽。全程走 vanilla 輸入系統(真實換槽 + keyUse),伺服器看到的就是正常吃東西。

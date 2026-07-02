@@ -433,10 +433,18 @@ public class ElytraGotoMod {
         showStatus(p, horizDist, "flying");
     }
 
-    /** Managed descent after {@code .nf goto stop} while airborne. Gentle dive,
-     *  flare near the ground, no yaw lock (player picks the landing spot), no
-     *  rockets. Releases the moment fall-flying ends (touchdown) or after a
-     *  10s safety cap so it can never itself get stuck. */
+    /** Managed descent after {@code .nf goto stop} while airborne. Staged dive
+     *  (steep when high, flare near the ground), no yaw lock (player picks the
+     *  landing spot), no rockets. Releases the moment fall-flying ends
+     *  (touchdown) or after a 30s safety cap so it can never itself get stuck.
+     *
+     *  Two hazards are actively avoided:
+     *   - Wall impact: elytra kinetic damage from slamming a hillside is
+     *     lethal; if the forward fan sees an obstacle, climb to skim over it
+     *     before resuming the descent.
+     *   - Lava (nether): a fluids-inclusive vs blocks-only ray pair tells us
+     *     the surface below is lava — hold altitude and keep gliding until
+     *     solid ground is underneath instead of flaring into the lake. */
     private static void tickLanding() {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
@@ -444,7 +452,7 @@ public class ElytraGotoMod {
 
         landingTicks++;
         boolean grounded = p.onGround() || !p.isFallFlying();
-        if (grounded || !p.isAlive() || landingTicks > 200) {
+        if (grounded || !p.isAlive() || landingTicks > 600) {
             stop();
             p.displayClientMessage(Component.literal(grounded
                 ? "§a[Goto] landed — control released"
@@ -452,11 +460,40 @@ public class ElytraGotoMod {
             return;
         }
 
-        // Dive to lose altitude, level out within ~8m of the ground to soften
-        // the touchdown (pair with NoFall if a fast landing would hurt).
-        double below = nearestBelow(p, mc, 8, isNether());
-        smoothSetPitch(p, below < 8 ? 0f : 15f);
-        p.displayClientMessage(Component.literal("§e[Goto] §7landing…"), true);
+        // Wall-impact guard first — same fan the cruise autopilot uses.
+        double speed = p.getDeltaMovement().horizontalDistance();
+        double lookahead = Math.max(10, speed * 12);
+        if (nearestAhead(p, mc, lookahead) < lookahead) {
+            smoothSetPitch(p, -12f);   // skim up and over, then resume descent
+            p.displayClientMessage(Component.literal("§e[Goto] §7landing… §6避障拉起"), true);
+            return;
+        }
+
+        boolean nether = isNether();
+        double solidBelow = nearestBelow(p, mc, 32, false);
+        double anyBelow   = nether ? nearestBelow(p, mc, 32, true) : solidBelow;
+        // Fluid surface strictly above the blocks-only hit ⇒ lava underneath.
+        boolean lavaBelow = nether && anyBelow < solidBelow - 0.5;
+
+        float pitch;
+        String note;
+        if (lavaBelow) {
+            pitch = -3f;               // hold altitude, glide to solid ground
+            note  = " §c熔岩下方,續滑";
+        } else if (anyBelow < 10) {
+            pitch = 0f;                // flare for a soft touchdown
+            note  = "";
+        } else if (anyBelow < 24) {
+            pitch = 12f;               // shallow final descent
+            note  = "";
+        } else {
+            pitch = 30f;               // get down fast — less drift from the stop point
+            note  = "";
+        }
+        smoothSetPitch(p, pitch);
+
+        String alt = anyBelow < Double.MAX_VALUE ? String.format(" §f%dm", (int) anyBelow) : "";
+        p.displayClientMessage(Component.literal("§e[Goto] §7landing…" + alt + note), true);
     }
 
     // ── Rotation smoothing ──────────────────────────────────────────────────
