@@ -210,6 +210,12 @@ public class ModConfig {
 
     // TargetHUD
     public boolean targetHudEnabled = false;
+
+    // Waypoints
+    public boolean waypointsEnabled = true;
+    /** Saved waypoint: position + the dimension it was recorded in. */
+    public static class Wp { public double x, y, z; public String dim; }
+    public java.util.LinkedHashMap<String, Wp> waypoints = new java.util.LinkedHashMap<>();
     public int     targetHudStyle   = 0;   // 0=Classic, 1=Compact, 2=Gradient, 3=Ring, 4=Aurora
 
     // AutoTotem
@@ -246,7 +252,11 @@ public class ModConfig {
         if (file.exists()) {
             try (Reader r = new FileReader(file)) {
                 ModConfig cfg = GSON.fromJson(r, ModConfig.class);
-                if (cfg != null) return cfg;
+                if (cfg != null) {
+                    // Defensive: a hand-edited config can null the map out.
+                    if (cfg.waypoints == null) cfg.waypoints = new java.util.LinkedHashMap<>();
+                    return cfg;
+                }
             } catch (Exception ignored) {}
         }
         ModConfig def = new ModConfig();

@@ -2,7 +2,7 @@
 
 Fabric client mod for **Lunar Client 1.21** — utility / combat features.
 
-Latest: **v1.7.46** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
+Latest: **v1.7.47** — [Download JAR](https://github.com/Siesta0217/valencia/releases/latest)
 
 ---
 
@@ -99,7 +99,7 @@ Latest: **v1.7.46** — [Download JAR](https://github.com/Siesta0217/valencia/re
 git clone https://github.com/Siesta0217/valencia.git
 cd valencia
 .\gradlew.bat assemble
-# JAR → build/libs/valencia-1.7.46.jar
+# JAR → build/libs/valencia-1.7.47.jar
 ```
 
 > **注意**：不要使用 `gradlew build`（test task 在此環境下會壞）。
@@ -108,6 +108,12 @@ cd valencia
 ---
 
 ## Changelog
+
+### v1.7.47 — Waypoints(存點 + goto 直飛)
+- **新模組 Waypoints**(Render 類,預設開):`.nf wp add <name>` 存目前位置+維度、`.nf wp del <name>` 刪、`.nf wp list` 列清單(含距離)。
+- **世界內渲染**:每個 waypoint 一根全高度彩色光柱(名字 hash 決定顏色)+ 視平線高度的「name (123m)」浮動標籤,走 ESP 同一條 vanilla gizmo 管線,穿牆可見。
+- **goto 整合**:`.nf goto home` 直接飛向存點;跨維度自動 ÷8/×8 換算(地獄存的點在主世界飛、反之亦然),終界點不換算會明講。
+- Registry 效益實證:新模組的啟動還原/持久化/自檢,只在 `Modules.ALL` 加一行就全部接好。
 
 ### v1.7.46 — ElytraGoto 自動駕駛升級
 - **自動起飛**:站在地上設好目標就自動跳躍+展翅,不用再自己「jump off something」。有裝備檢查(鞘翅+煙火,缺了顯示提示不亂跳),低天花板最多試 8 次防彈跳迴圈。

@@ -238,6 +238,10 @@ final class ModuleRegistry {
             new SliderS("Style", () -> cfg.targetHudStyle, v -> { cfg.targetHudStyle = (int)v; cfg.save(); }, 0, 4)
         )));
 
+        add(Cat.RENDER, new ModEntry("Waypoints",
+            WaypointsMod::isEnabled, () -> { WaypointsMod.toggle(); cfg.waypointsEnabled = WaypointsMod.isEnabled(); cfg.save(); },
+            true, List.of()));
+
         add(Cat.RENDER, new ModEntry("ArrayList",
             ArrayListMod::isEnabled, () -> { ArrayListMod.toggle(); cfg.arrayListEnabled = ArrayListMod.isEnabled(); cfg.save(); }, true, List.of(
             new BoolS("Rainbow", () -> cfg.arrayListRainbow,    () -> { cfg.arrayListRainbow = !cfg.arrayListRainbow;       ArrayListMod.rainbow = cfg.arrayListRainbow;       cfg.save(); }),

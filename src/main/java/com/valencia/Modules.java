@@ -147,6 +147,9 @@ public final class Modules {
         new ModuleDef("TargetHUD", Cat.RENDER,   TargetHudMod::isEnabled, TargetHudMod::toggle,
             null, null,
             () -> cfg().targetHudEnabled, v -> cfg().targetHudEnabled = v, "targetHudEnabled", false, false),
+        new ModuleDef("Waypoints", Cat.RENDER,   WaypointsMod::isEnabled, WaypointsMod::toggle,
+            null, null,
+            () -> cfg().waypointsEnabled, v -> cfg().waypointsEnabled = v, "waypointsEnabled", false, false),
         new ModuleDef("ArrayList", Cat.RENDER,   ArrayListMod::isEnabled, ArrayListMod::toggle,
             null, null,
             () -> cfg().arrayListEnabled, v -> cfg().arrayListEnabled = v, "arrayListEnabled", false, false)

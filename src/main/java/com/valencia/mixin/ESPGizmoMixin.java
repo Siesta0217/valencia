@@ -45,9 +45,13 @@ public abstract class ESPGizmoMixin {
                                      double camX, double camY, double camZ,
                                      float partialTick,
                                      CallbackInfo ci) {
-        if (!ESPMod.isEnabled()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
+
+        // Waypoint beams ride the same collector (independent of ESP state).
+        com.valencia.WaypointsMod.emitGizmos(mc);
+
+        if (!ESPMod.isEnabled()) return;
 
         int color = 0xFF000000
             | ((ESPMod.red   & 0xFF) << 16)
